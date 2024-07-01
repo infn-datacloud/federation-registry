@@ -23,12 +23,14 @@ class Quota(StructuredNode):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
     """
 
     uid = UniqueIdProperty()
     description = StringProperty(default="")
     type = StringProperty(required=True)
     per_user = BooleanProperty(default=False)
+    usage = BooleanProperty(default=False)
 
     project = RelationshipFrom(
         "fed_reg.project.models.Project", "USE_SERVICE_WITH", cardinality=One
@@ -46,6 +48,7 @@ class BlockStorageQuota(Quota):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         gigabytes (int | None): Number of max usable gigabytes (GiB).
         per_volume_gigabytes (int | None): Number of max usable gigabytes per volume
             (GiB).
@@ -72,6 +75,7 @@ class ComputeQuota(Quota):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         cores (int | None): Number of max usable cores.
         instance (int | None): Number of max VM instances.
         ram (int | None): Number of max usable RAM (MiB).
@@ -97,6 +101,7 @@ class NetworkQuota(Quota):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         public_ips (int | None): The number of floating IP addresses allowed for each
             project.
         networks (int | None): The number of networks allowed for each project.

@@ -409,19 +409,26 @@ def find_duplicates(items: Any, attr: Optional[str] = None) -> None:
 def multiple_quotas_same_project(quotas: list[Any]) -> None:
     """Verify maximum number of quotas on same project.
 
-    A project can have at most one `project` quota and one `per-user` quota on a
-    specific service.
+    A project can have at most one `project` quota, one `per-user` quota and one `usage`
+    quota on a specific service.
     """
     d = {}
     for quota in quotas:
         if quota.project is not None:
             msg = f"Multiple quotas on same project {quota.project}"
-            q = d.get(quota.project)
-            if not q:
-                d[quota.project] = [1, quota.per_user]
+            if not d.get(quota.project, None):
+                d[quota.project] = [0, 0, 0]
+            if quota.usage:
+                d[quota.project][2] += 1
+            elif quota.per_user:
+                d[quota.project][1] += 1
             else:
-                q[0] += 1
-                assert q[0] <= 2 and q[1] != quota.per_user, msg
+                d[quota.project][0] += 1
+            assert (
+                d[quota.project][0] <= 2
+                and d[quota.project][1] <= 2
+                and d[quota.project][2] <= 2
+            ), msg
 
 
 def find_duplicate_projects(project: str, seen: Set[str]) -> None:

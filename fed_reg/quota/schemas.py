@@ -22,6 +22,7 @@ from fed_reg.quota.constants import (
     DOC_PORT,
     DOC_PUB_IPS,
     DOC_RAM,
+    DOC_USAGE,
     DOC_VOL_GB,
     DOC_VOLS,
 )
@@ -37,9 +38,11 @@ class QuotaBase(BaseNode):
     ----------
         description (str): Brief description.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
     """
 
     per_user: bool = Field(default=False, description=DOC_PER_USER)
+    usage: bool = Field(default=False, description=DOC_USAGE)
 
 
 class BlockStorageQuotaBasePublic(QuotaBase):
@@ -52,6 +55,7 @@ class BlockStorageQuotaBasePublic(QuotaBase):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         gigabytes (int | None): Number of max usable gigabytes (GiB).
         per_volume_gigabytes (int | None): Number of max usable gigabytes per volume
             (GiB).
@@ -73,6 +77,7 @@ class BlockStorageQuotaBase(BlockStorageQuotaBasePublic):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         gigabytes (int | None): Number of max usable gigabytes (GiB).
         per_volume_gigabytes (int | None): Number of max usable gigabytes per volume
             (GiB).
@@ -97,6 +102,7 @@ class BlockStorageQuotaCreate(BaseNodeCreate, BlockStorageQuotaBase):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         gigabytes (int | None): Number of max usable gigabytes (GiB).
         per_volume_gigabytes (int | None): Number of max usable gigabytes per volume
             (GiB).
@@ -117,6 +123,7 @@ class BlockStorageQuotaUpdate(BaseNodeCreate, BlockStorageQuotaBase):
         description (str | None): Brief description.
         type (str | None): Quota type.
         per_user (str | None): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         gigabytes (int | None): Number of max usable gigabytes (GiB).
         per_volume_gigabytes (int | None): Number of max usable gigabytes per volume
             (GiB).
@@ -140,6 +147,7 @@ class BlockStorageQuotaReadPublic(
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
     """
 
 
@@ -157,6 +165,7 @@ class BlockStorageQuotaRead(BaseNodeRead, BaseReadPrivate, BlockStorageQuotaBase
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         gigabytes (int | None): Number of max usable gigabytes (GiB).
         per_volume_gigabytes (int | None): Number of max usable gigabytes per volume
             (GiB).
@@ -179,6 +188,7 @@ class ComputeQuotaBasePublic(QuotaBase):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         cores (int | None): Number of max usable cores.
         instances (int | None): Number of max VM instances.
         ram (int | None): Number of max usable RAM (MiB).
@@ -199,6 +209,7 @@ class ComputeQuotaBase(ComputeQuotaBasePublic):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         cores (int | None): Number of max usable cores.
         instances (int | None): Number of max VM instances.
         ram (int | None): Number of max usable RAM (MiB).
@@ -220,6 +231,7 @@ class ComputeQuotaCreate(BaseNodeCreate, ComputeQuotaBase):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         cores (int | None): Number of max usable cores.
         instances (int | None): Number of max VM instances.
         ram (int | None): Number of max usable RAM (MiB).
@@ -239,6 +251,7 @@ class ComputeQuotaUpdate(BaseNodeCreate, ComputeQuotaBase):
         description (str | None): Brief description.
         type (str | None): Quota type.
         per_user (str | None): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         cores (int | None): Number of max usable cores.
         instances (int | None): Number of max VM instances.
         ram (int | None): Number of max usable RAM (MiB).
@@ -259,6 +272,7 @@ class ComputeQuotaReadPublic(BaseNodeRead, BaseReadPublic, ComputeQuotaBasePubli
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
     """
 
 
@@ -276,6 +290,7 @@ class ComputeQuotaRead(BaseNodeRead, BaseReadPrivate, ComputeQuotaBase):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         cores (int | None): Number of max usable cores.
         instances (int | None): Number of max VM instances.
         ram (int | None): Number of max usable RAM (MiB).
@@ -295,6 +310,7 @@ class NetworkQuotaBasePublic(QuotaBase):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         public_ips (int | None): The number of floating IP addresses allowed for each
             project.
         networks (int | None): The number of networks allowed for each project.
@@ -320,6 +336,7 @@ class NetworkQuotaBase(NetworkQuotaBasePublic):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         public_ips (int | None): The number of floating IP addresses allowed for each
             project.
         networks (int | None): The number of networks allowed for each project.
@@ -350,6 +367,7 @@ class NetworkQuotaCreate(BaseNodeCreate, NetworkQuotaBase):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         public_ips (int | None): The number of floating IP addresses allowed for each
             project.
         networks (int | None): The number of networks allowed for each project.
@@ -374,6 +392,7 @@ class NetworkQuotaUpdate(BaseNodeCreate, NetworkQuotaBase):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         public_ips (int | None): The number of floating IP addresses allowed for each
             project.
         networks (int | None): The number of networks allowed for each project.
@@ -399,6 +418,7 @@ class NetworkQuotaReadPublic(BaseNodeRead, BaseReadPublic, NetworkQuotaBasePubli
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
     """
 
     type: QuotaType = Field(description="Network type")
@@ -418,6 +438,7 @@ class NetworkQuotaRead(BaseNodeRead, BaseReadPrivate, NetworkQuotaBase):
         description (str): Brief description.
         type (str): Quota type.
         per_user (str): This limitation should be applied to each user.
+        usage (str): This quota defines the current resource usage.
         public_ips (int | None): The number of floating IP addresses allowed for each
             project.
         networks (int | None): The number of networks allowed for each project.
