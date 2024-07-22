@@ -80,7 +80,7 @@ router = APIRouter(prefix="/providers", tags=["providers"])
 )
 @custom.decorate_view_func
 @db.read_transaction
-def get_providers(
+async def get_providers(
     comm: DbQueryCommonParams = Depends(),
     page: Pagination = Depends(),
     size: SchemaSize = Depends(),
