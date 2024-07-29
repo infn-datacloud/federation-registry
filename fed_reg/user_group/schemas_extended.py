@@ -151,6 +151,7 @@ class NetworkQuotaReadExtendedPublic(NetworkQuotaReadPublic):
 
     service: NetworkServiceReadPublic = Field(description=DOC_EXT_SERV)
 
+
 class ObjectStoreQuotaReadExtended(ObjectStoreQuotaRead):
     """Model to extend the Object Storage Quota data read from the DB.
 

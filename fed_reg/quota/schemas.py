@@ -529,8 +529,8 @@ class ObjectStoreQuotaUpdate(BaseNodeCreate, ObjectStoreQuotaBase):
         usage (str): This quota defines the current resource usage.
         bytes (int): Maximum number of allowed bytes.
         containers (int): Maximum number of allowed containers.
-        objects (int): Maximum number of allowed objects
-"""
+        objects (int): Maximum number of allowed objects.
+    """
 
 
 class ObjectStoreQuotaReadPublic(

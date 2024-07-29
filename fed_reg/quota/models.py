@@ -137,9 +137,9 @@ class ObjectStoreQuota(Quota):
         usage (str): This quota defines the current resource usage.
     """
 
-    bytes: int = IntegerProperty()
-    containers: int = IntegerProperty()
-    objects: int = IntegerProperty()
+    bytes = IntegerProperty()
+    containers = IntegerProperty()
+    objects = IntegerProperty()
 
     service = RelationshipTo(
         "fed_reg.service.models.ObjectStoreService", "APPLY_TO", cardinality=One

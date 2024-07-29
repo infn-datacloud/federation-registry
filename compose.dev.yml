@@ -1,0 +1,8 @@
+services:
+  backend:
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+    environment:
+      - NEO4J_SERVER=db

@@ -1,48 +1,28 @@
-version: "3"
-
 services:
   db:
-    image: neo4j:5.15
+    image: neo4j:5.18
     container_name: fed-reg-devc-db
+    ports:
+      - 7687:7687
+      - 7474:7474
     volumes:
       - fed-reg-devc-db-data:/data
       - fed-reg-devc-db-logs:/logs
     environment:
       - NEO4J_AUTH=none
       - NEO4J_PLUGINS=["apoc"]
-    networks:
-      - fed-reg-devc-db
-
-  oidc-agent:
-    image: opensciencegrid/oidc-agent:3.6-release-20240220-1639
-    container_name: fed-reg-devc-oidc-agent
-    platform: linux/amd64
-    volumes:
-      - fed-reg-devc-oidc-agent-iss-config:/root/.oidc-agent
-    networks:
-      - fed-reg-devc-oidc-agent
 
   base:
-    image: mcr.microsoft.com/devcontainers/typescript-node:18
+    build:
+      context: ./..
+      dockerfile: ./dockerfiles/Dockerfile.devc
     container_name: fed-reg-devc-base
-    depends_on:
-      - db
-      - oidc-agent
     volumes:
       - ..:/workspace:cached
     environment:
       - NEO4J_SERVER=fed-reg-devc-db
-      - OIDC_AGENT_CONTAINER_NAME=fed-reg-devc-oidc-agent
-    networks:
-      - fed-reg-devc-db
-      - fed-reg-devc-oidc-agent
     command: sleep infinity
 
 volumes:
   fed-reg-devc-db-data:
   fed-reg-devc-db-logs:
-  fed-reg-devc-oidc-agent-iss-config:
-
-networks:
-  fed-reg-devc-db:
-  fed-reg-devc-oidc-agent:

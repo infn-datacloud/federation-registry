@@ -673,9 +673,7 @@ def delete_network_services(
         )
 
 
-os_router = APIRouter(
-    prefix="/object_store_services", tags=["object_store_services"]
-)
+os_router = APIRouter(prefix="/object_store_services", tags=["object_store_services"])
 
 
 @os_router.get(
