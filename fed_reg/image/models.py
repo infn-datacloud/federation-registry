@@ -7,7 +7,6 @@ from neomodel import (
     StringProperty,
     StructuredNode,
     UniqueIdProperty,
-    ZeroOrMore,
 )
 
 
@@ -34,7 +33,6 @@ class Image(StructuredNode):
         kernel_id (str | None): Kernel version.
         cuda_support (str): Support for cuda enabled.
         gpu_driver (str): Support for GPUs drivers.
-        is_public (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
     """
 
@@ -51,7 +49,6 @@ class Image(StructuredNode):
     cuda_support = BooleanProperty(default=False)
     # TODO Understand what does it mean and add to documentation
     gpu_driver = BooleanProperty(default=False)
-    is_public = BooleanProperty(default=True)
     tags = ArrayProperty(StringProperty(), default=[])
 
     services = RelationshipFrom(
@@ -59,8 +56,60 @@ class Image(StructuredNode):
         "AVAILABLE_VM_IMAGE",
         cardinality=OneOrMore,
     )
+
+
+class PrivateImage(Image):
+    """Virtual Machine Image owned by a Provider.
+
+    A Private Image can be used by one or multiple projects. At least one project must
+    point to this item.
+
+    Attributes:
+    ----------
+        uid (int): Image unique ID.
+        description (str): Brief description.
+        name (str): Image name in the Provider.
+        uuid (str): Image unique ID in the Provider
+        os_type (str | None): OS type.
+        os_distro (str | None): OS distribution.
+        os_version (str | None): Distribution version.
+        architecture (str | None): OS architecture.
+        kernel_id (str | None): Kernel version.
+        cuda_support (str): Support for cuda enabled.
+        gpu_driver (str): Support for GPUs drivers.
+        is_public (bool): Public or private Image.
+        tags (list of str): list of tags associated to this Image.
+    """
+
+    is_public = BooleanProperty(default=False)
+
     projects = RelationshipFrom(
         "fed_reg.project.models.Project",
         "CAN_USE_VM_IMAGE",
-        cardinality=ZeroOrMore,
+        cardinality=OneOrMore,
     )
+
+
+class PublicImage(Image):
+    """Virtual Machine Image owned by a Provider.
+
+    All projects have access to public images.
+
+    Attributes:
+    ----------
+        uid (int): Image unique ID.
+        description (str): Brief description.
+        name (str): Image name in the Provider.
+        uuid (str): Image unique ID in the Provider
+        os_type (str | None): OS type.
+        os_distro (str | None): OS distribution.
+        os_version (str | None): Distribution version.
+        architecture (str | None): OS architecture.
+        kernel_id (str | None): Kernel version.
+        cuda_support (str): Support for cuda enabled.
+        gpu_driver (str): Support for GPUs drivers.
+        is_public (bool): Public or private Image.
+        tags (list of str): list of tags associated to this Image.
+    """
+
+    is_public = BooleanProperty(default=True)

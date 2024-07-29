@@ -9,7 +9,7 @@ from neomodel import (
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.flavor.models import PrivateFlavor, PublicFlavor
-from fed_reg.image.models import Image
+from fed_reg.image.models import PrivateImage, PublicImage
 from fed_reg.network.models import Network
 from fed_reg.project.models import Project
 from fed_reg.provider.models import Provider
@@ -146,30 +146,83 @@ def test_priv_pub_flavors_belong_to_diff_lists(
     assert len(project_model.private_flavors.all()) == 1
 
 
-def test_linked_image(project_model: Project, image_model: Image) -> None:
+def test_linked_private_image(
+    project_model: Project, private_image_model: PrivateImage
+) -> None:
     assert project_model.private_images.name
     assert project_model.private_images.source
     assert isinstance(project_model.private_images.source, Project)
     assert project_model.private_images.source.uid == project_model.uid
     assert project_model.private_images.definition
-    assert project_model.private_images.definition["node_class"] == Image
+    assert project_model.private_images.definition["node_class"] == PrivateImage
 
-    r = project_model.private_images.connect(image_model)
+    r = project_model.private_images.connect(private_image_model)
     assert r is True
 
     assert len(project_model.private_images.all()) == 1
     image = project_model.private_images.single()
-    assert isinstance(image, Image)
-    assert image.uid == image_model.uid
+    assert isinstance(image, PrivateImage)
+    assert image.uid == private_image_model.uid
     assert not image.is_public
 
 
-def test_multiple_linked_images(project_model: Project) -> None:
-    item = Image(**image_model_dict()).save()
+def test_multiple_linked_private_images(project_model: Project) -> None:
+    item = PrivateImage(**image_model_dict()).save()
     project_model.private_images.connect(item)
-    item = Image(**image_model_dict()).save()
+    item = PrivateImage(**image_model_dict()).save()
     project_model.private_images.connect(item)
     assert len(project_model.private_images.all()) == 2
+
+
+def test_linked_public_image(
+    project_model: Project,
+    compute_quota_model: ComputeQuota,
+    compute_service_model: ComputeService,
+    public_image_model: PublicImage,
+) -> None:
+    compute_service_model.quotas.connect(compute_quota_model)
+    project_model.quotas.connect(compute_quota_model)
+    compute_service_model.images.connect(public_image_model)
+
+    public_images = project_model.public_images()
+    assert len(public_images) == 1
+    image = public_images[0]
+    assert isinstance(image, PublicImage)
+    assert image.uid == public_image_model.uid
+
+
+def test_multi_linked_public_images(
+    project_model: Project,
+    compute_quota_model: ComputeQuota,
+    compute_service_model: ComputeService,
+) -> None:
+    compute_service_model.quotas.connect(compute_quota_model)
+    project_model.quotas.connect(compute_quota_model)
+
+    image_model = PublicImage(**image_model_dict()).save()
+    compute_service_model.images.connect(image_model)
+    image_model = PublicImage(**image_model_dict()).save()
+    compute_service_model.images.connect(image_model)
+
+    public_images = project_model.public_images()
+    assert len(public_images) == 2
+
+
+def test_priv_pub_images_belong_to_diff_lists(
+    project_model: Project,
+    compute_quota_model: ComputeQuota,
+    compute_service_model: ComputeService,
+) -> None:
+    compute_service_model.quotas.connect(compute_quota_model)
+    project_model.quotas.connect(compute_quota_model)
+
+    image_model = PublicImage(**image_model_dict()).save()
+    compute_service_model.images.connect(image_model)
+    image_model = PrivateImage(**image_model_dict()).save()
+    project_model.private_images.connect(image_model)
+
+    assert len(project_model.public_images()) == 1
+    assert len(project_model.private_images.all()) == 1
 
 
 def test_linked_network(project_model: Project, network_model: Network) -> None:
@@ -290,48 +343,6 @@ def test_multiple_linked_quotas(
     project_model.quotas.connect(quota_models[0])
     project_model.quotas.connect(quota_models[1])
     assert len(project_model.quotas.all()) == 2
-
-
-def test_linked_public_image(
-    project_model: Project,
-    compute_quota_model: ComputeQuota,
-    compute_service_model: ComputeService,
-) -> None:
-    compute_service_model.quotas.connect(compute_quota_model)
-    project_model.quotas.connect(compute_quota_model)
-
-    d = image_model_dict()
-    d["is_public"] = True
-    image_model = Image(**d).save()
-    compute_service_model.images.connect(image_model)
-
-    public_images = project_model.public_images()
-    assert len(public_images) == 1
-    image = public_images[0]
-    assert isinstance(image, Image)
-    assert image.uid == image_model.uid
-
-
-def test_multi_linked_public_images(
-    project_model: Project,
-    compute_quota_model: ComputeQuota,
-    compute_service_model: ComputeService,
-) -> None:
-    compute_service_model.quotas.connect(compute_quota_model)
-    project_model.quotas.connect(compute_quota_model)
-
-    d = image_model_dict()
-    d["is_public"] = True
-    image_model = Image(**d).save()
-    compute_service_model.images.connect(image_model)
-
-    d = image_model_dict()
-    d["is_public"] = True
-    image_model = Image(**d).save()
-    compute_service_model.images.connect(image_model)
-
-    public_images = project_model.public_images()
-    assert len(public_images) == 2
 
 
 def test_linked_public_network(

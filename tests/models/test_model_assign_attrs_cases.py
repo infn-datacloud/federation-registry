@@ -6,7 +6,7 @@ from pytest_cases import parametrize
 
 from fed_reg.flavor.models import Flavor, PrivateFlavor, PublicFlavor
 from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.image.models import Image
+from fed_reg.image.models import Image, PrivateImage, PublicImage
 from fed_reg.location.models import Location
 from fed_reg.network.models import Network
 from fed_reg.project.models import Project
@@ -108,7 +108,7 @@ class CaseImage:
     def case_image_str(self, attr: str) -> tuple[dict, type[Image], str, str]:
         return image_model_dict(), Image, attr, random_lower_string()
 
-    @parametrize(attr=["cuda_support", "gpu_driver", "is_public"])
+    @parametrize(attr=["cuda_support", "gpu_driver"])
     def case_image_bool(
         self, attr: str
     ) -> tuple[dict, type[Image], str, Literal[True]]:
@@ -121,6 +121,18 @@ class CaseImage:
     ) -> tuple[dict, type[Image], str, list[str]]:
         values = [] if not fill else [random_lower_string()]
         return image_model_dict(), Image, attr, values
+
+    @parametrize(attr=["is_public"])
+    def case_public_image_bool(
+        self, attr: str
+    ) -> tuple[dict, type[PublicImage], str, Literal[False]]:
+        return image_model_dict(), PublicImage, attr, False
+
+    @parametrize(attr=["is_public"])
+    def case_private_image_bool(
+        self, attr: str
+    ) -> tuple[dict, type[PrivateImage], str, Literal[True]]:
+        return image_model_dict(), PrivateImage, attr, True
 
 
 class CaseLocation:

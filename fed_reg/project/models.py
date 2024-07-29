@@ -11,7 +11,7 @@ from neomodel import (
 )
 
 from fed_reg.flavor.models import PublicFlavor
-from fed_reg.image.models import Image
+from fed_reg.image.models import PublicImage
 from fed_reg.network.models import Network
 from fed_reg.service.enum import ServiceType
 
@@ -61,7 +61,7 @@ class Project(StructuredNode):
         cardinality=ZeroOrMore,
     )
     private_images = RelationshipTo(
-        "fed_reg.image.models.Image",
+        "fed_reg.image.models.PrivateImage",
         "CAN_USE_VM_IMAGE",
         cardinality=ZeroOrMore,
     )
@@ -93,7 +93,7 @@ class Project(StructuredNode):
         )
         return [PublicFlavor.inflate(row[0]) for row in results]
 
-    def public_images(self) -> list[Image]:
+    def public_images(self) -> list[PublicImage]:
         """list public images this project can access.
 
         Make a cypher query to retrieve all public images this project can access.
@@ -103,12 +103,12 @@ class Project(StructuredNode):
                 {self.query_prefix}
                 WHERE q.type = "{ServiceType.COMPUTE.value}"
                 MATCH (q)-[:`APPLY_TO`]-(s)
-                MATCH (s)-[:`AVAILABLE_VM_IMAGE`]->(u:Image)
+                MATCH (s)-[:`AVAILABLE_VM_IMAGE`]->(u:PublicImage)
                 WHERE u.is_public = True
                 RETURN u
             """
         )
-        return [Image.inflate(row[0]) for row in results]
+        return [PublicImage.inflate(row[0]) for row in results]
 
     def public_networks(self) -> list[Network]:
         """list public networks this project can access.

@@ -11,7 +11,7 @@ from neomodel import db
 from fed_reg.config import Settings
 from fed_reg.flavor.models import Flavor, PrivateFlavor, PublicFlavor
 from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.image.models import Image
+from fed_reg.image.models import Image, PrivateImage, PublicImage
 from fed_reg.location.models import Location
 from fed_reg.location.schemas import LocationCreate
 from fed_reg.main import app, settings
@@ -206,6 +206,18 @@ def identity_provider_model() -> IdentityProvider:
 def image_model() -> Image:
     d = image_model_dict()
     return Image(**d).save()
+
+
+@pytest.fixture
+def private_image_model() -> PrivateImage:
+    d = image_model_dict()
+    return PrivateImage(**d).save()
+
+
+@pytest.fixture
+def public_image_model() -> PublicImage:
+    d = image_model_dict()
+    return PublicImage(**d).save()
 
 
 @pytest.fixture
