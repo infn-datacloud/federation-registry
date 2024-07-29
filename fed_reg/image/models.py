@@ -90,7 +90,7 @@ class PrivateImage(Image):
     )
 
 
-class PublicImage(Image):
+class SharedImage(Image):
     """Virtual Machine Image owned by a Provider.
 
     All projects have access to public images.

@@ -95,7 +95,7 @@ class PrivateFlavor(Flavor):
     )
 
 
-class PublicFlavor(Flavor):
+class SharedFlavor(Flavor):
     """Virtual Machine Flavor owned by a Provider.
 
     All projects have access to public flavors.

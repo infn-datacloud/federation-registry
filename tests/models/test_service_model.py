@@ -2,8 +2,8 @@ import pytest
 from neomodel import CardinalityViolation, RelationshipManager
 from pytest_cases import parametrize_with_cases
 
-from fed_reg.flavor.models import Flavor, PrivateFlavor, PublicFlavor
-from fed_reg.image.models import Image
+from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
+from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.network.models import Network
 from fed_reg.quota.models import (
     BlockStorageQuota,
@@ -217,7 +217,7 @@ def test_linked_flavor(
 
 
 def test_multiple_linked_flavors(compute_service_model: ComputeService) -> None:
-    item = PublicFlavor(**flavor_model_dict()).save()
+    item = SharedFlavor(**flavor_model_dict()).save()
     compute_service_model.flavors.connect(item)
     item = PrivateFlavor(**flavor_model_dict()).save()
     compute_service_model.flavors.connect(item)
@@ -244,9 +244,9 @@ def test_linked_image(
 
 
 def test_multiple_linked_images(compute_service_model: ComputeService) -> None:
-    item = Image(**image_model_dict()).save()
+    item = SharedImage(**image_model_dict()).save()
     compute_service_model.images.connect(item)
-    item = Image(**image_model_dict()).save()
+    item = PrivateImage(**image_model_dict()).save()
     compute_service_model.images.connect(item)
     assert len(compute_service_model.images.all()) == 2
 

@@ -9,9 +9,9 @@ from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.config import Settings
-from fed_reg.flavor.models import Flavor, PrivateFlavor, PublicFlavor
+from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.image.models import Image, PrivateImage, PublicImage
+from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.location.models import Location
 from fed_reg.location.schemas import LocationCreate
 from fed_reg.main import app, settings
@@ -191,9 +191,9 @@ def private_flavor_model() -> PrivateFlavor:
 
 
 @pytest.fixture
-def public_flavor_model() -> PublicFlavor:
+def public_flavor_model() -> SharedFlavor:
     d = flavor_model_dict()
-    return PublicFlavor(**d).save()
+    return SharedFlavor(**d).save()
 
 
 @pytest.fixture
@@ -215,9 +215,9 @@ def private_image_model() -> PrivateImage:
 
 
 @pytest.fixture
-def public_image_model() -> PublicImage:
+def public_image_model() -> SharedImage:
     d = image_model_dict()
-    return PublicImage(**d).save()
+    return SharedImage(**d).save()
 
 
 @pytest.fixture

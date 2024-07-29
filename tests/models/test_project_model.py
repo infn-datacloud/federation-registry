@@ -8,8 +8,8 @@ from neomodel import (
 )
 from pytest_cases import parametrize_with_cases
 
-from fed_reg.flavor.models import PrivateFlavor, PublicFlavor
-from fed_reg.image.models import PrivateImage, PublicImage
+from fed_reg.flavor.models import PrivateFlavor, SharedFlavor
+from fed_reg.image.models import PrivateImage, SharedImage
 from fed_reg.network.models import Network
 from fed_reg.project.models import Project
 from fed_reg.provider.models import Provider
@@ -99,7 +99,7 @@ def test_linked_public_flavor(
     project_model: Project,
     compute_quota_model: ComputeQuota,
     compute_service_model: ComputeService,
-    public_flavor_model: PublicFlavor,
+    public_flavor_model: SharedFlavor,
 ) -> None:
     compute_service_model.quotas.connect(compute_quota_model)
     project_model.quotas.connect(compute_quota_model)
@@ -108,7 +108,7 @@ def test_linked_public_flavor(
     public_flavors = project_model.public_flavors()
     assert len(public_flavors) == 1
     flavor = public_flavors[0]
-    assert isinstance(flavor, PublicFlavor)
+    assert isinstance(flavor, SharedFlavor)
     assert flavor.uid == public_flavor_model.uid
 
 
@@ -120,9 +120,9 @@ def test_multi_linked_public_flavors(
     compute_service_model.quotas.connect(compute_quota_model)
     project_model.quotas.connect(compute_quota_model)
 
-    flavor_model = PublicFlavor(**flavor_model_dict()).save()
+    flavor_model = SharedFlavor(**flavor_model_dict()).save()
     compute_service_model.flavors.connect(flavor_model)
-    flavor_model = PublicFlavor(**flavor_model_dict()).save()
+    flavor_model = SharedFlavor(**flavor_model_dict()).save()
     compute_service_model.flavors.connect(flavor_model)
 
     public_flavors = project_model.public_flavors()
@@ -137,7 +137,7 @@ def test_priv_pub_flavors_belong_to_diff_lists(
     compute_service_model.quotas.connect(compute_quota_model)
     project_model.quotas.connect(compute_quota_model)
 
-    flavor_model = PublicFlavor(**flavor_model_dict()).save()
+    flavor_model = SharedFlavor(**flavor_model_dict()).save()
     compute_service_model.flavors.connect(flavor_model)
     flavor_model = PrivateFlavor(**flavor_model_dict()).save()
     project_model.private_flavors.connect(flavor_model)
@@ -178,7 +178,7 @@ def test_linked_public_image(
     project_model: Project,
     compute_quota_model: ComputeQuota,
     compute_service_model: ComputeService,
-    public_image_model: PublicImage,
+    public_image_model: SharedImage,
 ) -> None:
     compute_service_model.quotas.connect(compute_quota_model)
     project_model.quotas.connect(compute_quota_model)
@@ -187,7 +187,7 @@ def test_linked_public_image(
     public_images = project_model.public_images()
     assert len(public_images) == 1
     image = public_images[0]
-    assert isinstance(image, PublicImage)
+    assert isinstance(image, SharedImage)
     assert image.uid == public_image_model.uid
 
 
@@ -199,9 +199,9 @@ def test_multi_linked_public_images(
     compute_service_model.quotas.connect(compute_quota_model)
     project_model.quotas.connect(compute_quota_model)
 
-    image_model = PublicImage(**image_model_dict()).save()
+    image_model = SharedImage(**image_model_dict()).save()
     compute_service_model.images.connect(image_model)
-    image_model = PublicImage(**image_model_dict()).save()
+    image_model = SharedImage(**image_model_dict()).save()
     compute_service_model.images.connect(image_model)
 
     public_images = project_model.public_images()
@@ -216,7 +216,7 @@ def test_priv_pub_images_belong_to_diff_lists(
     compute_service_model.quotas.connect(compute_quota_model)
     project_model.quotas.connect(compute_quota_model)
 
-    image_model = PublicImage(**image_model_dict()).save()
+    image_model = SharedImage(**image_model_dict()).save()
     compute_service_model.images.connect(image_model)
     image_model = PrivateImage(**image_model_dict()).save()
     project_model.private_images.connect(image_model)

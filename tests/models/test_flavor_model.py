@@ -1,7 +1,7 @@
 import pytest
 from neomodel import CardinalityViolation, RelationshipManager
 
-from fed_reg.flavor.models import Flavor, PrivateFlavor, PublicFlavor
+from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fed_reg.project.models import Project
 from fed_reg.service.models import ComputeService
 from tests.create_dict import (
@@ -66,10 +66,10 @@ def test_multiple_linked_services(flavor_model: Flavor) -> None:
 
 
 def test_public_flavor_default_attr() -> None:
-    assert issubclass(PublicFlavor, Flavor)
+    assert issubclass(SharedFlavor, Flavor)
 
     d = flavor_model_dict()
-    item = PublicFlavor(**d)
+    item = SharedFlavor(**d)
     assert item.is_public is True
 
 

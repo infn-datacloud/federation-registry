@@ -4,9 +4,9 @@ from typing import Literal
 
 from pytest_cases import parametrize
 
-from fed_reg.flavor.models import Flavor, PrivateFlavor, PublicFlavor
+from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.image.models import Image, PrivateImage, PublicImage
+from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.location.models import Location
 from fed_reg.network.models import Network
 from fed_reg.project.models import Project
@@ -69,8 +69,8 @@ class CaseFlavor:
     @parametrize(attr=["is_public"])
     def case_public_flavor_bool(
         self, attr: str
-    ) -> tuple[dict, type[PublicFlavor], str, Literal[False]]:
-        return flavor_model_dict(), PublicFlavor, attr, False
+    ) -> tuple[dict, type[SharedFlavor], str, Literal[False]]:
+        return flavor_model_dict(), SharedFlavor, attr, False
 
     @parametrize(attr=["is_public"])
     def case_private_flavor_bool(
@@ -125,8 +125,8 @@ class CaseImage:
     @parametrize(attr=["is_public"])
     def case_public_image_bool(
         self, attr: str
-    ) -> tuple[dict, type[PublicImage], str, Literal[False]]:
-        return image_model_dict(), PublicImage, attr, False
+    ) -> tuple[dict, type[SharedImage], str, Literal[False]]:
+        return image_model_dict(), SharedImage, attr, False
 
     @parametrize(attr=["is_public"])
     def case_private_image_bool(

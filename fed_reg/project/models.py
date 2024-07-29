@@ -10,8 +10,8 @@ from neomodel import (
     ZeroOrOne,
 )
 
-from fed_reg.flavor.models import PublicFlavor
-from fed_reg.image.models import PublicImage
+from fed_reg.flavor.models import SharedFlavor
+from fed_reg.image.models import SharedImage
 from fed_reg.network.models import Network
 from fed_reg.service.enum import ServiceType
 
@@ -77,7 +77,7 @@ class Project(StructuredNode):
         MATCH (p)-[:`USE_SERVICE_WITH`]-(q)
         """
 
-    def public_flavors(self) -> list[PublicFlavor]:
+    def public_flavors(self) -> list[SharedFlavor]:
         """list public flavors this project can access.
 
         Make a cypher query to retrieve all public flavors this project can access.
@@ -87,13 +87,13 @@ class Project(StructuredNode):
                 {self.query_prefix}
                 WHERE q.type = "{ServiceType.COMPUTE.value}"
                 MATCH (q)-[:`APPLY_TO`]-(s)
-                MATCH (s)-[:`AVAILABLE_VM_FLAVOR`]->(u:PublicFlavor)
+                MATCH (s)-[:`AVAILABLE_VM_FLAVOR`]->(u:SharedFlavor)
                 RETURN u
             """
         )
-        return [PublicFlavor.inflate(row[0]) for row in results]
+        return [SharedFlavor.inflate(row[0]) for row in results]
 
-    def public_images(self) -> list[PublicImage]:
+    def public_images(self) -> list[SharedImage]:
         """list public images this project can access.
 
         Make a cypher query to retrieve all public images this project can access.
@@ -103,12 +103,12 @@ class Project(StructuredNode):
                 {self.query_prefix}
                 WHERE q.type = "{ServiceType.COMPUTE.value}"
                 MATCH (q)-[:`APPLY_TO`]-(s)
-                MATCH (s)-[:`AVAILABLE_VM_IMAGE`]->(u:PublicImage)
+                MATCH (s)-[:`AVAILABLE_VM_IMAGE`]->(u:SharedImage)
                 WHERE u.is_public = True
                 RETURN u
             """
         )
-        return [PublicImage.inflate(row[0]) for row in results]
+        return [SharedImage.inflate(row[0]) for row in results]
 
     def public_networks(self) -> list[Network]:
         """list public networks this project can access.

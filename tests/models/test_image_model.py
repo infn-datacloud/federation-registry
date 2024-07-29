@@ -1,7 +1,7 @@
 import pytest
 from neomodel import CardinalityViolation, RelationshipManager
 
-from fed_reg.image.models import Image, PrivateImage, PublicImage
+from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.project.models import Project
 from fed_reg.service.models import ComputeService
 from tests.create_dict import (
@@ -64,10 +64,10 @@ def test_multiple_linked_services(image_model: Image) -> None:
 
 
 def test_public_image_default_attr() -> None:
-    assert issubclass(PublicImage, Image)
+    assert issubclass(SharedImage, Image)
 
     d = image_model_dict()
-    item = PublicImage(**d)
+    item = SharedImage(**d)
     assert item.is_public is True
 
 
