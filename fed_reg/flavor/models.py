@@ -7,7 +7,6 @@ from neomodel import (
     StringProperty,
     StructuredNode,
     UniqueIdProperty,
-    ZeroOrMore,
 )
 
 
@@ -28,7 +27,6 @@ class Flavor(StructuredNode):
         name (str): Flavor name in the Provider.
         uuid (str): Flavor unique ID in the Provider
         disk (int): Reserved disk size (GiB)
-        is_public (bool): Public or private Flavor.
         ram (int): Reserved RAM (MiB)
         vcpus (int): Number of Virtual CPUs.
         swap (int): Swap size (GiB).
@@ -61,8 +59,64 @@ class Flavor(StructuredNode):
         "AVAILABLE_VM_FLAVOR",
         cardinality=OneOrMore,
     )
+
+
+class PrivateFlavor(Flavor):
+    """Virtual Machine Flavor owned by a Provider.
+
+    A Private Flavor can be used by one or multiple projects. At least one project must
+    point to this item.
+
+    Attributes:
+    ----------
+        uid (str): Flavor unique ID.
+        description (str): Brief description.
+        name (str): Flavor name in the Provider.
+        uuid (str): Flavor unique ID in the Provider
+        disk (int): Reserved disk size (GiB)
+        is_public (bool): Public or private Flavor.
+        ram (int): Reserved RAM (MiB)
+        vcpus (int): Number of Virtual CPUs.
+        swap (int): Swap size (GiB).
+        ephemeral (int): Ephemeral disk size (GiB).
+        infiniband (bool): MPI - parallel multi-process enabled.
+        gpus (int): Number of GPUs.
+        gpu_model (str | None): GPU model name.
+        gpu_vendor (str | None): Name of the GPU vendor.
+        local_storage (str | None): Local storage presence.
+    """
+
+    is_public = BooleanProperty(default=False)
+
     projects = RelationshipFrom(
         "fed_reg.project.models.Project",
         "CAN_USE_VM_FLAVOR",
-        cardinality=ZeroOrMore,
+        cardinality=OneOrMore,
     )
+
+
+class PublicFlavor(Flavor):
+    """Virtual Machine Flavor owned by a Provider.
+
+    All projects have access to public flavors.
+
+    Attributes:
+    ----------
+        uid (str): Flavor unique ID.
+        description (str): Brief description.
+        name (str): Flavor name in the Provider.
+        uuid (str): Flavor unique ID in the Provider
+        disk (int): Reserved disk size (GiB)
+        is_public (bool): Public or private Flavor.
+        ram (int): Reserved RAM (MiB)
+        vcpus (int): Number of Virtual CPUs.
+        swap (int): Swap size (GiB).
+        ephemeral (int): Ephemeral disk size (GiB).
+        infiniband (bool): MPI - parallel multi-process enabled.
+        gpus (int): Number of GPUs.
+        gpu_model (str | None): GPU model name.
+        gpu_vendor (str | None): Name of the GPU vendor.
+        local_storage (str | None): Local storage presence.
+    """
+
+    is_public = BooleanProperty(default=True)

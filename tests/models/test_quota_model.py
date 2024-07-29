@@ -203,13 +203,10 @@ def test_linked_object_store_service(
     assert object_store_quota_model.service.name
     assert object_store_quota_model.service.source
     assert isinstance(object_store_quota_model.service.source, Quota)
-    assert (
-        object_store_quota_model.service.source.uid == object_store_quota_model.uid
-    )
+    assert object_store_quota_model.service.source.uid == object_store_quota_model.uid
     assert object_store_quota_model.service.definition
     assert (
-        object_store_quota_model.service.definition["node_class"]
-        == ObjectStoreService
+        object_store_quota_model.service.definition["node_class"] == ObjectStoreService
     )
 
     r = object_store_quota_model.service.connect(object_store_service_model)

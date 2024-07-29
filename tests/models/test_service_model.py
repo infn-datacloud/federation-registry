@@ -2,7 +2,7 @@ import pytest
 from neomodel import CardinalityViolation, RelationshipManager
 from pytest_cases import parametrize_with_cases
 
-from fed_reg.flavor.models import Flavor
+from fed_reg.flavor.models import Flavor, PrivateFlavor, PublicFlavor
 from fed_reg.image.models import Image
 from fed_reg.network.models import Network
 from fed_reg.quota.models import (
@@ -217,9 +217,9 @@ def test_linked_flavor(
 
 
 def test_multiple_linked_flavors(compute_service_model: ComputeService) -> None:
-    item = Flavor(**flavor_model_dict()).save()
+    item = PublicFlavor(**flavor_model_dict()).save()
     compute_service_model.flavors.connect(item)
-    item = Flavor(**flavor_model_dict()).save()
+    item = PrivateFlavor(**flavor_model_dict()).save()
     compute_service_model.flavors.connect(item)
     assert len(compute_service_model.flavors.all()) == 2
 
@@ -313,13 +313,11 @@ def test_linked_object_store_quota(
     assert object_store_service_model.quotas.source
     assert isinstance(object_store_service_model.quotas.source, ObjectStoreService)
     assert (
-        object_store_service_model.quotas.source.uid
-        == object_store_service_model.uid
+        object_store_service_model.quotas.source.uid == object_store_service_model.uid
     )
     assert object_store_service_model.quotas.definition
     assert (
-        object_store_service_model.quotas.definition["node_class"]
-        == ObjectStoreQuota
+        object_store_service_model.quotas.definition["node_class"] == ObjectStoreQuota
     )
 
     r = object_store_service_model.quotas.connect(object_store_quota_model)

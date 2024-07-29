@@ -4,7 +4,7 @@ from typing import Literal
 
 from pytest_cases import parametrize
 
-from fed_reg.flavor.models import Flavor
+from fed_reg.flavor.models import Flavor, PrivateFlavor, PublicFlavor
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.image.models import Image
 from fed_reg.location.models import Location
@@ -60,11 +60,23 @@ class CaseFlavor:
     def case_flavor_int(self, attr: str) -> tuple[dict, type[Flavor], str, int]:
         return flavor_model_dict(), Flavor, attr, randint(0, 100)
 
-    @parametrize(attr=["is_public", "infiniband"])
+    @parametrize(attr=["infiniband"])
     def case_flavor_bool(
         self, attr: str
     ) -> tuple[dict, type[Flavor], str, Literal[True]]:
         return flavor_model_dict(), Flavor, attr, True
+
+    @parametrize(attr=["is_public"])
+    def case_public_flavor_bool(
+        self, attr: str
+    ) -> tuple[dict, type[PublicFlavor], str, Literal[False]]:
+        return flavor_model_dict(), PublicFlavor, attr, False
+
+    @parametrize(attr=["is_public"])
+    def case_private_flavor_bool(
+        self, attr: str
+    ) -> tuple[dict, type[PrivateFlavor], str, Literal[True]]:
+        return flavor_model_dict(), PrivateFlavor, attr, True
 
 
 class CaseIdentityProvider:

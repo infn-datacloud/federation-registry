@@ -9,7 +9,7 @@ from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.config import Settings
-from fed_reg.flavor.models import Flavor
+from fed_reg.flavor.models import Flavor, PrivateFlavor, PublicFlavor
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.image.models import Image
 from fed_reg.location.models import Location
@@ -182,6 +182,18 @@ def cleanup() -> Generator[None, Any, None]:
 def flavor_model() -> Flavor:
     d = flavor_model_dict()
     return Flavor(**d).save()
+
+
+@pytest.fixture
+def private_flavor_model() -> PrivateFlavor:
+    d = flavor_model_dict()
+    return PrivateFlavor(**d).save()
+
+
+@pytest.fixture
+def public_flavor_model() -> PublicFlavor:
+    d = flavor_model_dict()
+    return PublicFlavor(**d).save()
 
 
 @pytest.fixture
