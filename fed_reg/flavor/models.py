@@ -43,7 +43,6 @@ class Flavor(StructuredNode):
     name = StringProperty(required=True)
     uuid = StringProperty(required=True)
     disk = IntegerProperty(default=0)
-    is_public = BooleanProperty(default=True)
     ram = IntegerProperty(default=0)
     vcpus = IntegerProperty(default=0)
     swap = IntegerProperty(default=0)

@@ -1,9 +1,9 @@
 from random import randint
 from typing import Literal
-from uuid import UUID, uuid4
 
 from pytest_cases import case, parametrize
 
+from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from tests.utils import random_lower_string
 
 
@@ -28,7 +28,7 @@ class CaseAttr:
 
     @case(tags=["base"])
     @parametrize(value=[True, False])
-    @parametrize(attr=["is_public", "infiniband"])
+    @parametrize(attr=["infiniband"])
     def case_boolean(self, attr: str, value: bool) -> tuple[str, bool]:
         return attr, value
 
@@ -37,7 +37,14 @@ class CaseAttr:
     def case_string(self, attr: str) -> tuple[str, str]:
         return attr, random_lower_string()
 
-    @case(tags=["create_extended"])
-    @parametrize(len=(0, 1, 2))
-    def case_projects(self, len: int) -> list[UUID]:
-        return [uuid4() for _ in range(len)]
+    @case(tags=["model"])
+    def case_private_model(self, private_flavor_model: PrivateFlavor):
+        return private_flavor_model
+
+    @case(tags=["model"])
+    def case_shared_model(self, shared_flavor_model: SharedFlavor):
+        return shared_flavor_model
+
+    @case(tags=["model"])
+    def case_model(self, flavor_model: Flavor):
+        return flavor_model

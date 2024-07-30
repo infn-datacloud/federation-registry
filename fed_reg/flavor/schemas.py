@@ -1,5 +1,5 @@
 """Pydantic models of the Virtual Machine Flavor owned by a Provider."""
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from pydantic import Field, root_validator
 
@@ -64,7 +64,6 @@ class FlavorBase(FlavorBasePublic):
     """
 
     disk: int = Field(default=0, ge=0, description=DOC_DISK)
-    is_public: bool = Field(default=True, description=DOC_SHARED)
     ram: int = Field(default=0, ge=0, description=DOC_RAM)
     vcpus: int = Field(default=0, ge=0, description=DOC_VCPUS)
     swap: int = Field(default=0, ge=0, description=DOC_SWAP)
@@ -88,7 +87,7 @@ class FlavorBase(FlavorBasePublic):
         return values
 
 
-class FlavorCreate(BaseNodeCreate, FlavorBase):
+class PrivateFlavorCreate(BaseNodeCreate, FlavorBase):
     """Model to create a Flavor.
 
     Class without id (which is populated by the database).
@@ -111,6 +110,35 @@ class FlavorCreate(BaseNodeCreate, FlavorBase):
         gpu_vendor (str | None): Name of the GPU vendor.
         local_storage (str | None): Local storage presence.
     """
+
+    is_public: Literal[False] = Field(default=False, description=DOC_SHARED)
+
+
+class SharedFlavorCreate(BaseNodeCreate, FlavorBase):
+    """Model to create a Flavor.
+
+    Class without id (which is populated by the database).
+    Expected as input when performing a POST request.
+
+    Attributes:
+    ----------
+        description (str): Brief description.
+        name (str): Flavor name in the Provider.
+        uuid (str): Flavor unique ID in the Provider
+        disk (int): Reserved disk size (GiB)
+        is_public (bool): Public or private Flavor.
+        ram (int): Reserved RAM (MiB)
+        vcpus (int): Number of Virtual CPUs.
+        swap (int): Swap size (GiB).
+        ephemeral (int): Ephemeral disk size (GiB).
+        infiniband (bool): MPI - parallel multi-process enabled.
+        gpus (int): Number of GPUs.
+        gpu_model (str | None): GPU model name.
+        gpu_vendor (str | None): Name of the GPU vendor.
+        local_storage (str | None): Local storage presence.
+    """
+
+    is_public: Literal[True] = Field(default=True, description=DOC_SHARED)
 
 
 class FlavorUpdate(BaseNodeCreate, FlavorBase):
@@ -186,6 +214,8 @@ class FlavorRead(BaseNodeRead, BaseReadPrivate, FlavorBase):
         gpu_vendor (str | None): Name of the GPU vendor.
         local_storage (str | None): Local storage presence.
     """
+
+    is_public: bool | None = Field(default=None, description=DOC_SHARED)
 
 
 FlavorQuery = create_query_model("FlavorQuery", FlavorBase)

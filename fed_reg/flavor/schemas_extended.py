@@ -1,7 +1,7 @@
 """Pydantic extended models of the Virtual Machine Flavor owned by a Provider."""
 from pydantic import BaseModel, Field
 
-from fed_reg.flavor.constants import DOC_EXT_PROJ, DOC_EXT_SERV
+from fed_reg.flavor.constants import DOC_EXT_PROJ, DOC_EXT_SERV, DOC_SHARED
 from fed_reg.flavor.schemas import (
     FlavorBase,
     FlavorBasePublic,
@@ -101,7 +101,9 @@ class FlavorReadExtended(BaseNodeRead, BaseReadPrivateExtended, FlavorBase):
             flavor.
     """
 
-    projects: list[ProjectRead] = Field(description=DOC_EXT_PROJ)
+    is_public: bool | None = Field(default=None, description=DOC_SHARED)
+
+    projects: list[ProjectRead] = Field(default_factory=list, description=DOC_EXT_PROJ)
     services: list[ComputeServiceReadExtended] = Field(description=DOC_EXT_SERV)
 
 
@@ -120,7 +122,9 @@ class FlavorReadExtendedPublic(BaseNodeRead, BaseReadPublicExtended, FlavorBaseP
             this flavor.
     """
 
-    projects: list[ProjectReadPublic] = Field(description=DOC_EXT_PROJ)
+    projects: list[ProjectReadPublic] = Field(
+        default_factory=list, description=DOC_EXT_PROJ
+    )
     services: list[ComputeServiceReadExtendedPublic] = Field(description=DOC_EXT_SERV)
 
 

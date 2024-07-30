@@ -5,7 +5,12 @@ from typing import Any, Dict, Optional, Set
 from pydantic import BaseModel, Field, root_validator, validator
 
 from fed_reg.auth_method.schemas import AuthMethodCreate, AuthMethodRead
-from fed_reg.flavor.schemas import FlavorCreate, FlavorRead, FlavorReadPublic
+from fed_reg.flavor.schemas import (
+    FlavorRead,
+    FlavorReadPublic,
+    PrivateFlavorCreate,
+    SharedFlavorCreate,
+)
 from fed_reg.identity_provider.constants import DOC_EXT_GROUP
 from fed_reg.identity_provider.schemas import (
     IdentityProviderCreate,
@@ -645,7 +650,7 @@ class ObjectStoreQuotaCreateExtended(ObjectStoreQuotaCreate):
     project: str = Field(description=DOC_NEW_PROJ_UUID)
 
 
-class FlavorCreateExtended(FlavorCreate):
+class PrivateFlavorCreateExtended(PrivateFlavorCreate):
     """Model to extend the Flavor data to add to the DB.
 
     Attributes:
@@ -668,7 +673,7 @@ class FlavorCreateExtended(FlavorCreate):
             the resource.
     """
 
-    projects: list[str] = Field(default_factory=list, description=DOC_NEW_PROJ_UUIDS)
+    projects: list[str] = Field(description=DOC_NEW_PROJ_UUIDS)
 
     @validator("projects")
     @classmethod
@@ -677,23 +682,27 @@ class FlavorCreateExtended(FlavorCreate):
         find_duplicates(v)
         return v
 
-    @root_validator
-    def project_require_if_private_flavor(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Verify list emptiness based on flavor type.
 
-        If public verify the projects list is empty, otherwise the list can't be empty.
-        """
-        if not values.get("is_public"):
-            assert len(
-                values.get("projects", [])
-            ), "Projects are mandatory for private flavors"
-        else:
-            assert not len(
-                values.get("projects", [])
-            ), "Public flavors do not have linked projects"
-        return values
+class SharedFlavorCreateExtended(SharedFlavorCreate):
+    """Model to extend the Flavor data to add to the DB.
+
+    Attributes:
+    ----------
+        description (str): Brief description.
+        name (str): Flavor name in the Provider.
+        uuid (str): Flavor unique ID in the Provider
+        disk (int): Reserved disk size (GiB)
+        is_public (bool): Public or private Flavor.
+        ram (int): Reserved RAM (MiB)
+        vcpus (int): Number of Virtual CPUs.
+        swap (int): Swap size (GiB).
+        ephemeral (int): Ephemeral disk size (GiB).
+        infiniband (bool): MPI - parallel multi-process enabled.
+        gpus (int): Number of GPUs.
+        gpu_model (str | None): GPU model name.
+        gpu_vendor (str | None): Name of the GPU vendor.
+        local_storage (str | None): Local storage presence.
+    """
 
 
 class ImageCreateExtended(ImageCreate):
@@ -822,7 +831,7 @@ class ComputeServiceCreateExtended(ComputeServiceCreate):
         images (list of ImageRead): Supplied images.
     """
 
-    flavors: list[FlavorCreateExtended] = Field(
+    flavors: list[PrivateFlavorCreateExtended | SharedFlavorCreateExtended] = Field(
         default_factory=list, description=DOC_EXT_FLAV
     )
     images: list[ImageCreateExtended] = Field(
@@ -835,8 +844,13 @@ class ComputeServiceCreateExtended(ComputeServiceCreate):
     @validator("flavors", "images")
     @classmethod
     def validate_flavors(
-        cls, v: list[FlavorCreateExtended] | list[ImageCreateExtended]
-    ) -> list[FlavorCreateExtended] | list[ImageCreateExtended]:
+        cls,
+        v: list[PrivateFlavorCreateExtended | SharedFlavorCreateExtended]
+        | list[ImageCreateExtended],
+    ) -> (
+        list[PrivateFlavorCreateExtended | SharedFlavorCreateExtended]
+        | list[ImageCreateExtended]
+    ):
         """Verify there are no duplicated names or UUIDs in the flavor list."""
         find_duplicates(v, "uuid")
         find_duplicates(v, "name")
