@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Optional, Set
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, validator
 
 from fed_reg.auth_method.schemas import AuthMethodCreate, AuthMethodRead
 from fed_reg.flavor.schemas import (
@@ -29,7 +29,12 @@ from fed_reg.location.schemas import (
     LocationReadPublic,
 )
 from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
-from fed_reg.network.schemas import NetworkCreate, NetworkRead, NetworkReadPublic
+from fed_reg.network.schemas import (
+    NetworkRead,
+    NetworkReadPublic,
+    PrivateNetworkCreate,
+    SharedNetworkCreate,
+)
 from fed_reg.project.schemas import ProjectCreate, ProjectRead, ProjectReadPublic
 from fed_reg.provider.constants import (
     DOC_EXT_AUTH_METH,
@@ -761,7 +766,7 @@ class SharedImageCreateExtended(SharedImageCreate):
     """
 
 
-class NetworkCreateExtended(NetworkCreate):
+class PrivateNetworkCreateExtended(PrivateNetworkCreate):
     """Model to extend the Network data to add to the DB.
 
     Attributes:
@@ -780,23 +785,26 @@ class NetworkCreateExtended(NetworkCreate):
         project (str | None): Target project's UUID in the Provider.
     """
 
-    project: Optional[str] = Field(default=None, description=DOC_NEW_PROJ_UUID)
+    project: str = Field(description=DOC_NEW_PROJ_UUID)
 
-    @root_validator
-    def project_require_if_private_net(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Verify target project is defined based on network type.
 
-        If shared verify the project is None, otherwise the project must be defined.
-        """
-        if not values.get("is_shared"):
-            assert (
-                values.get("project") is not None
-            ), "Projects is mandatory for private networks"
-        else:
-            assert not values.get(
-                "project"
-            ), "Shared networks do not have a linked project"
-        return values
+class SharedNetworkCreateExtended(SharedNetworkCreate):
+    """Model to extend the Network data to add to the DB.
+
+    Attributes:
+    ----------
+        description (str): Brief description.
+        name (str): Network name in the Provider.
+        uuid (str): Network unique ID in the Provider
+        is_shared (bool): Public or private Network.
+        is_router_external (bool): Network with access to outside networks. Externa
+            network.
+        is_default (bool): Network to use as default.
+        mtu (int | None): Metric transmission unit (B).
+        proxy_host (str | None): Proxy IP address.
+        proxy_user (str | None): Proxy username.
+        tags (list of str): list of tags associated to this Network.
+    """
 
 
 class BlockStorageServiceCreateExtended(BlockStorageServiceCreate):
@@ -888,7 +896,7 @@ class NetworkServiceCreateExtended(NetworkServiceCreate):
         networks (list of NetworkRead): Supplied networks.
     """
 
-    networks: list[NetworkCreateExtended] = Field(
+    networks: list[PrivateNetworkCreateExtended | SharedNetworkCreateExtended] = Field(
         default_factory=list, description=DOC_EXT_NETW
     )
     quotas: list[NetworkQuotaCreateExtended] = Field(
@@ -898,8 +906,8 @@ class NetworkServiceCreateExtended(NetworkServiceCreate):
     @validator("networks")
     @classmethod
     def validate_networks(
-        cls, v: list[NetworkCreateExtended]
-    ) -> list[NetworkCreateExtended]:
+        cls, v: list[PrivateNetworkCreateExtended | SharedNetworkCreateExtended]
+    ) -> list[PrivateNetworkCreateExtended | SharedNetworkCreateExtended]:
         """Verify there are no duplicated UUIDs in the network list."""
         find_duplicates(v, "uuid")
         return v

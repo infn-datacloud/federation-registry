@@ -1,5 +1,5 @@
 """Pydantic models of the Virtual Machine Network owned by a Provider."""
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import Field
 
@@ -56,7 +56,6 @@ class NetworkBase(NetworkBasePublic):
         tags (list of str): list of tags associated to this Network.
     """
 
-    is_shared: bool = Field(default=True, description=DOC_SHARED)
     is_router_external: bool = Field(default=False, description=DOC_EXT_ROUT)
     is_default: bool = Field(default=False, description=DOC_DEFAULT)
     mtu: Optional[int] = Field(default=None, gt=0, description=DOC_MTU)
@@ -65,7 +64,7 @@ class NetworkBase(NetworkBasePublic):
     tags: list[str] = Field(default_factory=list, description=DOC_TAGS)
 
 
-class NetworkCreate(BaseNodeCreate, NetworkBase):
+class PrivateNetworkCreate(BaseNodeCreate, NetworkBase):
     """Model to create a Network.
 
     Class without id (which is populated by the database). Expected as input when
@@ -85,6 +84,32 @@ class NetworkCreate(BaseNodeCreate, NetworkBase):
         proxy_user (str | None): Proxy username.
         tags (list of str): list of tags associated to this Network.
     """
+
+    is_shared: Literal[False] = Field(default=False, description=DOC_SHARED)
+
+
+class SharedNetworkCreate(BaseNodeCreate, NetworkBase):
+    """Model to create a Network.
+
+    Class without id (which is populated by the database). Expected as input when
+    performing a POST request.
+
+    Attributes:
+    ----------
+        description (str): Brief description.
+        name (str): Network name in the Provider.
+        uuid (str): Network unique ID in the Provider
+        is_shared (bool): Public or private Network.
+        is_router_external (bool): Network with access to outside networks. External
+            network.
+        is_default (bool): Network to use as default.
+        mtu (int | None): Metric transmission unit (B).
+        proxy_host (str | None): Proxy IP address.
+        proxy_user (str | None): Proxy username.
+        tags (list of str): list of tags associated to this Network.
+    """
+
+    is_shared: Literal[True] = Field(default=True, description=DOC_SHARED)
 
 
 class NetworkUpdate(BaseNodeCreate, NetworkBase):
@@ -154,6 +179,8 @@ class NetworkRead(BaseNodeRead, BaseReadPrivate, NetworkBase):
         proxy_user (str | None): Proxy username.
         tags (list of str): list of tags associated to this Network.
     """
+
+    is_shared: bool | None = Field(default=None, description=DOC_SHARED)
 
 
 NetworkQuery = create_query_model("NetworkQuery", NetworkBase)

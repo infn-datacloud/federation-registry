@@ -1,10 +1,8 @@
 """Pydantic extended models of the Virtual Machine Network owned by a Provider."""
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
-from fed_reg.network.constants import DOC_EXT_PROJ, DOC_EXT_SERV
+from fed_reg.network.constants import DOC_EXT_PROJ, DOC_EXT_SERV, DOC_SHARED
 from fed_reg.network.schemas import (
     NetworkBase,
     NetworkBasePublic,
@@ -96,7 +94,9 @@ class NetworkReadExtended(BaseNodeRead, BaseReadPrivateExtended, NetworkBase):
         service (NetworkServiceReadExtended): Network Service supplying this network.
     """
 
-    project: Optional[ProjectRead] = Field(default=None, description=DOC_EXT_PROJ)
+    is_shared: bool | None = Field(default=None, description=DOC_SHARED)
+
+    project: ProjectRead | None = Field(default=None, description=DOC_EXT_PROJ)
     service: NetworkServiceReadExtended = Field(description=DOC_EXT_SERV)
 
 
@@ -115,7 +115,7 @@ class NetworkReadExtendedPublic(
             network.
     """
 
-    project: Optional[ProjectRead] = Field(default=None, description=DOC_EXT_PROJ)
+    project: ProjectRead | None = Field(default=None, description=DOC_EXT_PROJ)
     service: NetworkServiceReadExtendedPublic = Field(description=DOC_EXT_SERV)
 
 
