@@ -606,9 +606,7 @@ def get_object_store_quotas(
     items = object_store_quota_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = object_store_quota_mng.paginate(
-        items=items, page=page.page, size=page.size
-    )
+    items = object_store_quota_mng.paginate(items=items, page=page.page, size=page.size)
     return object_store_quota_mng.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )

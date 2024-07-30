@@ -33,9 +33,7 @@ class Service(StructuredNode):
     type = StringProperty(required=True)
     name = StringProperty(required=True)
 
-    region = RelationshipFrom(
-        "fed_reg.region.models.Region", "SUPPLY", cardinality=One
-    )
+    region = RelationshipFrom("fed_reg.region.models.Region", "SUPPLY", cardinality=One)
 
 
 class BlockStorageService(Service):

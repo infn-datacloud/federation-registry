@@ -423,9 +423,7 @@ class ObjectStoreServiceReadExtendedPublic(
     """
 
     region: RegionReadExtendedPublic = Field(description=DOC_EXT_REG)
-    quotas: list[ObjectStoreQuotaReadExtendedPublic] = Field(
-        description=DOC_EXT_QUOTA
-    )
+    quotas: list[ObjectStoreQuotaReadExtendedPublic] = Field(description=DOC_EXT_QUOTA)
 
 
 class BlockStorageServiceReadSingle(BaseModel):

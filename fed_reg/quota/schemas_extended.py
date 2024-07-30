@@ -412,8 +412,6 @@ class ObjectStoreQuotaReadSingle(BaseModel):
 
 
 class ObjectStoreQuotaReadMulti(BaseModel):
-    __root__: list[ObjectStoreQuotaReadExtended] | list[
-        ObjectStoreQuotaRead
-    ] | list[ObjectStoreQuotaReadExtendedPublic] | list[
-        ObjectStoreQuotaReadPublic
-    ] = Field(..., discriminator="schema_type")
+    __root__: list[ObjectStoreQuotaReadExtended] | list[ObjectStoreQuotaRead] | list[
+        ObjectStoreQuotaReadExtendedPublic
+    ] | list[ObjectStoreQuotaReadPublic] = Field(..., discriminator="schema_type")
