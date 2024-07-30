@@ -1,5 +1,11 @@
+from unittest.mock import patch
+
 import pytest
-from neomodel import CardinalityViolation, RelationshipManager
+from neomodel import (
+    AttemptedCardinalityViolation,
+    CardinalityViolation,
+    RelationshipManager,
+)
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
@@ -11,12 +17,14 @@ from fed_reg.quota.models import (
     NetworkQuota,
     ObjectStoreQuota,
 )
+from fed_reg.region.models import Region
 from fed_reg.service.models import (
     BlockStorageService,
     ComputeService,
     IdentityService,
     NetworkService,
     ObjectStoreService,
+    Service,
 )
 from tests.create_dict import (
     block_storage_quota_model_dict,
@@ -26,69 +34,55 @@ from tests.create_dict import (
     network_model_dict,
     network_quota_model_dict,
     object_store_quota_model_dict,
+    region_model_dict,
     service_model_dict,
 )
 
 
-def test_block_storage_default_attr() -> None:
+def test_service_default_attr() -> None:
     d = service_model_dict()
-    item = BlockStorageService(**d)
+    item = Service(**d)
     assert item.uid is not None
     assert item.description == ""
     assert item.type == d.get("type")
     assert item.endpoint == d.get("endpoint")
     assert item.name == d.get("name")
-    assert isinstance(item.regions, RelationshipManager)
+    assert isinstance(item.region, RelationshipManager)
+
+
+def test_block_storage_default_attr() -> None:
+    assert issubclass(BlockStorageService, Service)
+    d = service_model_dict()
+    item = BlockStorageService(**d)
     assert isinstance(item.quotas, RelationshipManager)
 
 
 def test_compute_default_attr() -> None:
+    assert issubclass(ComputeService, Service)
     d = service_model_dict()
     item = ComputeService(**d)
-    assert item.uid is not None
-    assert item.description == ""
-    assert item.type == d.get("type")
-    assert item.endpoint == d.get("endpoint")
-    assert item.name == d.get("name")
-    assert isinstance(item.regions, RelationshipManager)
     assert isinstance(item.flavors, RelationshipManager)
     assert isinstance(item.images, RelationshipManager)
     assert isinstance(item.quotas, RelationshipManager)
 
 
 def test_identity_default_attr() -> None:
-    d = service_model_dict()
-    item = IdentityService(**d)
-    assert item.uid is not None
-    assert item.description == ""
-    assert item.type == d.get("type")
-    assert item.endpoint == d.get("endpoint")
-    assert item.name == d.get("name")
-    assert isinstance(item.regions, RelationshipManager)
+    assert issubclass(IdentityService, Service)
+    IdentityService(**service_model_dict())
 
 
 def test_network_default_attr() -> None:
+    assert issubclass(NetworkService, Service)
     d = service_model_dict()
     item = NetworkService(**d)
-    assert item.uid is not None
-    assert item.description == ""
-    assert item.type == d.get("type")
-    assert item.endpoint == d.get("endpoint")
-    assert item.name == d.get("name")
-    assert isinstance(item.regions, RelationshipManager)
     assert isinstance(item.networks, RelationshipManager)
     assert isinstance(item.quotas, RelationshipManager)
 
 
 def test_object_store_default_attr() -> None:
+    assert issubclass(ObjectStoreService, Service)
     d = service_model_dict()
     item = ObjectStoreService(**d)
-    assert item.uid is not None
-    assert item.description == ""
-    assert item.type == d.get("type")
-    assert item.endpoint == d.get("endpoint")
-    assert item.name == d.get("name")
-    assert isinstance(item.regions, RelationshipManager)
     assert isinstance(item.quotas, RelationshipManager)
 
 
@@ -101,9 +95,29 @@ def test_required_rel(
     | ObjectStoreService,
 ) -> None:
     with pytest.raises(CardinalityViolation):
-        service_model.regions.all()
+        service_model.region.all()
     with pytest.raises(CardinalityViolation):
-        service_model.regions.single()
+        service_model.region.single()
+
+
+@parametrize_with_cases("service_model")
+def test_multiple_linked_regions(
+    service_model: BlockStorageService
+    | ComputeService
+    | IdentityService
+    | NetworkService
+    | ObjectStoreService,
+) -> None:
+    item = Region(**region_model_dict()).save()
+    service_model.region.connect(item)
+    item = Region(**region_model_dict()).save()
+    with pytest.raises(AttemptedCardinalityViolation):
+        service_model.region.connect(item)
+
+    with patch("neomodel.sync_.match.QueryBuilder._count", return_value=0):
+        service_model.region.connect(item)
+        with pytest.raises(CardinalityViolation):
+            service_model.region.all()
 
 
 def test_block_storage_optional_rel(
