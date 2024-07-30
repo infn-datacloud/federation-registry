@@ -17,7 +17,12 @@ from fed_reg.identity_provider.schemas import (
     IdentityProviderRead,
     IdentityProviderReadPublic,
 )
-from fed_reg.image.schemas import ImageCreate, ImageRead, ImageReadPublic
+from fed_reg.image.schemas import (
+    ImageRead,
+    ImageReadPublic,
+    PrivateImageCreate,
+    SharedImageCreate,
+)
 from fed_reg.location.schemas import (
     LocationCreate,
     LocationRead,
@@ -705,7 +710,7 @@ class SharedFlavorCreateExtended(SharedFlavorCreate):
     """
 
 
-class ImageCreateExtended(ImageCreate):
+class PrivateImageCreateExtended(PrivateImageCreate):
     """Model to extend the Image data to add to the DB.
 
     Attributes:
@@ -726,7 +731,7 @@ class ImageCreateExtended(ImageCreate):
             the resource.
     """
 
-    projects: list[str] = Field(default_factory=list, description=DOC_NEW_PROJ_UUIDS)
+    projects: list[str] = Field(description=DOC_NEW_PROJ_UUIDS)
 
     @validator("projects")
     @classmethod
@@ -735,21 +740,25 @@ class ImageCreateExtended(ImageCreate):
         find_duplicates(v)
         return v
 
-    @root_validator
-    def project_require_if_private_image(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Verify list emptiness based on image type.
 
-        If public verify the projects list is empty, otherwise the list can't be empty.
-        """
-        if not values.get("is_public"):
-            assert len(
-                values.get("projects", [])
-            ), "Projects are mandatory for private images"
-        else:
-            assert not len(
-                values.get("projects", [])
-            ), "Public images do not have linked projects"
-        return values
+class SharedImageCreateExtended(SharedImageCreate):
+    """Model to extend the Image data to add to the DB.
+
+    Attributes:
+    ----------
+        description (str): Brief description.
+        name (str): Image name in the Provider.
+        uuid (str): Image unique ID in the Provider
+        os_type (str | None): OS type.
+        os_distro (str | None): OS distribution.
+        os_version (str | None): Distribution version.
+        architecture (str | None): OS architecture.
+        kernel_id (str | None): Kernel version.
+        cuda_support (str): Support for cuda enabled.
+        gpu_driver (str): Support for GPUs drivers.
+        is_public (bool): Public or private Image.
+        tags (list of str): list of tags associated to this Image.
+    """
 
 
 class NetworkCreateExtended(NetworkCreate):
@@ -834,7 +843,7 @@ class ComputeServiceCreateExtended(ComputeServiceCreate):
     flavors: list[PrivateFlavorCreateExtended | SharedFlavorCreateExtended] = Field(
         default_factory=list, description=DOC_EXT_FLAV
     )
-    images: list[ImageCreateExtended] = Field(
+    images: list[PrivateImageCreateExtended | SharedImageCreateExtended] = Field(
         default_factory=list, description=DOC_EXT_IMAG
     )
     quotas: list[ComputeQuotaCreateExtended] = Field(
@@ -846,10 +855,10 @@ class ComputeServiceCreateExtended(ComputeServiceCreate):
     def validate_flavors(
         cls,
         v: list[PrivateFlavorCreateExtended | SharedFlavorCreateExtended]
-        | list[ImageCreateExtended],
+        | list[PrivateImageCreateExtended | SharedImageCreateExtended],
     ) -> (
         list[PrivateFlavorCreateExtended | SharedFlavorCreateExtended]
-        | list[ImageCreateExtended]
+        | list[PrivateImageCreateExtended | SharedImageCreateExtended]
     ):
         """Verify there are no duplicated names or UUIDs in the flavor list."""
         find_duplicates(v, "uuid")

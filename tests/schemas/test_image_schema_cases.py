@@ -1,9 +1,9 @@
 from typing import Literal, Optional
-from uuid import UUID, uuid4
 
 from pytest_cases import case, parametrize
 
 from fed_reg.image.enum import ImageOS
+from fed_reg.image.models import Image, PrivateImage, SharedImage
 from tests.utils import random_lower_string
 
 
@@ -23,7 +23,7 @@ class CaseAttr:
 
     @case(tags=["base"])
     @parametrize(value=[True, False])
-    @parametrize(attr=["is_public", "cuda_support", "gpu_driver"])
+    @parametrize(attr=["cuda_support", "gpu_driver"])
     def case_boolean(self, attr: str, value: bool) -> tuple[str, bool]:
         return attr, value
 
@@ -42,7 +42,14 @@ class CaseAttr:
     def case_tag_list(self, len: int) -> tuple[Literal["tags"], Optional[list[str]]]:
         return "tags", [random_lower_string() for _ in range(len)]
 
-    @case(tags=["create_extended"])
-    @parametrize(len=(0, 1, 2))
-    def case_projects(self, len: int) -> list[UUID]:
-        return [uuid4() for _ in range(len)]
+    @case(tags=["model"])
+    def case_private_model(self, private_image_model: PrivateImage):
+        return private_image_model
+
+    @case(tags=["model"])
+    def case_shared_model(self, shared_image_model: SharedImage):
+        return shared_image_model
+
+    @case(tags=["model"])
+    def case_model(self, image_model: Image):
+        return image_model

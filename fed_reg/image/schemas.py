@@ -1,5 +1,5 @@
 """Pydantic models of the Virtual Machine Image owned by a Provider."""
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import Field
 
@@ -67,11 +67,10 @@ class ImageBase(ImageBasePublic):
     kernel_id: Optional[str] = Field(default=None, description=DOC_KERN)
     cuda_support: bool = Field(default=False, description=DOC_CUDA)
     gpu_driver: bool = Field(default=False, description=DOC_GPU_DRIV)
-    is_public: bool = Field(default=True, description=DOC_SHARED)
     tags: list[str] = Field(default_factory=list, description=DOC_TAGS)
 
 
-class ImageCreate(BaseNodeCreate, ImageBase):
+class PrivateImageCreate(BaseNodeCreate, ImageBase):
     """Model to create an Image.
 
     Class without id (which is populated by the database). Expected as input when
@@ -92,6 +91,33 @@ class ImageCreate(BaseNodeCreate, ImageBase):
         is_public (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
     """
+
+    is_public: Literal[False] = Field(default=False, description=DOC_SHARED)
+
+
+class SharedImageCreate(BaseNodeCreate, ImageBase):
+    """Model to create an Image.
+
+    Class without id (which is populated by the database). Expected as input when
+    performing a POST request.
+
+    Attributes:
+    ----------
+        description (str): Brief description.
+        name (str): Image name in the Provider.
+        uuid (str): Image unique ID in the Provider
+        os_type (str | None): OS type.
+        os_distro (str | None): OS distribution.
+        os_version (str | None): Distribution version.
+        architecture (str | None): OS architecture.
+        kernel_id (str | None): Kernel version.
+        cuda_support (str): Support for cuda enabled.
+        gpu_driver (str): Support for GPUs drivers.
+        is_public (bool): Public or private Image.
+        tags (list of str): list of tags associated to this Image.
+    """
+
+    is_public: Literal[True] = Field(default=True, description=DOC_SHARED)
 
 
 class ImageUpdate(BaseNodeCreate, ImageBase):
@@ -163,6 +189,8 @@ class ImageRead(BaseNodeRead, BaseReadPrivate, ImageBase):
         is_public (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
     """
+
+    is_public: bool | None = Field(default=None, description=DOC_SHARED)
 
 
 ImageQuery = create_query_model("ImageQuery", ImageBase)

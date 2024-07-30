@@ -1,7 +1,7 @@
 """Pydantic models of the Virtual Machine Image owned by a Provider."""
 from pydantic import BaseModel, Field
 
-from fed_reg.image.constants import DOC_EXT_PROJ, DOC_EXT_SERV
+from fed_reg.image.constants import DOC_EXT_PROJ, DOC_EXT_SERV, DOC_SHARED
 from fed_reg.image.schemas import ImageBase, ImageBasePublic, ImageRead, ImageReadPublic
 from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
 from fed_reg.project.schemas import ProjectRead, ProjectReadPublic
@@ -94,7 +94,9 @@ class ImageReadExtended(BaseNodeRead, BaseReadPrivateExtended, ImageBase):
             flavor.
     """
 
-    projects: list[ProjectRead] = Field(description=DOC_EXT_PROJ)
+    is_public: bool | None = Field(default=None, description=DOC_SHARED)
+
+    projects: list[ProjectRead] = Field(default_factory=list, description=DOC_EXT_PROJ)
     services: list[ComputeServiceReadExtended] = Field(description=DOC_EXT_SERV)
 
 
@@ -113,7 +115,9 @@ class ImageReadExtendedPublic(BaseNodeRead, BaseReadPublicExtended, ImageBasePub
             this flavor.
     """
 
-    projects: list[ProjectReadPublic] = Field(description=DOC_EXT_PROJ)
+    projects: list[ProjectReadPublic] = Field(
+        default_factory=list, description=DOC_EXT_PROJ
+    )
     services: list[ComputeServiceReadExtendedPublic] = Field(description=DOC_EXT_SERV)
 
 
