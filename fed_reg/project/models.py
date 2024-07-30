@@ -12,7 +12,7 @@ from neomodel import (
 
 from fed_reg.flavor.models import SharedFlavor
 from fed_reg.image.models import SharedImage
-from fed_reg.network.models import Network
+from fed_reg.network.models import SharedNetwork
 from fed_reg.service.enum import ServiceType
 
 
@@ -66,7 +66,7 @@ class Project(StructuredNode):
         cardinality=ZeroOrMore,
     )
     private_networks = RelationshipTo(
-        "fed_reg.network.models.Network",
+        "fed_reg.network.models.PrivateNetwork",
         "CAN_USE_NETWORK",
         cardinality=ZeroOrMore,
     )
@@ -110,7 +110,7 @@ class Project(StructuredNode):
         )
         return [SharedImage.inflate(row[0]) for row in results]
 
-    def public_networks(self) -> list[Network]:
+    def public_networks(self) -> list[SharedNetwork]:
         """list public networks this project can access.
 
         Make a cypher query to retrieve all public networks this project can access.
@@ -120,9 +120,9 @@ class Project(StructuredNode):
                 {self.query_prefix}
                 WHERE q.type = "{ServiceType.NETWORK.value}"
                 MATCH (q)-[:`APPLY_TO`]-(s)
-                MATCH (s)-[:`AVAILABLE_NETWORK`]->(u:Network)
+                MATCH (s)-[:`AVAILABLE_NETWORK`]->(u:SharedNetwork)
                 WHERE u.is_shared = True
                 RETURN u
             """
         )
-        return [Network.inflate(row[0]) for row in results]
+        return [SharedNetwork.inflate(row[0]) for row in results]

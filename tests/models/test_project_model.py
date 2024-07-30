@@ -10,7 +10,7 @@ from pytest_cases import parametrize_with_cases
 
 from fed_reg.flavor.models import PrivateFlavor, SharedFlavor
 from fed_reg.image.models import PrivateImage, SharedImage
-from fed_reg.network.models import Network
+from fed_reg.network.models import PrivateNetwork, SharedNetwork
 from fed_reg.project.models import Project
 from fed_reg.provider.models import Provider
 from fed_reg.quota.models import (
@@ -99,17 +99,17 @@ def test_linked_public_flavor(
     project_model: Project,
     compute_quota_model: ComputeQuota,
     compute_service_model: ComputeService,
-    public_flavor_model: SharedFlavor,
+    shared_flavor_model: SharedFlavor,
 ) -> None:
     compute_service_model.quotas.connect(compute_quota_model)
     project_model.quotas.connect(compute_quota_model)
-    compute_service_model.flavors.connect(public_flavor_model)
+    compute_service_model.flavors.connect(shared_flavor_model)
 
     public_flavors = project_model.public_flavors()
     assert len(public_flavors) == 1
     flavor = public_flavors[0]
     assert isinstance(flavor, SharedFlavor)
-    assert flavor.uid == public_flavor_model.uid
+    assert flavor.uid == shared_flavor_model.uid
 
 
 def test_multi_linked_public_flavors(
@@ -178,17 +178,17 @@ def test_linked_public_image(
     project_model: Project,
     compute_quota_model: ComputeQuota,
     compute_service_model: ComputeService,
-    public_image_model: SharedImage,
+    shared_image_model: SharedImage,
 ) -> None:
     compute_service_model.quotas.connect(compute_quota_model)
     project_model.quotas.connect(compute_quota_model)
-    compute_service_model.images.connect(public_image_model)
+    compute_service_model.images.connect(shared_image_model)
 
     public_images = project_model.public_images()
     assert len(public_images) == 1
     image = public_images[0]
     assert isinstance(image, SharedImage)
-    assert image.uid == public_image_model.uid
+    assert image.uid == shared_image_model.uid
 
 
 def test_multi_linked_public_images(
@@ -225,30 +225,83 @@ def test_priv_pub_images_belong_to_diff_lists(
     assert len(project_model.private_images.all()) == 1
 
 
-def test_linked_network(project_model: Project, network_model: Network) -> None:
+def test_linked_private_network(
+    project_model: Project, private_network_model: PrivateNetwork
+) -> None:
     assert project_model.private_networks.name
     assert project_model.private_networks.source
     assert isinstance(project_model.private_networks.source, Project)
     assert project_model.private_networks.source.uid == project_model.uid
     assert project_model.private_networks.definition
-    assert project_model.private_networks.definition["node_class"] == Network
+    assert project_model.private_networks.definition["node_class"] == PrivateNetwork
 
-    r = project_model.private_networks.connect(network_model)
+    r = project_model.private_networks.connect(private_network_model)
     assert r is True
 
     assert len(project_model.private_networks.all()) == 1
     network = project_model.private_networks.single()
-    assert isinstance(network, Network)
-    assert network.uid == network_model.uid
+    assert isinstance(network, PrivateNetwork)
+    assert network.uid == private_network_model.uid
     assert not network.is_shared
 
 
-def test_multiple_linked_networks(project_model: Project) -> None:
-    item = Network(**network_model_dict()).save()
+def test_multiple_linked_private_networks(project_model: Project) -> None:
+    item = PrivateNetwork(**network_model_dict()).save()
     project_model.private_networks.connect(item)
-    item = Network(**network_model_dict()).save()
+    item = PrivateNetwork(**network_model_dict()).save()
     project_model.private_networks.connect(item)
     assert len(project_model.private_networks.all()) == 2
+
+
+def test_linked_public_network(
+    project_model: Project,
+    network_quota_model: NetworkQuota,
+    network_service_model: NetworkService,
+    shared_network_model: SharedNetwork,
+) -> None:
+    network_service_model.quotas.connect(network_quota_model)
+    project_model.quotas.connect(network_quota_model)
+    network_service_model.networks.connect(shared_network_model)
+
+    public_networks = project_model.public_networks()
+    assert len(public_networks) == 1
+    network = public_networks[0]
+    assert isinstance(network, SharedNetwork)
+    assert network.uid == shared_network_model.uid
+
+
+def test_multi_linked_public_networks(
+    project_model: Project,
+    network_quota_model: NetworkQuota,
+    network_service_model: NetworkService,
+) -> None:
+    network_service_model.quotas.connect(network_quota_model)
+    project_model.quotas.connect(network_quota_model)
+
+    network_model = SharedNetwork(**network_model_dict()).save()
+    network_service_model.networks.connect(network_model)
+    network_model = SharedNetwork(**network_model_dict()).save()
+    network_service_model.networks.connect(network_model)
+
+    public_networks = project_model.public_networks()
+    assert len(public_networks) == 2
+
+
+def test_priv_pub_networks_belong_to_diff_lists(
+    project_model: Project,
+    network_quota_model: NetworkQuota,
+    network_service_model: NetworkService,
+) -> None:
+    network_service_model.quotas.connect(network_quota_model)
+    project_model.quotas.connect(network_quota_model)
+
+    network_model = SharedNetwork(**network_model_dict()).save()
+    network_service_model.networks.connect(network_model)
+    network_model = PrivateNetwork(**network_model_dict()).save()
+    project_model.private_networks.connect(network_model)
+
+    assert len(project_model.public_networks()) == 1
+    assert len(project_model.private_networks.all()) == 1
 
 
 def test_linked_provider(project_model: Project, provider_model: Provider) -> None:
@@ -343,48 +396,3 @@ def test_multiple_linked_quotas(
     project_model.quotas.connect(quota_models[0])
     project_model.quotas.connect(quota_models[1])
     assert len(project_model.quotas.all()) == 2
-
-
-def test_linked_public_network(
-    project_model: Project,
-    network_quota_model: NetworkQuota,
-    network_service_model: NetworkService,
-) -> None:
-    network_service_model.quotas.connect(network_quota_model)
-    project_model.quotas.connect(network_quota_model)
-
-    d = network_model_dict()
-    d["is_shared"] = True
-    network_model = Network(**d).save()
-    network_service_model.networks.connect(network_model)
-
-    public_networks = project_model.public_networks()
-    assert len(public_networks) == 1
-    network = public_networks[0]
-    assert isinstance(network, Network)
-    assert network.uid == network_model.uid
-
-
-def test_multi_linked_public_networks(
-    project_model: Project,
-    network_quota_model: NetworkQuota,
-    network_service_model: NetworkService,
-) -> None:
-    network_service_model.quotas.connect(network_quota_model)
-    project_model.quotas.connect(network_quota_model)
-
-    d = network_model_dict()
-    d["is_shared"] = True
-    network_model = Network(**d).save()
-    network_service_model.networks.connect(network_model)
-
-    d = network_model_dict()
-    d["is_shared"] = True
-    network_model = Network(**d).save()
-    network_service_model.networks.connect(network_model)
-
-    public_networks = project_model.public_networks()
-    assert len(public_networks) == 2
-
-
-# ! Current tests does not check if flavor, image and network are privates or publics.

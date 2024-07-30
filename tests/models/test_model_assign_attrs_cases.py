@@ -8,7 +8,7 @@ from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.location.models import Location
-from fed_reg.network.models import Network
+from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.project.models import Project
 from fed_reg.provider.models import Provider
 from fed_reg.quota.models import (
@@ -154,11 +154,23 @@ class CaseNetwork:
     def case_network_int(self, attr: str) -> tuple[dict, type[Network], str, int]:
         return network_model_dict(), Network, attr, randint(0, 100)
 
-    @parametrize(attr=["is_shared", "is_router_external", "is_default"])
+    @parametrize(attr=["is_router_external", "is_default"])
     def case_network_bool(
         self, attr: str
     ) -> tuple[dict, type[Network], str, Literal[True]]:
         return network_model_dict(), Network, attr, True
+
+    @parametrize(attr=["is_shared"])
+    def case_shared_network_bool(
+        self, attr: str
+    ) -> tuple[dict, type[SharedNetwork], str, Literal[False]]:
+        return network_model_dict(), SharedNetwork, attr, False
+
+    @parametrize(attr=["is_shared"])
+    def case_private_network_bool(
+        self, attr: str
+    ) -> tuple[dict, type[PrivateNetwork], str, Literal[True]]:
+        return network_model_dict(), PrivateNetwork, attr, True
 
     @parametrize(attr=["tags"])
     @parametrize(fill=[True, False])

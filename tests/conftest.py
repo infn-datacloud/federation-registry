@@ -15,7 +15,7 @@ from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.location.models import Location
 from fed_reg.location.schemas import LocationCreate
 from fed_reg.main import app, settings
-from fed_reg.network.models import Network
+from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.project.models import Project
 from fed_reg.project.schemas import ProjectCreate
 from fed_reg.provider.models import Provider
@@ -191,7 +191,7 @@ def private_flavor_model() -> PrivateFlavor:
 
 
 @pytest.fixture
-def public_flavor_model() -> SharedFlavor:
+def shared_flavor_model() -> SharedFlavor:
     d = flavor_model_dict()
     return SharedFlavor(**d).save()
 
@@ -215,7 +215,7 @@ def private_image_model() -> PrivateImage:
 
 
 @pytest.fixture
-def public_image_model() -> SharedImage:
+def shared_image_model() -> SharedImage:
     d = image_model_dict()
     return SharedImage(**d).save()
 
@@ -230,6 +230,18 @@ def location_model() -> Location:
 def network_model() -> Network:
     d = network_model_dict()
     return Network(**d).save()
+
+
+@pytest.fixture
+def private_network_model() -> PrivateNetwork:
+    d = network_model_dict()
+    return PrivateNetwork(**d).save()
+
+
+@pytest.fixture
+def shared_network_model() -> SharedNetwork:
+    d = network_model_dict()
+    return SharedNetwork(**d).save()
 
 
 @pytest.fixture
