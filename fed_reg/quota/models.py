@@ -10,6 +10,8 @@ from neomodel import (
     UniqueIdProperty,
 )
 
+from fed_reg.quota.enum import QuotaType
+
 
 class Quota(StructuredNode):
     """Resource limitations for Projects on Services.
@@ -28,7 +30,6 @@ class Quota(StructuredNode):
 
     uid = UniqueIdProperty()
     description = StringProperty(default="")
-    type = StringProperty(required=True)
     per_user = BooleanProperty(default=False)
     usage = BooleanProperty(default=False)
 
@@ -55,6 +56,7 @@ class BlockStorageQuota(Quota):
         volumes (int | None): Number of max volumes a user group can create.
     """
 
+    type = StringProperty(default=QuotaType.BLOCK_STORAGE.value)
     gigabytes = IntegerProperty()
     per_volume_gigabytes = IntegerProperty()
     volumes = IntegerProperty()
@@ -81,6 +83,7 @@ class ComputeQuota(Quota):
         ram (int | None): Number of max usable RAM (MiB).
     """
 
+    type = StringProperty(default=QuotaType.COMPUTE.value)
     cores = IntegerProperty()
     instances = IntegerProperty()
     ram = IntegerProperty()
@@ -112,6 +115,7 @@ class NetworkQuota(Quota):
             for each project.
     """
 
+    type = StringProperty(default=QuotaType.NETWORK.value)
     public_ips = IntegerProperty()
     networks = IntegerProperty()
     ports = IntegerProperty()
@@ -137,6 +141,7 @@ class ObjectStoreQuota(Quota):
         usage (str): This quota defines the current resource usage.
     """
 
+    type = StringProperty(default=QuotaType.OBJECT_STORE.value)
     bytes: int = IntegerProperty()
     containers: int = IntegerProperty()
     objects: int = IntegerProperty()

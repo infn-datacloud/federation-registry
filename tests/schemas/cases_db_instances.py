@@ -19,21 +19,16 @@ from fed_reg.sla.models import SLA
 from fed_reg.user_group.models import UserGroup
 from tests.create_dict import (
     auth_method_dict,
-    block_storage_quota_model_dict,
-    block_storage_service_model_dict,
-    compute_quota_model_dict,
-    compute_service_model_dict,
     flavor_model_dict,
     identity_provider_model_dict,
-    identity_service_model_dict,
     image_model_dict,
     location_model_dict,
     network_model_dict,
-    network_quota_model_dict,
-    network_service_model_dict,
     project_model_dict,
     provider_model_dict,
+    quota_model_dict,
     region_model_dict,
+    service_model_dict,
     sla_model_dict,
     user_group_model_dict,
 )
@@ -87,7 +82,7 @@ class CaseDBInstance:
     ) -> Region:
         region_model.provider.connect(provider_model)
         for _ in range(tot):
-            item = BlockStorageService(**block_storage_service_model_dict()).save()
+            item = BlockStorageService(**service_model_dict()).save()
             region_model.services.connect(item)
         return region_model
 
@@ -98,7 +93,7 @@ class CaseDBInstance:
     ) -> Region:
         region_model.provider.connect(provider_model)
         for _ in range(tot):
-            item = ComputeService(**compute_service_model_dict()).save()
+            item = ComputeService(**service_model_dict()).save()
             region_model.services.connect(item)
         return region_model
 
@@ -109,7 +104,7 @@ class CaseDBInstance:
     ) -> Region:
         region_model.provider.connect(provider_model)
         for _ in range(tot):
-            item = IdentityService(**identity_service_model_dict()).save()
+            item = IdentityService(**service_model_dict()).save()
             region_model.services.connect(item)
         return region_model
 
@@ -120,7 +115,7 @@ class CaseDBInstance:
     ) -> Region:
         region_model.provider.connect(provider_model)
         for _ in range(tot):
-            item = NetworkService(**network_service_model_dict()).save()
+            item = NetworkService(**service_model_dict()).save()
             region_model.services.connect(item)
         return region_model
 
@@ -128,13 +123,13 @@ class CaseDBInstance:
     def case_mixed_srv(self, provider_model: Provider, region_model: Region) -> Region:
         p = Provider(**provider_model_dict()).save()
         region_model.provider.connect(p)
-        item = BlockStorageService(**block_storage_service_model_dict()).save()
+        item = BlockStorageService(**service_model_dict()).save()
         region_model.services.connect(item)
-        item = ComputeService(**compute_service_model_dict()).save()
+        item = ComputeService(**service_model_dict()).save()
         region_model.services.connect(item)
-        item = IdentityService(**identity_service_model_dict()).save()
+        item = IdentityService(**service_model_dict()).save()
         region_model.services.connect(item)
-        item = NetworkService(**network_service_model_dict()).save()
+        item = NetworkService(**service_model_dict()).save()
         region_model.services.connect(item)
         return region_model
 
@@ -184,7 +179,7 @@ class CaseDBInstance:
         region_model.provider.connect(provider_model)
         block_storage_service_model.regions.connect(region_model)
         for _ in range(tot):
-            item = BlockStorageQuota(**block_storage_quota_model_dict()).save()
+            item = BlockStorageQuota(**quota_model_dict()).save()
             block_storage_service_model.quotas.connect(item)
         return block_storage_service_model
 
@@ -232,7 +227,7 @@ class CaseDBInstance:
         region_model.provider.connect(provider_model)
         compute_service_model.regions.connect(region_model)
         for _ in range(tot):
-            item = ComputeQuota(**compute_quota_model_dict()).save()
+            item = ComputeQuota(**quota_model_dict()).save()
             compute_service_model.quotas.connect(item)
         return compute_service_model
 
@@ -248,7 +243,7 @@ class CaseDBInstance:
         region_model.provider.connect(provider_model)
         network_service_model.regions.connect(region_model)
         for _ in range(tot):
-            item = NetworkQuota(**network_quota_model_dict()).save()
+            item = NetworkQuota(**quota_model_dict()).save()
             network_service_model.quotas.connect(item)
         return network_service_model
 

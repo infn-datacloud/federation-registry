@@ -5,6 +5,7 @@ from neomodel import (
     AttemptedCardinalityViolation,
     CardinalityViolation,
     RelationshipManager,
+    RequiredProperty,
 )
 from pytest_cases import parametrize_with_cases
 
@@ -26,71 +27,37 @@ from tests.create_dict import (
 )
 
 
-def test_default_attr() -> None:
-    d = region_model_dict()
+@parametrize_with_cases("attr", has_tag="attr")
+def test_region_attr(attr: str) -> None:
+    """Test attribute values (default and set)."""
+    d = region_model_dict(attr)
     item = Region(**d)
+    assert isinstance(item, Region)
     assert item.uid is not None
-    assert item.description == ""
+    assert item.description == d.get("description", "")
     assert item.name == d.get("name")
-    assert isinstance(item.location, RelationshipManager)
-    assert isinstance(item.provider, RelationshipManager)
-    assert isinstance(item.services, RelationshipManager)
+
+    saved = item.save()
+    assert saved.element_id_property
+    assert saved.uid == item.uid
 
 
-def test_required_rel(region_model: Region) -> None:
-    with pytest.raises(CardinalityViolation):
-        region_model.provider.all()
-    with pytest.raises(CardinalityViolation):
-        region_model.provider.single()
+@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
+def test_region_missing_mandatory_attr(attr: str) -> None:
+    """Test Region required attributes.
+
+    Creating a model without required values raises a RequiredProperty error.
+    """
+    err_msg = f"property '{attr}' on objects of class {Region.__name__}"
+    d = region_model_dict()
+    d.pop(attr)
+    with pytest.raises(RequiredProperty, match=err_msg):
+        Region(**d).save()
 
 
-def test_optional_rel(region_model: Region) -> None:
-    assert len(region_model.location.all()) == 0
-    assert region_model.location.single() is None
-    assert len(region_model.services.all()) == 0
-    assert region_model.services.single() is None
-
-
-@parametrize_with_cases("service_model", has_tag="single")
-def test_linked_service(
-    region_model: Region,
-    service_model: BlockStorageService
-    | ComputeService
-    | IdentityService
-    | NetworkService
-    | ObjectStoreService,
-) -> None:
-    assert region_model.services.name
-    assert region_model.services.source
-    assert isinstance(region_model.services.source, Region)
-    assert region_model.services.source.uid == region_model.uid
-    assert region_model.services.definition
-    assert region_model.services.definition["node_class"] == Service
-
-    r = region_model.services.connect(service_model)
-    assert r is True
-
-    assert len(region_model.services.all()) == 1
-    service = region_model.services.single()
-    assert isinstance(service, Service)
-    assert service.uid == service_model.uid
-
-
-@parametrize_with_cases("service_models", has_tag="multi")
-def test_multiple_linked_services(
-    region_model: Region,
-    service_models: list[BlockStorageService]
-    | list[ComputeService]
-    | list[IdentityService]
-    | list[NetworkService]
-    | list[ObjectStoreService],
-) -> None:
-    region_model.services.connect(service_models[0])
-    region_model.services.connect(service_models[1])
-    assert len(region_model.services.all()) == 2
-
-
-def test_linked_location(region_model: Region, location_model: Location) -> None:
+def test_rel_def(region_model: Region) -> None:
+    """Test relationships definition."""
+    assert isinstance(region_model.location, RelationshipManager)
     assert region_model.location.name
     assert region_model.location.source
     assert isinstance(region_model.location.source, Region)
@@ -98,6 +65,80 @@ def test_linked_location(region_model: Region, location_model: Location) -> None
     assert region_model.location.definition
     assert region_model.location.definition["node_class"] == Location
 
+    assert isinstance(region_model.provider, RelationshipManager)
+    assert region_model.provider.name
+    assert region_model.provider.source
+    assert isinstance(region_model.provider.source, Region)
+    assert region_model.provider.source.uid == region_model.uid
+    assert region_model.provider.definition
+    assert region_model.provider.definition["node_class"] == Provider
+
+    assert isinstance(region_model.services, RelationshipManager)
+    assert region_model.services.name
+    assert region_model.services.source
+    assert isinstance(region_model.services.source, Region)
+    assert region_model.services.source.uid == region_model.uid
+    assert region_model.services.definition
+    assert region_model.services.definition["node_class"] == Service
+
+
+def test_required_rel(region_model: Region) -> None:
+    """Test Model required relationships.
+
+    A model without required relationships can exist but when querying those values, it
+    raises a CardinalityViolation error.
+    """
+    with pytest.raises(CardinalityViolation):
+        region_model.provider.all()
+    with pytest.raises(CardinalityViolation):
+        region_model.provider.single()
+
+
+def test_single_linked_provider(region_model: Region, provider_model: Provider) -> None:
+    """Verify `provider` relationship works correctly.
+
+    Connect a single Provider to a Region.
+    """
+    r = region_model.provider.connect(provider_model)
+    assert r is True
+
+    assert len(region_model.provider.all()) == 1
+    provider = region_model.provider.single()
+    assert isinstance(provider, Provider)
+    assert provider.uid == provider_model.uid
+
+
+def test_multiple_linked_provider(region_model: Region) -> None:
+    """Verify `provider` relationship works correctly.
+
+    Trying to connect multiple Provider to a Region raises an
+    AttemptCardinalityViolation error.
+    """
+    item = Provider(**provider_model_dict()).save()
+    region_model.provider.connect(item)
+    item = Provider(**provider_model_dict()).save()
+    with pytest.raises(AttemptedCardinalityViolation):
+        region_model.provider.connect(item)
+
+    with patch("neomodel.sync_.match.QueryBuilder._count", return_value=0):
+        region_model.provider.connect(item)
+        with pytest.raises(CardinalityViolation):
+            region_model.provider.all()
+
+
+def test_optional_rel(region_model: Region) -> None:
+    """Test Model optional relationships."""
+    assert len(region_model.location.all()) == 0
+    assert region_model.location.single() is None
+    assert len(region_model.services.all()) == 0
+    assert region_model.services.single() is None
+
+
+def test_single_linked_location(region_model: Region, location_model: Location) -> None:
+    """Verify `location` relationship works correctly.
+
+    Connect a single Location to a Region.
+    """
     r = region_model.location.connect(location_model)
     assert r is True
 
@@ -108,6 +149,11 @@ def test_linked_location(region_model: Region, location_model: Location) -> None
 
 
 def test_multiple_linked_location(region_model: Region) -> None:
+    """Verify `location` relationship works correctly.
+
+    Trying to connect multiple Location to a Region raises an
+    AttemptCardinalityViolation error.
+    """
     item = Location(**location_model_dict()).save()
     region_model.location.connect(item)
     item = Location(**location_model_dict()).save()
@@ -120,31 +166,45 @@ def test_multiple_linked_location(region_model: Region) -> None:
             region_model.location.all()
 
 
-def test_linked_provider(region_model: Region, provider_model: Provider) -> None:
-    assert region_model.provider.name
-    assert region_model.provider.source
-    assert isinstance(region_model.provider.source, Region)
-    assert region_model.provider.source.uid == region_model.uid
-    assert region_model.provider.definition
-    assert region_model.provider.definition["node_class"] == Provider
+@parametrize_with_cases("service_model", has_tag=("service", "single"))
+def test_single_linked_service(
+    region_model: Region,
+    service_model: BlockStorageService
+    | ComputeService
+    | IdentityService
+    | NetworkService
+    | ObjectStoreService,
+) -> None:
+    """Verify `quotas` relationship works correctly.
 
-    r = region_model.provider.connect(provider_model)
+    Connect a single Quota to a Project.
+    Execute this test for these quota types: BlockStorage, Compute, Indentity, Network
+    and ObjectStore.
+    """
+    r = region_model.services.connect(service_model)
     assert r is True
 
-    assert len(region_model.provider.all()) == 1
-    provider = region_model.provider.single()
-    assert isinstance(provider, Provider)
-    assert provider.uid == provider_model.uid
+    assert len(region_model.services.all()) == 1
+    service = region_model.services.single()
+    assert isinstance(service, Service)
+    assert service.uid == service_model.uid
 
 
-def test_multiple_linked_provider(region_model: Region) -> None:
-    item = Provider(**provider_model_dict()).save()
-    region_model.provider.connect(item)
-    item = Provider(**provider_model_dict()).save()
-    with pytest.raises(AttemptedCardinalityViolation):
-        region_model.provider.connect(item)
+@parametrize_with_cases("service_models", has_tag=("service", "multi"))
+def test_multiple_linked_services(
+    region_model: Region,
+    service_models: list[BlockStorageService]
+    | list[ComputeService]
+    | list[IdentityService]
+    | list[NetworkService]
+    | list[ObjectStoreService],
+) -> None:
+    """Verify `services` relationship works correctly.
 
-    with patch("neomodel.sync_.match.QueryBuilder._count", return_value=0):
-        region_model.provider.connect(item)
-        with pytest.raises(CardinalityViolation):
-            region_model.provider.all()
+    Connect multiple Service to a Region.
+    Execute this test for these quota types: BlockStorage, Compute, Identity, Network
+    and ObjectStore.
+    """
+    for service_model in service_models:
+        region_model.services.connect(service_model)
+    assert len(region_model.services.all()) == len(service_models)

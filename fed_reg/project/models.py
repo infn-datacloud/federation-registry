@@ -77,7 +77,7 @@ class Project(StructuredNode):
         MATCH (p)-[:`USE_SERVICE_WITH`]-(q)
         """
 
-    def public_flavors(self) -> list[SharedFlavor]:
+    def shared_flavors(self) -> list[SharedFlavor]:
         """list public flavors this project can access.
 
         Make a cypher query to retrieve all public flavors this project can access.
@@ -93,7 +93,7 @@ class Project(StructuredNode):
         )
         return [SharedFlavor.inflate(row[0]) for row in results]
 
-    def public_images(self) -> list[SharedImage]:
+    def shared_images(self) -> list[SharedImage]:
         """list public images this project can access.
 
         Make a cypher query to retrieve all public images this project can access.
@@ -110,7 +110,7 @@ class Project(StructuredNode):
         )
         return [SharedImage.inflate(row[0]) for row in results]
 
-    def public_networks(self) -> list[SharedNetwork]:
+    def shared_networks(self) -> list[SharedNetwork]:
         """list public networks this project can access.
 
         Make a cypher query to retrieve all public networks this project can access.

@@ -9,8 +9,9 @@ from typing import Any, Type
 from pycountry import countries
 from pydantic import AnyHttpUrl
 
+from fed_reg.image.enum import ImageOS
 from fed_reg.models import BaseNodeRead
-from fed_reg.provider.enum import ProviderType
+from fed_reg.provider.enum import ProviderStatus, ProviderType
 
 MOCK_READ_EMAIL = "user@test.it"
 MOCK_WRITE_EMAIL = "admin@test.it"
@@ -121,6 +122,10 @@ def random_provider_type() -> ProviderType:
     return choice([i for i in ProviderType])
 
 
+def random_provider_status() -> ProviderStatus:
+    return choice([i for i in ProviderStatus])
+
+
 def random_start_end_dates() -> tuple[date, date]:
     """Return a random couples of valid start and end dates (in order)."""
     d1 = random_date()
@@ -138,3 +143,7 @@ def random_start_end_dates() -> tuple[date, date]:
 
 def random_service_name(enum_cls: Enum) -> Any:
     return choice([i for i in enum_cls])
+
+
+def random_image_os_type() -> ImageOS:
+    return choice([i for i in ImageOS])

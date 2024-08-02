@@ -532,9 +532,9 @@ class ProjectReadExtended(BaseNodeRead, BaseReadPrivateExtended, ProjectBase):
 
         `obj` is the orm model instance.
         """
-        obj.flavors = obj.public_flavors() + obj.private_flavors.all()
-        obj.images = obj.public_images() + obj.private_images.all()
-        obj.networks = obj.public_networks() + obj.private_networks.all()
+        obj.flavors = obj.shared_flavors() + obj.private_flavors.all()
+        obj.images = obj.shared_images() + obj.private_images.all()
+        obj.networks = obj.shared_networks() + obj.private_networks.all()
         return super().from_orm(obj)
 
 
@@ -576,9 +576,9 @@ class ProjectReadExtendedPublic(
 
         `obj` is the orm model instance.
         """
-        obj.flavors = obj.public_flavors() + obj.private_flavors.all()
-        obj.images = obj.public_images() + obj.private_images.all()
-        obj.networks = obj.public_networks() + obj.private_networks.all()
+        obj.flavors = obj.shared_flavors() + obj.private_flavors.all()
+        obj.images = obj.shared_images() + obj.private_images.all()
+        obj.networks = obj.shared_networks() + obj.private_networks.all()
         return super().from_orm(obj)
 
 

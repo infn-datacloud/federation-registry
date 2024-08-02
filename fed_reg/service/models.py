@@ -9,6 +9,8 @@ from neomodel import (
     ZeroOrMore,
 )
 
+from fed_reg.service.enum import ServiceType
+
 
 class Service(StructuredNode):
     """Service supplied by a Provider on a specific Region.
@@ -30,7 +32,6 @@ class Service(StructuredNode):
     uid = UniqueIdProperty()
     description = StringProperty(default="")
     endpoint = StringProperty(required=True)
-    type = StringProperty(required=True)
     name = StringProperty(required=True)
 
     region = RelationshipFrom("fed_reg.region.models.Region", "SUPPLY", cardinality=One)
@@ -51,6 +52,8 @@ class BlockStorageService(Service):
         name (str): Service name.
     """
 
+    type = StringProperty(default=ServiceType.BLOCK_STORAGE.value)
+
     quotas = RelationshipFrom(
         "fed_reg.quota.models.BlockStorageQuota", "APPLY_TO", cardinality=ZeroOrMore
     )
@@ -70,6 +73,8 @@ class ComputeService(Service):
         type (str): Service type.
         name (str): Service name.
     """
+
+    type = StringProperty(default=ServiceType.COMPUTE.value)
 
     flavors = RelationshipTo(
         "fed_reg.flavor.models.Flavor",
@@ -98,6 +103,8 @@ class IdentityService(Service):
         name (str): Service name.
     """
 
+    type = StringProperty(default=ServiceType.IDENTITY.value)
+
 
 class NetworkService(Service):
     """Service managing Network resources.
@@ -112,6 +119,8 @@ class NetworkService(Service):
         type (str): Service type.
         name (str): Service name.
     """
+
+    type = StringProperty(default=ServiceType.NETWORK.value)
 
     networks = RelationshipTo(
         "fed_reg.network.models.Network",
@@ -137,6 +146,8 @@ class ObjectStoreService(Service):
         type (str): Service type.
         name (str): Service name.
     """
+
+    type = StringProperty(default=ServiceType.OBJECT_STORE.value)
 
     quotas = RelationshipFrom(
         "fed_reg.quota.models.ObjectStoreQuota", "APPLY_TO", cardinality=ZeroOrMore
