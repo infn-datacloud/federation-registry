@@ -25,16 +25,17 @@ from fed_reg.provider.schemas_extended import (
     ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
     IdentityProviderCreateExtended,
-    ImageCreateExtended,
     NetworkCreateExtended,
     NetworkQuotaCreateExtended,
     NetworkServiceCreateExtended,
     ObjectStoreQuotaCreateExtended,
     ObjectStoreServiceCreateExtended,
     PrivateFlavorCreateExtended,
+    PrivateImageCreateExtended,
     ProviderCreateExtended,
     RegionCreateExtended,
     SharedFlavorCreateExtended,
+    SharedImageCreateExtended,
     SLACreateExtended,
     UserGroupCreateExtended,
 )
@@ -366,8 +367,13 @@ def identity_provider_create_ext_schema(
 
 
 @pytest.fixture
-def image_create_ext_schema() -> ImageCreateExtended:
-    return ImageCreateExtended(**image_schema_dict())
+def private_image_create_ext_schema() -> PrivateImageCreateExtended:
+    return PrivateImageCreateExtended(**image_schema_dict(), projects=[uuid4()])
+
+
+@pytest.fixture
+def shared_image_create_ext_schema() -> SharedImageCreateExtended:
+    return SharedImageCreateExtended(**image_schema_dict())
 
 
 @pytest.fixture

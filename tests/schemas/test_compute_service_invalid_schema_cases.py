@@ -5,9 +5,10 @@ from pytest_cases import case, parametrize
 
 from fed_reg.provider.schemas_extended import (
     ComputeQuotaCreateExtended,
-    ImageCreateExtended,
     PrivateFlavorCreateExtended,
+    PrivateImageCreateExtended,
     SharedFlavorCreateExtended,
+    SharedImageCreateExtended,
 )
 from fed_reg.service.enum import ServiceType
 from tests.utils import random_lower_string
@@ -45,13 +46,13 @@ class CaseInvalidAttr:
         self,
         flavor_create_ext_schema: PrivateFlavorCreateExtended
         | SharedFlavorCreateExtended,
-        image_create_ext_schema: ImageCreateExtended,
+        image_create_ext_schema: PrivateImageCreateExtended | SharedImageCreateExtended,
         attr: str,
         res: str,
     ) -> tuple[
         str,
         list[PrivateFlavorCreateExtended | SharedFlavorCreateExtended]
-        | list[ImageCreateExtended],
+        | list[PrivateImageCreateExtended | SharedImageCreateExtended],
         str,
     ]:
         item = flavor_create_ext_schema if res == "flavors" else image_create_ext_schema

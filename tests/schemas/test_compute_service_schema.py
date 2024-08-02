@@ -5,9 +5,10 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.provider.schemas_extended import (
     ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
-    ImageCreateExtended,
     PrivateFlavorCreateExtended,
+    PrivateImageCreateExtended,
     SharedFlavorCreateExtended,
+    SharedImageCreateExtended,
 )
 from fed_reg.service.enum import ComputeServiceName, ServiceType
 from fed_reg.service.models import ComputeService
@@ -77,7 +78,7 @@ def test_create_extended(
     attr: str,
     values: list[ComputeQuotaCreateExtended]
     | list[PrivateFlavorCreateExtended | SharedFlavorCreateExtended]
-    | list[ImageCreateExtended],
+    | list[PrivateImageCreateExtended | SharedImageCreateExtended],
 ) -> None:
     d = compute_service_schema_dict()
     d[attr] = values

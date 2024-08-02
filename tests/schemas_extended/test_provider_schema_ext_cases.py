@@ -10,13 +10,13 @@ from fed_reg.provider.schemas_extended import (
     ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
     IdentityProviderCreateExtended,
-    ImageCreateExtended,
     NetworkCreateExtended,
     NetworkQuotaCreateExtended,
     NetworkServiceCreateExtended,
     ObjectStoreQuotaCreateExtended,
     ObjectStoreServiceCreateExtended,
     PrivateFlavorCreateExtended,
+    PrivateImageCreateExtended,
     RegionCreateExtended,
     SLACreateExtended,
 )
@@ -189,7 +189,7 @@ class CaseAttr:
             )
             compute_service_create_ext_schema.flavors = [item]
         elif resource == "images":
-            item = ImageCreateExtended(
+            item = PrivateImageCreateExtended(
                 **image_schema_dict(), is_public=False, projects=[uuid4()]
             )
             compute_service_create_ext_schema.images = [item]

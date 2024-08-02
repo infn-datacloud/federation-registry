@@ -19,7 +19,8 @@ from fed_reg.identity_provider.schemas_extended import (
 from fed_reg.image.schemas import (
     ImageBase,
     ImageBasePublic,
-    ImageCreate,
+    PrivateImageCreate,
+    SharedImageCreate,
 )
 from fed_reg.image.schemas_extended import ImageReadExtended, ImageReadExtendedPublic
 from fed_reg.location.schemas import (
@@ -58,18 +59,19 @@ from fed_reg.provider.schemas_extended import (
     ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
     IdentityProviderCreateExtended,
-    ImageCreateExtended,
     NetworkCreateExtended,
     NetworkQuotaCreateExtended,
     NetworkServiceCreateExtended,
     ObjectStoreQuotaCreateExtended,
     ObjectStoreServiceCreateExtended,
     PrivateFlavorCreateExtended,
+    PrivateImageCreateExtended,
     ProviderCreateExtended,
     ProviderReadExtended,
     ProviderReadExtendedPublic,
     RegionCreateExtended,
     SharedFlavorCreateExtended,
+    SharedImageCreateExtended,
     SLACreateExtended,
     UserGroupCreateExtended,
 )
@@ -162,8 +164,12 @@ class CaseClassInheritance:
         return IdentityProviderCreateExtended, IdentityProviderCreate
 
     @case(tags=["create"])
-    def case_image_create(self):
-        return ImageCreateExtended, ImageCreate
+    def case_private_image_create(self):
+        return PrivateImageCreateExtended, PrivateImageCreate
+
+    @case(tags=["create"])
+    def case_shared_image_create(self):
+        return SharedImageCreateExtended, SharedImageCreate
 
     @case(tags=["create"])
     def case_network_create(self):

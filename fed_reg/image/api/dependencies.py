@@ -4,7 +4,11 @@ from fastapi import Depends, HTTPException, status
 
 from fed_reg.image.crud import image_mng
 from fed_reg.image.models import Image
-from fed_reg.image.schemas import ImageCreate, ImageUpdate
+from fed_reg.image.schemas import (
+    ImageUpdate,
+    PrivateImageCreate,
+    SharedImageCreate,
+)
 from fed_reg.service.api.dependencies import valid_compute_service_id
 from fed_reg.service.models import ComputeService
 
@@ -34,7 +38,8 @@ def valid_image_id(image_uid: str) -> Image:
 
 
 def valid_image_name(
-    item: ImageCreate | ImageUpdate, services: list[ComputeService]
+    item: PrivateImageCreate | SharedImageCreate | ImageUpdate,
+    services: list[ComputeService],
 ) -> None:
     """Check given data are valid ones.
 
@@ -42,7 +47,7 @@ def valid_image_name(
 
     Args:
     ----
-        item (ImageCreate | ImageUpdate): new data.
+        item (PrivateImageCreate | SharedImageCreate | ImageUpdate): new data.
         services (list of ComputeService): list of services to inspect.
 
     Returns:
@@ -65,7 +70,7 @@ def valid_image_name(
 
 
 def valid_image_uuid(
-    item: ImageCreate | ImageUpdate,
+    item: PrivateImageCreate | SharedImageCreate | ImageUpdate,
     services: list[ComputeService] = Depends(valid_compute_service_id),
 ) -> None:
     """Check given data are valid ones.
@@ -74,7 +79,7 @@ def valid_image_uuid(
 
     Args:
     ----
-        item (ImageCreate | ImageUpdate): new data.
+        item (PrivateImageCreate | SharedImageCreate | ImageUpdate): new data.
         services (list of ComputeService): list of services to inspect.
 
     Returns:

@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException, status
 
 from fed_reg.flavor.crud import flavor_mng
 from fed_reg.flavor.models import Flavor
-from fed_reg.flavor.schemas import FlavorCreate, FlavorUpdate
+from fed_reg.flavor.schemas import FlavorUpdate, PrivateFlavorCreate, SharedFlavorCreate
 from fed_reg.service.api.dependencies import valid_compute_service_id
 from fed_reg.service.models import ComputeService
 
@@ -33,7 +33,7 @@ def valid_flavor_id(flavor_uid: str) -> Flavor:
 
 
 def valid_flavor_name(
-    item: FlavorCreate | FlavorUpdate,
+    item: PrivateFlavorCreate | SharedFlavorCreate | FlavorUpdate,
     services: list[ComputeService],
 ) -> None:
     """Check no duplicate name.
@@ -43,7 +43,7 @@ def valid_flavor_name(
 
     Args:
     ----
-        item (FlavorCreate | FlavorUpdate): new data.
+        item (PrivateFlavorCreate | SharedFlavorCreate | FlavorUpdate): new data.
         services (list of ComputeService): list of services to inspect.
 
     Returns:
@@ -66,7 +66,7 @@ def valid_flavor_name(
 
 
 def valid_flavor_uuid(
-    item: FlavorCreate | FlavorUpdate,
+    item: PrivateFlavorCreate | SharedFlavorCreate | FlavorUpdate,
     services: list[ComputeService] = Depends(valid_compute_service_id),
 ) -> None:
     """Check no duplicate UUID.
@@ -76,7 +76,7 @@ def valid_flavor_uuid(
 
     Args:
     ----
-        item (FlavorCreate | FlavorUpdate): new data.
+        item (PrivateFlavorCreate | SharedFlavorCreate | FlavorUpdate): new data.
         services (list of ComputeService): list of services to inspect.
 
     Returns:

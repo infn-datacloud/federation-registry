@@ -22,11 +22,12 @@ from fed_reg.identity_provider.schemas import (
 from fed_reg.image.schemas import (
     ImageBase,
     ImageBasePublic,
-    ImageCreate,
     ImageQuery,
     ImageRead,
     ImageReadPublic,
     ImageUpdate,
+    PrivateImageCreate,
+    SharedImageCreate,
 )
 from fed_reg.location.schemas import (
     LocationBase,
@@ -336,8 +337,12 @@ class CaseClassInheritance:
         return IdentityProviderCreate, IdentityProviderBase
 
     @case(tags=["create"])
-    def case_image_create(self):
-        return ImageCreate, ImageBase
+    def case_private_image_create(self):
+        return PrivateImageCreate, ImageBase
+
+    @case(tags=["create"])
+    def case_shared_image_create(self):
+        return SharedImageCreate, ImageBase
 
     @case(tags=["create"])
     def case_location_create(self):

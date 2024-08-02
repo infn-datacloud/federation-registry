@@ -2,18 +2,28 @@
 from typing import Optional
 
 from fed_reg.crud import CRUDBase
-from fed_reg.image.models import Image
-from fed_reg.image.schemas import ImageCreate, ImageRead, ImageReadPublic, ImageUpdate
+from fed_reg.image.models import Image, PrivateImage, SharedImage
+from fed_reg.image.schemas import (
+    ImageRead,
+    ImageReadPublic,
+    ImageUpdate,
+    PrivateImageCreate,
+    SharedImageCreate,
+)
 from fed_reg.image.schemas_extended import ImageReadExtended, ImageReadExtendedPublic
 from fed_reg.project.models import Project
-from fed_reg.provider.schemas_extended import ImageCreateExtended
+from fed_reg.provider.schemas_extended import (
+    PrivateImageCreateExtended,
+    SharedImageCreateExtended,
+)
+from fed_reg.region.models import Region
 from fed_reg.service.models import ComputeService
 
 
-class CRUDImage(
+class CRUDPrivateImage(
     CRUDBase[
-        Image,
-        ImageCreate,
+        PrivateImage,
+        PrivateImageCreate,
         ImageUpdate,
         ImageRead,
         ImageReadPublic,
@@ -26,10 +36,10 @@ class CRUDImage(
     def create(
         self,
         *,
-        obj_in: ImageCreateExtended,
+        obj_in: PrivateImageCreateExtended,
         service: ComputeService,
-        projects: Optional[list[Project]] = None,
-    ) -> Image:
+        projects: list[Project],
+    ) -> PrivateImage:
         """Create a new Image.
 
         At first check that a image with the given UUID does not already exist. If it
@@ -38,15 +48,16 @@ class CRUDImage(
         image. In any case connect the image to the given service and to any received
         project.
         """
-        if projects is None:
-            projects = []
         db_obj = self.get(uuid=obj_in.uuid)
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
         else:
-            # It's indifferent which service, we want to reach the provider
-            db_service = db_obj.services.single()
-            db_region = db_service.region.single()
+            # If a image with the same properties already exists, we need to check if
+            # they belong to the same provider. If they belong to different providers we
+            # treat them as separate entities.
+            # We choose any service; it's irrelevant since we want to reach the provider
+            db_service: ComputeService = db_obj.services.single()
+            db_region: Region = db_service.region.single()
             db_provider1 = db_region.provider.single()
             db_region = service.region.single()
             db_provider2 = db_region.provider.single()
@@ -62,25 +73,23 @@ class CRUDImage(
     def update(
         self,
         *,
-        db_obj: Image,
-        obj_in: ImageUpdate | ImageCreateExtended,
-        projects: Optional[list[Project]] = None,
+        db_obj: PrivateImage,
+        obj_in: ImageUpdate | PrivateImageCreateExtended,
+        projects: list[Project],
         force: bool = False,
-    ) -> Optional[Image]:
+    ) -> PrivateImage | None:
         """Update Image attributes.
 
         By default do not update relationships or default values. If force is True,
         update linked projects and apply default values when explicit.
         """
-        if projects is None:
-            projects = []
         edit = False
         if force:
             edit = self.__update_projects(
                 db_obj=db_obj, obj_in=obj_in, provider_projects=projects
             )
 
-        if isinstance(obj_in, ImageCreateExtended):
+        if isinstance(obj_in, PrivateImageCreateExtended):
             obj_in = ImageUpdate.parse_obj(obj_in)
 
         updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
@@ -89,8 +98,8 @@ class CRUDImage(
     def __update_projects(
         self,
         *,
-        obj_in: ImageCreateExtended,
-        db_obj: Image,
+        obj_in: PrivateImageCreateExtended,
+        db_obj: PrivateImage,
         provider_projects: list[Project],
     ) -> bool:
         """Update image linked projects.
@@ -113,9 +122,128 @@ class CRUDImage(
         return edit
 
 
+class CRUDSharedImage(
+    CRUDBase[
+        SharedImage,
+        SharedImageCreate,
+        ImageUpdate,
+        ImageRead,
+        ImageReadPublic,
+        ImageReadExtended,
+        ImageReadExtendedPublic,
+    ]
+):
+    """Image Create, Read, Update and Delete operations."""
+
+    def create(
+        self, *, obj_in: SharedImageCreateExtended, service: ComputeService
+    ) -> SharedImage:
+        """Create a new Image.
+
+        At first check that a image with the given UUID does not already exist. If it
+        does not exist create it. Otherwise check the provider of the existing one. If
+        it is the same of the received service, do nothing, otherwise create a new
+        image. In any case connect the image to the given service and to any received
+        project.
+        """
+        db_obj = self.get(uuid=obj_in.uuid)
+        if not db_obj:
+            db_obj = super().create(obj_in=obj_in)
+        else:
+            # If a image with the same properties already exists, we need to check if
+            # they belong to the same provider. If they belong to different providers we
+            # treat them as separate entities.
+            # We choose any service; it's irrelevant since we want to reach the provider
+            db_service: ComputeService = db_obj.services.single()
+            db_region: Region = db_service.region.single()
+            db_provider1 = db_region.provider.single()
+            db_region = service.region.single()
+            db_provider2 = db_region.provider.single()
+            if db_provider1 != db_provider2:
+                db_obj = super().create(obj_in=obj_in)
+
+        db_obj.services.connect(service)
+        return db_obj
+
+
+private_image_mng = CRUDPrivateImage(
+    model=PrivateImage,
+    create_schema=PrivateImageCreate,
+    read_schema=ImageRead,
+    read_public_schema=ImageReadPublic,
+    read_extended_schema=ImageReadExtended,
+    read_extended_public_schema=ImageReadExtendedPublic,
+)
+
+shared_image_mng = CRUDSharedImage(
+    model=SharedImage,
+    create_schema=SharedImageCreate,
+    read_schema=ImageRead,
+    read_public_schema=ImageReadPublic,
+    read_extended_schema=ImageReadExtended,
+    read_extended_public_schema=ImageReadExtendedPublic,
+)
+
+
+class CRUDImage(
+    CRUDBase[
+        Image,
+        PrivateImageCreateExtended | SharedImageCreateExtended,
+        ImageUpdate,
+        ImageRead,
+        ImageReadPublic,
+        ImageReadExtended,
+        ImageReadExtendedPublic,
+    ]
+):
+    """Image Create, Read, Update and Delete operations."""
+
+    def create(
+        self,
+        *,
+        obj_in: PrivateImageCreateExtended | SharedImageCreateExtended,
+        service: ComputeService,
+        projects: list[Project] | None = None,
+    ) -> Image:
+        """Create a new Image.
+
+        At first check that a image with the given UUID does not already exist. If it
+        does not exist create it. Otherwise check the provider of the existing one. If
+        it is the same of the received service, do nothing, otherwise create a new
+        image. In any case connect the image to the given service and to any received
+        project.
+        """
+        if isinstance(obj_in, PrivateImageCreateExtended):
+            return private_image_mng.create(
+                obj_in=obj_in, service=service, projects=projects
+            )
+        return shared_image_mng.create(obj_in=obj_in, service=service)
+
+    def update(
+        self,
+        *,
+        db_obj: Image,
+        obj_in: ImageUpdate | PrivateImageCreateExtended,
+        projects: Optional[list[Project]] = None,
+        force: bool = False,
+    ) -> Optional[Image]:
+        """Update Image attributes.
+
+        By default do not update relationships or default values. If force is True,
+        update linked projects and apply default values when explicit.
+        """
+        if isinstance(obj_in, PrivateImageCreateExtended):
+            return private_image_mng.update(
+                db_obj=db_obj, obj_in=obj_in, projects=projects, force=force
+            )
+        elif isinstance(obj_in, SharedImageCreateExtended):
+            return shared_image_mng.update(db_obj=db_obj, obj_in=obj_in, force=force)
+        return super().update(db_obj=db_obj, obj_in=obj_in, force=force)
+
+
 image_mng = CRUDImage(
     model=Image,
-    create_schema=ImageCreate,
+    create_schema=PrivateImageCreateExtended | SharedImageCreateExtended,
     read_schema=ImageRead,
     read_public_schema=ImageReadPublic,
     read_extended_schema=ImageReadExtended,

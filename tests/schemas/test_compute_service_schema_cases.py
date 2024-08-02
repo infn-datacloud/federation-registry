@@ -5,9 +5,10 @@ from pytest_cases import case, parametrize
 
 from fed_reg.provider.schemas_extended import (
     ComputeQuotaCreateExtended,
-    ImageCreateExtended,
     PrivateFlavorCreateExtended,
+    PrivateImageCreateExtended,
     SharedFlavorCreateExtended,
+    SharedImageCreateExtended,
 )
 from fed_reg.service.enum import ComputeServiceName
 from tests.create_dict import flavor_schema_dict, image_schema_dict
@@ -77,14 +78,18 @@ class CaseAttr:
     @case(tags=["create_extended"])
     @parametrize(len=(0, 1, 2))
     def case_images(
-        self, image_create_ext_schema: ImageCreateExtended, len: int
-    ) -> tuple[Literal["images"], list[ImageCreateExtended]]:
+        self,
+        image_create_ext_schema: PrivateImageCreateExtended | SharedImageCreateExtended,
+        len: int,
+    ) -> tuple[
+        Literal["images"], list[PrivateImageCreateExtended | SharedImageCreateExtended]
+    ]:
         if len == 1:
             return "images", [image_create_ext_schema]
         elif len == 2:
             return "images", [
                 image_create_ext_schema,
-                ImageCreateExtended(**image_schema_dict()),
+                SharedImageCreateExtended(**image_schema_dict()),
             ]
         else:
             return "images", []
