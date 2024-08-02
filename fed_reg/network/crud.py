@@ -2,26 +2,30 @@
 from typing import Optional
 
 from fed_reg.crud import CRUDBase
-from fed_reg.network.models import Network
+from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.network.schemas import (
-    NetworkCreate,
     NetworkRead,
     NetworkReadPublic,
     NetworkUpdate,
+    PrivateNetworkCreate,
+    SharedNetworkCreate,
 )
 from fed_reg.network.schemas_extended import (
     NetworkReadExtended,
     NetworkReadExtendedPublic,
 )
 from fed_reg.project.models import Project
-from fed_reg.provider.schemas_extended import NetworkCreateExtended
+from fed_reg.provider.schemas_extended import (
+    PrivateNetworkCreateExtended,
+    SharedNetworkCreateExtended,
+)
 from fed_reg.service.models import NetworkService
 
 
-class CRUDNetwork(
+class CRUDPrivateNetwork(
     CRUDBase[
-        Network,
-        NetworkCreate,
+        PrivateNetwork,
+        PrivateNetworkCreate,
         NetworkUpdate,
         NetworkRead,
         NetworkReadPublic,
@@ -34,7 +38,114 @@ class CRUDNetwork(
     def create(
         self,
         *,
-        obj_in: NetworkCreate,
+        obj_in: PrivateNetworkCreateExtended,
+        service: NetworkService,
+        project: Project,
+    ) -> PrivateNetwork:
+        """Create a new Network.
+
+        At first check that a network with the given UUID does not already exist. If it
+        does not exist create it. Otherwise check the provider of the existing one. If
+        it is the same of the received service, do nothing, otherwise create a new
+        network. In any case connect the network to the given service and to any
+        received project.
+        """
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.service.connect(service)
+        db_obj.project.connect(project)
+        return db_obj
+
+    def update(
+        self,
+        *,
+        db_obj: PrivateNetwork,
+        obj_in: NetworkUpdate | PrivateNetworkCreateExtended,
+        project: Project,
+        force: bool = False,
+    ) -> PrivateNetwork | None:
+        """Update Network attributes.
+
+        By default do not update relationships or default values. If force is True,
+        update linked projects and apply default values when explicit.
+        """
+        edit = False
+        if force:
+            if project != db_obj.project.single():
+                db_obj.project.replace(project)
+                edit = True
+
+        if isinstance(obj_in, PrivateNetworkCreateExtended):
+            obj_in = NetworkUpdate.parse_obj(obj_in)
+
+        updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
+        return db_obj if edit else updated_data
+
+
+class CRUDSharedNetwork(
+    CRUDBase[
+        SharedNetwork,
+        SharedNetworkCreate,
+        NetworkUpdate,
+        NetworkRead,
+        NetworkReadPublic,
+        NetworkReadExtended,
+        NetworkReadExtendedPublic,
+    ]
+):
+    """Network Create, Read, Update and Delete operations."""
+
+    def create(
+        self, *, obj_in: SharedNetworkCreateExtended, service: NetworkService
+    ) -> SharedNetwork:
+        """Create a new Network.
+
+        At first check that a network with the given UUID does not already exist. If it
+        does not exist create it. Otherwise check the provider of the existing one. If
+        it is the same of the received service, do nothing, otherwise create a new
+        network. In any case connect the network to the given service and to any
+        received project.
+        """
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.service.connect(service)
+        return db_obj
+
+
+private_network_mng = CRUDPrivateNetwork(
+    model=PrivateNetwork,
+    create_schema=PrivateNetworkCreate,
+    read_schema=NetworkRead,
+    read_public_schema=NetworkReadPublic,
+    read_extended_schema=NetworkReadExtended,
+    read_extended_public_schema=NetworkReadExtendedPublic,
+)
+
+shared_network_mng = CRUDSharedNetwork(
+    model=SharedNetwork,
+    create_schema=SharedNetworkCreate,
+    read_schema=NetworkRead,
+    read_public_schema=NetworkReadPublic,
+    read_extended_schema=NetworkReadExtended,
+    read_extended_public_schema=NetworkReadExtendedPublic,
+)
+
+
+class CRUDNetwork(
+    CRUDBase[
+        Network,
+        PrivateNetworkCreateExtended | SharedNetworkCreateExtended,
+        NetworkUpdate,
+        NetworkRead,
+        NetworkReadPublic,
+        NetworkReadExtended,
+        NetworkReadExtendedPublic,
+    ]
+):
+    """Network Create, Read, Update and Delete operations."""
+
+    def create(
+        self,
+        *,
+        obj_in: PrivateNetworkCreateExtended | SharedNetworkCreateExtended,
         service: NetworkService,
         project: Optional[Project] = None,
     ) -> Network:
@@ -42,18 +153,20 @@ class CRUDNetwork(
 
         Connect the network to the given service and to the optional received project.
         """
-        db_obj = super().create(obj_in=obj_in)
-        db_obj.service.connect(service)
-        if project is not None:
-            db_obj.project.connect(project)
-        return db_obj
+        if isinstance(obj_in, PrivateNetworkCreateExtended):
+            return private_network_mng.create(
+                obj_in=obj_in, service=service, project=project
+            )
+        return shared_network_mng.create(obj_in=obj_in, service=service)
 
     def update(
         self,
         *,
         db_obj: Network,
-        obj_in: NetworkUpdate | NetworkCreateExtended,
-        projects: Optional[list[Project]] = None,
+        obj_in: NetworkUpdate
+        | PrivateNetworkCreateExtended
+        | SharedNetworkCreateExtended,
+        project: Optional[Project] = None,
         force: bool = False,
     ) -> Optional[Network]:
         """Update Network attributes.
@@ -61,30 +174,18 @@ class CRUDNetwork(
         By default do not update relationships or default values. If force is True,
         update linked project and apply default values when explicit.
         """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            db_projects = {db_item.uuid: db_item for db_item in projects}
-            db_proj = db_obj.project.single()
-            if not obj_in.project and db_proj:
-                db_obj.project.disconnect(db_proj)
-                edit = True
-            elif not db_proj or (db_proj and obj_in.project != db_proj.uuid):
-                db_item = db_projects.get(obj_in.project)
-                db_obj.project.replace(db_item)
-                edit = True
-
-        if isinstance(obj_in, NetworkCreateExtended):
-            obj_in = NetworkUpdate.parse_obj(obj_in)
-
-        updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else updated_data
+        if isinstance(obj_in, PrivateNetworkCreateExtended):
+            return private_network_mng.update(
+                db_obj=db_obj, obj_in=obj_in, project=project, force=force
+            )
+        elif isinstance(obj_in, SharedNetworkCreateExtended):
+            return shared_network_mng.update(db_obj=db_obj, obj_in=obj_in, force=force)
+        return super().update(db_obj=db_obj, obj_in=obj_in, force=force)
 
 
 network_mng = CRUDNetwork(
     model=Network,
-    create_schema=NetworkCreate,
+    create_schema=PrivateNetworkCreateExtended | SharedNetworkCreateExtended,
     read_schema=NetworkRead,
     read_public_schema=NetworkReadPublic,
     read_extended_schema=NetworkReadExtended,

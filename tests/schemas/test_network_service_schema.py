@@ -3,9 +3,10 @@ from typing import Any
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.provider.schemas_extended import (
-    NetworkCreateExtended,
     NetworkQuotaCreateExtended,
     NetworkServiceCreateExtended,
+    PrivateNetworkCreateExtended,
+    SharedNetworkCreateExtended,
 )
 from fed_reg.service.enum import NetworkServiceName, ServiceType
 from fed_reg.service.models import NetworkService
@@ -73,7 +74,8 @@ def test_update(key: str, value: Any) -> None:
 @parametrize_with_cases("attr, values", has_tag="create_extended")
 def test_create_extended(
     attr: str,
-    values: list[NetworkQuotaCreateExtended] | list[NetworkCreateExtended],
+    values: list[NetworkQuotaCreateExtended]
+    | list[PrivateNetworkCreateExtended | SharedNetworkCreateExtended],
 ) -> None:
     d = network_service_schema_dict()
     d[attr] = values

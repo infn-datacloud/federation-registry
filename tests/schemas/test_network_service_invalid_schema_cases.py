@@ -3,8 +3,9 @@ from typing import Literal
 from pytest_cases import case, parametrize
 
 from fed_reg.provider.schemas_extended import (
-    NetworkCreateExtended,
     NetworkQuotaCreateExtended,
+    PrivateNetworkCreateExtended,
+    SharedNetworkCreateExtended,
 )
 from fed_reg.service.enum import ServiceType
 from tests.utils import random_lower_string
@@ -37,10 +38,16 @@ class CaseInvalidAttr:
 
     @case(tags=["create_extended"])
     def case_dup_networks(
-        self, network_create_ext_schema: NetworkCreateExtended
-    ) -> tuple[Literal["networks"], list[NetworkCreateExtended], str]:
+        self,
+        shared_network_create_ext_schema: PrivateNetworkCreateExtended
+        | SharedNetworkCreateExtended,
+    ) -> tuple[
+        Literal["networks"],
+        list[PrivateNetworkCreateExtended | SharedNetworkCreateExtended],
+        str,
+    ]:
         return (
             "networks",
-            [network_create_ext_schema, network_create_ext_schema],
+            [shared_network_create_ext_schema, shared_network_create_ext_schema],
             "There are multiple items with identical uuid",
         )

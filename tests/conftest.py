@@ -25,17 +25,18 @@ from fed_reg.provider.schemas_extended import (
     ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
     IdentityProviderCreateExtended,
-    NetworkCreateExtended,
     NetworkQuotaCreateExtended,
     NetworkServiceCreateExtended,
     ObjectStoreQuotaCreateExtended,
     ObjectStoreServiceCreateExtended,
     PrivateFlavorCreateExtended,
     PrivateImageCreateExtended,
+    PrivateNetworkCreateExtended,
     ProviderCreateExtended,
     RegionCreateExtended,
     SharedFlavorCreateExtended,
     SharedImageCreateExtended,
+    SharedNetworkCreateExtended,
     SLACreateExtended,
     UserGroupCreateExtended,
 )
@@ -377,8 +378,13 @@ def shared_image_create_ext_schema() -> SharedImageCreateExtended:
 
 
 @pytest.fixture
-def network_create_ext_schema() -> NetworkCreateExtended:
-    return NetworkCreateExtended(**network_schema_dict())
+def private_network_create_ext_schema() -> PrivateNetworkCreateExtended:
+    return PrivateNetworkCreateExtended(**network_schema_dict())
+
+
+@pytest.fixture
+def shared_network_create_ext_schema() -> SharedNetworkCreateExtended:
+    return SharedNetworkCreateExtended(**network_schema_dict())
 
 
 @pytest.fixture

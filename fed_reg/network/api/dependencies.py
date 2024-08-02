@@ -4,7 +4,11 @@ from fastapi import Depends, HTTPException, status
 
 from fed_reg.network.crud import network_mng
 from fed_reg.network.models import Network
-from fed_reg.network.schemas import NetworkCreate, NetworkUpdate
+from fed_reg.network.schemas import (
+    NetworkUpdate,
+    PrivateNetworkCreate,
+    SharedNetworkCreate,
+)
 from fed_reg.service.api.dependencies import valid_network_service_id
 from fed_reg.service.models import NetworkService
 
@@ -34,7 +38,7 @@ def valid_network_id(network_uid: str) -> Network:
 
 
 def valid_network_uuid(
-    item: NetworkCreate | NetworkUpdate,
+    item: PrivateNetworkCreate | SharedNetworkCreate | NetworkUpdate,
     service: NetworkService = Depends(valid_network_service_id),
 ) -> None:
     """Check given data are valid ones.
@@ -44,7 +48,7 @@ def valid_network_uuid(
 
     Args:
     ----
-        item (NetworkCreate | NetworkUpdate): new data.
+        item (PrivateNetworkCreate | SharedNetworkCreate | NetworkUpdate): new data.
         service (NetworkService): Service to inspect.
 
     Returns:

@@ -53,15 +53,27 @@ def test_create_private_extended(projects: list[UUID]) -> None:
     assert item.projects == [i.hex for i in projects]
 
 
-def test_invalid_create_private_extended() -> None:
+def test_invalid_create_private_extended(projects: list[UUID]) -> None:
     d = image_schema_dict()
     with pytest.raises(ValidationError):
         PrivateImageCreateExtended(**d)
+    with pytest.raises(ValidationError):
+        PrivateImageCreateExtended(**d, projects=projects, is_public=True)
 
 
-def test_create_shared_extended() -> None:
+def test_create_shared_extended(projects: list[UUID]) -> None:
     d = image_schema_dict()
     SharedImageCreateExtended(**d)
+    # Even if we pass projects they are discarded
+    item = SharedImageCreateExtended(**d, projects=projects)
+    with pytest.raises(AttributeError):
+        item.__getattribute__("projects")
+
+
+def test_invalid_create_shared_extended() -> None:
+    d = image_schema_dict()
+    with pytest.raises(ValidationError):
+        SharedImageCreateExtended(**d, is_public=False)
 
 
 def test_region_read_ext(provider_model: Provider, region_model: Region):

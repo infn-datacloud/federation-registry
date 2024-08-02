@@ -61,15 +61,17 @@ def test_invalid_create_private_extended(projects: list[UUID]) -> None:
         PrivateFlavorCreateExtended(**d, projects=projects, is_public=True)
 
 
-def test_create_shared_extended() -> None:
+def test_create_shared_extended(projects: list[UUID]) -> None:
     d = flavor_schema_dict()
     SharedFlavorCreateExtended(**d)
+    # Even if we pass projects they are discarded
+    item = SharedFlavorCreateExtended(**d, projects=projects)
+    with pytest.raises(AttributeError):
+        item.__getattribute__("projects")
 
 
-def test_invalid_create_shared_extended(projects: list[UUID]) -> None:
+def test_invalid_create_shared_extended() -> None:
     d = flavor_schema_dict()
-    with pytest.raises(ValidationError):
-        SharedFlavorCreateExtended(**d, projects=projects)
     with pytest.raises(ValidationError):
         SharedFlavorCreateExtended(**d, is_public=False)
 

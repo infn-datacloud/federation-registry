@@ -52,14 +52,28 @@ def test_create_private_extended() -> None:
 
 
 def test_invalid_create_private_extended() -> None:
+    project = uuid4()
     d = network_schema_dict()
     with pytest.raises(ValidationError):
         PrivateNetworkCreateExtended(**d)
+    with pytest.raises(ValidationError):
+        PrivateNetworkCreateExtended(**d, project=project, is_shared=True)
 
 
 def test_create_shared_extended() -> None:
+    project = uuid4()
     d = network_schema_dict()
     SharedNetworkCreateExtended(**d)
+    # Even if we pass projects they are discarded
+    item = SharedNetworkCreateExtended(**d, project=project)
+    with pytest.raises(AttributeError):
+        item.__getattribute__("projects")
+
+
+def test_invalid_create_shared_extended() -> None:
+    d = network_schema_dict()
+    with pytest.raises(ValidationError):
+        SharedNetworkCreateExtended(**d, is_shared=False)
 
 
 def test_region_read_ext(provider_model: Provider, region_model: Region):

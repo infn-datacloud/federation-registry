@@ -1,5 +1,4 @@
-from typing import Any, Optional
-from uuid import UUID
+from typing import Any
 
 import pytest
 from pytest_cases import parametrize_with_cases
@@ -11,7 +10,6 @@ from fed_reg.network.schemas import (
     NetworkRead,
     NetworkReadPublic,
 )
-from fed_reg.provider.schemas_extended import NetworkCreateExtended
 from tests.create_dict import network_schema_dict
 
 
@@ -43,12 +41,3 @@ def test_invalid_read(network_model: Network, key: str, value: str) -> None:
     network_model.__setattr__(key, value)
     with pytest.raises(ValueError):
         NetworkRead.from_orm(network_model)
-
-
-@parametrize_with_cases("project, msg", has_tag="create_extended")
-def test_invalid_create_extended(project: Optional[UUID], msg: str) -> None:
-    d = network_schema_dict()
-    d["is_shared"] = project is not None
-    d["project"] = project
-    with pytest.raises(ValueError, match=msg):
-        NetworkCreateExtended(**d)

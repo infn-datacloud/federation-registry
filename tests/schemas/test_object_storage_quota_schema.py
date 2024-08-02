@@ -38,9 +38,7 @@ def test_read_public(
 
 
 @parametrize_with_cases("key, value")
-def test_read(
-    object_store_quota_model: ObjectStoreQuota, key: str, value: Any
-) -> None:
+def test_read(object_store_quota_model: ObjectStoreQuota, key: str, value: Any) -> None:
     if key:
         object_store_quota_model.__setattr__(key, value)
     item = ObjectStoreQuotaRead.from_orm(object_store_quota_model)

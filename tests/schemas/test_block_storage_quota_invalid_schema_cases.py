@@ -14,4 +14,3 @@ class CaseInvalidAttr:
     @parametrize(value=(i for i in QuotaType if i != QuotaType.BLOCK_STORAGE))
     def case_type(self, value: QuotaType) -> tuple[Literal["type"], QuotaType]:
         return "type", value
-

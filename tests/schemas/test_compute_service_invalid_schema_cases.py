@@ -44,9 +44,10 @@ class CaseInvalidAttr:
     @parametrize(res=("flavors", "images"))
     def case_dup_res(
         self,
-        flavor_create_ext_schema: PrivateFlavorCreateExtended
+        shared_flavor_create_ext_schema: PrivateFlavorCreateExtended
         | SharedFlavorCreateExtended,
-        image_create_ext_schema: PrivateImageCreateExtended | SharedImageCreateExtended,
+        shared_image_create_ext_schema: PrivateImageCreateExtended
+        | SharedImageCreateExtended,
         attr: str,
         res: str,
     ) -> tuple[
@@ -55,7 +56,11 @@ class CaseInvalidAttr:
         | list[PrivateImageCreateExtended | SharedImageCreateExtended],
         str,
     ]:
-        item = flavor_create_ext_schema if res == "flavors" else image_create_ext_schema
+        item = (
+            shared_flavor_create_ext_schema
+            if res == "flavors"
+            else shared_image_create_ext_schema
+        )
         item2 = item.copy()
         if attr == "name":
             item2.uuid = uuid4()

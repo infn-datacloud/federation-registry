@@ -4,8 +4,9 @@ from uuid import uuid4
 from pytest_cases import case, parametrize
 
 from fed_reg.provider.schemas_extended import (
-    NetworkCreateExtended,
     NetworkQuotaCreateExtended,
+    PrivateNetworkCreateExtended,
+    SharedNetworkCreateExtended,
 )
 from fed_reg.service.enum import NetworkServiceName
 from tests.create_dict import network_schema_dict
@@ -54,14 +55,20 @@ class CaseAttr:
     @case(tags=["create_extended"])
     @parametrize(len=[0, 1, 2])
     def case_networks(
-        self, network_create_ext_schema: NetworkCreateExtended, len: int
-    ) -> tuple[Literal["networks"], list[NetworkCreateExtended]]:
+        self,
+        shared_network_create_ext_schema: PrivateNetworkCreateExtended
+        | SharedNetworkCreateExtended,
+        len: int,
+    ) -> tuple[
+        Literal["networks"],
+        list[PrivateNetworkCreateExtended | SharedNetworkCreateExtended],
+    ]:
         if len == 1:
-            return "networks", [network_create_ext_schema]
+            return "networks", [shared_network_create_ext_schema]
         elif len == 2:
             return "networks", [
-                network_create_ext_schema,
-                NetworkCreateExtended(**network_schema_dict()),
+                shared_network_create_ext_schema,
+                SharedNetworkCreateExtended(**network_schema_dict()),
             ]
         else:
             return "networks", []

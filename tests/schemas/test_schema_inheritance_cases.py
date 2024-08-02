@@ -41,11 +41,12 @@ from fed_reg.location.schemas import (
 from fed_reg.network.schemas import (
     NetworkBase,
     NetworkBasePublic,
-    NetworkCreate,
     NetworkQuery,
     NetworkRead,
     NetworkReadPublic,
     NetworkUpdate,
+    PrivateNetworkCreate,
+    SharedNetworkCreate,
 )
 from fed_reg.project.schemas import (
     ProjectBase,
@@ -349,8 +350,12 @@ class CaseClassInheritance:
         return LocationCreate, LocationBase
 
     @case(tags=["create"])
-    def case_network_create(self):
-        return NetworkCreate, NetworkBase
+    def case_private_network_create(self):
+        return PrivateNetworkCreate, NetworkBase
+
+    @case(tags=["create"])
+    def case_shared_network_create(self):
+        return SharedNetworkCreate, NetworkBase
 
     @case(tags=["create"])
     def case_project_create(self):

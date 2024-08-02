@@ -58,7 +58,7 @@ class CaseAttr:
     @parametrize(len=(0, 1, 2))
     def case_flavors(
         self,
-        flavor_create_ext_schema: PrivateFlavorCreateExtended
+        shared_flavor_create_ext_schema: PrivateFlavorCreateExtended
         | SharedFlavorCreateExtended,
         len: int,
     ) -> tuple[
@@ -66,10 +66,10 @@ class CaseAttr:
         list[PrivateFlavorCreateExtended | SharedFlavorCreateExtended],
     ]:
         if len == 1:
-            return "flavors", [flavor_create_ext_schema]
+            return "flavors", [shared_flavor_create_ext_schema]
         elif len == 2:
             return "flavors", [
-                flavor_create_ext_schema,
+                shared_flavor_create_ext_schema,
                 SharedFlavorCreateExtended(**flavor_schema_dict()),
             ]
         else:
@@ -79,16 +79,17 @@ class CaseAttr:
     @parametrize(len=(0, 1, 2))
     def case_images(
         self,
-        image_create_ext_schema: PrivateImageCreateExtended | SharedImageCreateExtended,
+        shared_image_create_ext_schema: PrivateImageCreateExtended
+        | SharedImageCreateExtended,
         len: int,
     ) -> tuple[
         Literal["images"], list[PrivateImageCreateExtended | SharedImageCreateExtended]
     ]:
         if len == 1:
-            return "images", [image_create_ext_schema]
+            return "images", [shared_image_create_ext_schema]
         elif len == 2:
             return "images", [
-                image_create_ext_schema,
+                shared_image_create_ext_schema,
                 SharedImageCreateExtended(**image_schema_dict()),
             ]
         else:

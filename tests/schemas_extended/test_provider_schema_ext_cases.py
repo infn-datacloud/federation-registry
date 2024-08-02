@@ -10,13 +10,13 @@ from fed_reg.provider.schemas_extended import (
     ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
     IdentityProviderCreateExtended,
-    NetworkCreateExtended,
     NetworkQuotaCreateExtended,
     NetworkServiceCreateExtended,
     ObjectStoreQuotaCreateExtended,
     ObjectStoreServiceCreateExtended,
     PrivateFlavorCreateExtended,
     PrivateImageCreateExtended,
+    PrivateNetworkCreateExtended,
     RegionCreateExtended,
     SLACreateExtended,
 )
@@ -212,7 +212,7 @@ class CaseAttr:
         if resource == "quotas":
             network_service_create_ext_schema.quotas = [network_quota_create_ext_schema]
         elif resource == "networks":
-            item = NetworkCreateExtended(
+            item = PrivateNetworkCreateExtended(
                 **network_schema_dict(), is_shared=False, project=uuid4()
             )
             network_service_create_ext_schema.networks = [item]
