@@ -3,7 +3,8 @@ from pytest_cases import case
 from fed_reg.flavor.schemas import (
     FlavorBase,
     FlavorBasePublic,
-    FlavorCreate,
+    PrivateFlavorCreate,
+    SharedFlavorCreate,
 )
 from fed_reg.flavor.schemas_extended import FlavorReadExtended, FlavorReadExtendedPublic
 from fed_reg.identity_provider.schemas import (
@@ -56,7 +57,6 @@ from fed_reg.provider.schemas_extended import (
     BlockStorageServiceCreateExtended,
     ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
-    FlavorCreateExtended,
     IdentityProviderCreateExtended,
     ImageCreateExtended,
     NetworkCreateExtended,
@@ -64,10 +64,12 @@ from fed_reg.provider.schemas_extended import (
     NetworkServiceCreateExtended,
     ObjectStoreQuotaCreateExtended,
     ObjectStoreServiceCreateExtended,
+    PrivateFlavorCreateExtended,
     ProviderCreateExtended,
     ProviderReadExtended,
     ProviderReadExtendedPublic,
     RegionCreateExtended,
+    SharedFlavorCreateExtended,
     SLACreateExtended,
     UserGroupCreateExtended,
 )
@@ -148,8 +150,12 @@ from fed_reg.user_group.schemas_extended import (
 
 class CaseClassInheritance:
     @case(tags=["create"])
-    def case_flavor_create(self):
-        return FlavorCreateExtended, FlavorCreate
+    def case_private_flavor_create(self):
+        return PrivateFlavorCreateExtended, PrivateFlavorCreate
+
+    @case(tags=["create"])
+    def case_shared_flavor_create(self):
+        return SharedFlavorCreateExtended, SharedFlavorCreate
 
     @case(tags=["create"])
     def case_identity_provider_create(self):

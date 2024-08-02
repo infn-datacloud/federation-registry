@@ -3,11 +3,12 @@ from pytest_cases import case
 from fed_reg.flavor.schemas import (
     FlavorBase,
     FlavorBasePublic,
-    FlavorCreate,
     FlavorQuery,
     FlavorRead,
     FlavorReadPublic,
     FlavorUpdate,
+    PrivateFlavorCreate,
+    SharedFlavorCreate,
 )
 from fed_reg.identity_provider.schemas import (
     IdentityProviderBase,
@@ -323,8 +324,12 @@ class CaseClassInheritance:
         return UserGroupBase, UserGroupBasePublic
 
     @case(tags=["create"])
-    def case_flavor_create(self):
-        return FlavorCreate, FlavorBase
+    def case_private_flavor_create(self):
+        return PrivateFlavorCreate, FlavorBase
+
+    @case(tags=["create"])
+    def case_shared_flavor_create(self):
+        return SharedFlavorCreate, FlavorBase
 
     @case(tags=["create"])
     def case_identity_provider_create(self):

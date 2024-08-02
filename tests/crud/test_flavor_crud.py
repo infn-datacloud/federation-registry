@@ -1,0 +1,278 @@
+from typing import Any
+
+import pytest
+from neomodel.exceptions import MultipleNodesReturned
+from pytest_cases import fixture, parametrize_with_cases
+
+from fed_reg.flavor.crud import CRUDFlavor, CRUDPrivateFlavor, CRUDSharedFlavor
+from fed_reg.flavor.models import PrivateFlavor, SharedFlavor
+from fed_reg.project.models import Project
+from fed_reg.provider.schemas_extended import (
+    PrivateFlavorCreateExtended,
+    SharedFlavorCreateExtended,
+)
+from fed_reg.service.models import ComputeService
+from tests.create_dict import flavor_model_dict, flavor_schema_dict, project_model_dict
+
+
+@fixture
+@parametrize_with_cases("key, value", has_tag="create")
+def flavor_create_dict(key: str, value: Any) -> dict[str, Any]:
+    d = flavor_schema_dict()
+    if key:
+        d[key] = value
+        if key.startswith("gpu_"):
+            d["gpus"] = 1
+    return d
+
+
+@fixture
+@parametrize_with_cases("key, value", has_tag="get_single")
+def flavor_get_dict(key: str, value: Any) -> dict[str, Any]:
+    d = flavor_schema_dict()
+    if key:
+        d[key] = value
+        if key.startswith("gpu_"):
+            d["gpus"] = 1
+    return d
+
+
+@parametrize_with_cases("mgr", has_tag=("manager", "shared"))
+def test_create_shared(
+    flavor_create_dict: dict[str, Any],
+    compute_service_model: ComputeService,
+    mgr: CRUDFlavor | CRUDSharedFlavor,
+) -> None:
+    flavor_schema = SharedFlavorCreateExtended(**flavor_create_dict)
+    item = mgr.create(obj_in=flavor_schema, service=compute_service_model)
+    assert isinstance(item, SharedFlavor)
+    assert item.uid is not None
+    assert item.description == flavor_schema.description
+    assert item.name == flavor_schema.name
+    assert item.uuid == flavor_schema.uuid
+    assert item.disk == flavor_schema.disk
+    assert item.ram == flavor_schema.ram
+    assert item.vcpus == flavor_schema.vcpus
+    assert item.swap == flavor_schema.swap
+    assert item.ephemeral == flavor_schema.ephemeral
+    assert item.infiniband == flavor_schema.infiniband
+    assert item.gpus == flavor_schema.gpus
+    assert item.gpu_model == flavor_schema.gpu_model
+    assert item.gpu_vendor == flavor_schema.gpu_vendor
+    assert item.local_storage == flavor_schema.local_storage
+    assert len(item.services.all()) == 1
+    assert item.services.single() == compute_service_model
+
+
+@parametrize_with_cases("mgr", has_tag=("manager", "private"))
+def test_create_private_single_project(
+    flavor_create_dict: dict[str, Any],
+    compute_service_model: ComputeService,
+    project_model: Project,
+    mgr: CRUDFlavor | CRUDPrivateFlavor,
+) -> None:
+    flavor_create_dict["projects"] = [project_model.uuid]
+    flavor_schema = PrivateFlavorCreateExtended(**flavor_create_dict)
+    item = mgr.create(
+        obj_in=flavor_schema, service=compute_service_model, projects=[project_model]
+    )
+    assert isinstance(item, PrivateFlavor)
+    assert item.uid is not None
+    assert item.description == flavor_schema.description
+    assert item.name == flavor_schema.name
+    assert item.uuid == flavor_schema.uuid
+    assert item.disk == flavor_schema.disk
+    assert item.ram == flavor_schema.ram
+    assert item.vcpus == flavor_schema.vcpus
+    assert item.swap == flavor_schema.swap
+    assert item.ephemeral == flavor_schema.ephemeral
+    assert item.infiniband == flavor_schema.infiniband
+    assert item.gpus == flavor_schema.gpus
+    assert item.gpu_model == flavor_schema.gpu_model
+    assert item.gpu_vendor == flavor_schema.gpu_vendor
+    assert item.local_storage == flavor_schema.local_storage
+    assert len(item.services.all()) == 1
+    assert item.services.single() == compute_service_model
+    assert len(item.projects.all()) == 1
+    assert item.projects.single() == project_model
+
+
+@parametrize_with_cases("mgr", has_tag=("manager", "private"))
+def test_create_private_multi_projects(
+    flavor_create_dict: dict[str, Any],
+    compute_service_model: ComputeService,
+    mgr: CRUDFlavor | CRUDPrivateFlavor,
+) -> None:
+    project_models = [
+        Project(**project_model_dict()).save(),
+        Project(**project_model_dict()).save(),
+    ]
+    flavor_create_dict["projects"] = [i.uuid for i in project_models]
+    flavor_schema = PrivateFlavorCreateExtended(**flavor_create_dict)
+    item = mgr.create(
+        obj_in=flavor_schema, service=compute_service_model, projects=project_models
+    )
+    assert isinstance(item, PrivateFlavor)
+    assert len(item.projects.all()) == 2
+
+
+@parametrize_with_cases("mgr", has_tag="manager")
+@parametrize_with_cases("key", has_tag="mandatory")
+def test_get_private_from_default_attr(
+    private_flavor_model: PrivateFlavor,
+    mgr: CRUDFlavor | CRUDSharedFlavor | CRUDPrivateFlavor,
+    key: str,
+) -> None:
+    kwargs = {key: private_flavor_model.__getattribute__(key)}
+    item = mgr.get(**kwargs)
+    if isinstance(mgr, CRUDSharedFlavor):
+        assert item is None
+    else:
+        assert isinstance(item, PrivateFlavor)
+        assert item.uid == private_flavor_model.uid
+
+
+@parametrize_with_cases("mgr", has_tag="manager")
+@parametrize_with_cases("key", has_tag="mandatory")
+def test_get_shared_from_default_attr(
+    shared_flavor_model: PrivateFlavor | SharedFlavor,
+    mgr: CRUDFlavor | CRUDSharedFlavor | CRUDPrivateFlavor,
+    key: str,
+) -> None:
+    kwargs = {key: shared_flavor_model.__getattribute__(key)}
+    item = mgr.get(**kwargs)
+    if isinstance(mgr, CRUDPrivateFlavor):
+        assert item is None
+    else:
+        assert isinstance(item, SharedFlavor)
+        assert item.uid == shared_flavor_model.uid
+
+
+@parametrize_with_cases("flavor_model", has_tag="model")
+@parametrize_with_cases("mgr", has_tag="manager")
+@parametrize_with_cases("key, value", has_tag="get_single")
+def test_get_none_because_not_matching(
+    flavor_model: PrivateFlavor | SharedFlavor,
+    mgr: CRUDFlavor | CRUDPrivateFlavor | CRUDSharedFlavor,
+    key: str,
+    value: Any,
+) -> None:
+    item = mgr.get(**{key: value})
+    assert item is None
+
+
+@parametrize_with_cases("mgr", has_tag=("manager", "private"))
+def test_get_private_err_multi_match(
+    private_flavor_model: PrivateFlavor, mgr: CRUDFlavor | CRUDPrivateFlavor
+) -> None:
+    PrivateFlavor(**flavor_model_dict()).save()
+    with pytest.raises(MultipleNodesReturned):
+        mgr.get()
+
+
+@parametrize_with_cases("mgr", has_tag=("manager", "shared"))
+def test_get_shared_err_multi_match(
+    shared_flavor_model: SharedFlavor, mgr: CRUDFlavor | CRUDSharedFlavor
+) -> None:
+    SharedFlavor(**flavor_model_dict()).save()
+    with pytest.raises(MultipleNodesReturned):
+        mgr.get()
+
+
+@parametrize_with_cases("mgr", has_tag=("manager", "shared"))
+def test_get_only_one_shared(
+    shared_flavor_model: SharedFlavor,
+    flavor_get_dict: dict[str, Any],
+    mgr: CRUDFlavor | CRUDSharedFlavor,
+    current_cases,
+) -> None:
+    key = current_cases["flavor_get_dict"]["key"].params["attr"]
+    value = flavor_get_dict[key]
+    flavor_model = SharedFlavor(**flavor_get_dict).save()
+    item = mgr.get(**{key: value})
+    assert isinstance(item, SharedFlavor)
+    assert item.uid == flavor_model.uid
+
+
+@parametrize_with_cases("mgr", has_tag=("manager", "private"))
+def test_get_only_one_private(
+    private_flavor_model: PrivateFlavor,
+    flavor_get_dict: dict[str, Any],
+    mgr: CRUDFlavor | CRUDPrivateFlavor,
+    current_cases,
+) -> None:
+    key = current_cases["flavor_get_dict"]["key"].params["attr"]
+    value = flavor_get_dict[key]
+    flavor_model = PrivateFlavor(**flavor_get_dict).save()
+    item = mgr.get(**{key: value})
+    assert isinstance(item, PrivateFlavor)
+    assert item.uid == flavor_model.uid
+
+
+@parametrize_with_cases("mgr", has_tag="manager")
+def test_get_multi_from_default_attr(
+    private_flavor_model: PrivateFlavor,
+    shared_flavor_model: SharedFlavor,
+    mgr: CRUDFlavor | CRUDPrivateFlavor | CRUDSharedFlavor,
+) -> None:
+    items = mgr.get_multi()
+    if isinstance(mgr, CRUDPrivateFlavor):
+        assert len(items) == 1
+        assert isinstance(items[0], PrivateFlavor)
+        assert items[0] == private_flavor_model
+    elif isinstance(mgr, CRUDSharedFlavor):
+        assert len(items) == 1
+        assert isinstance(items[0], SharedFlavor)
+        assert items[0] == shared_flavor_model
+    else:
+        assert len(items) == 2
+        assert (
+            isinstance(items[0], PrivateFlavor) and isinstance(items[1], SharedFlavor)
+        ) or (
+            isinstance(items[1], PrivateFlavor) and isinstance(items[0], SharedFlavor)
+        )
+
+
+@parametrize_with_cases("flavor_model", has_tag="model")
+@parametrize_with_cases("mgr", has_tag="manager")
+@parametrize_with_cases("key, value", has_tag="get_single")
+def test_get_empty_list_because_not_matching(
+    flavor_model: PrivateFlavor | SharedFlavor,
+    mgr: CRUDFlavor | CRUDPrivateFlavor | CRUDSharedFlavor,
+    key: str,
+    value: Any,
+) -> None:
+    items = mgr.get_multi(**{key: value})
+    assert len(items) == 0
+
+
+@parametrize_with_cases("mgr", has_tag=("manager", "private"))
+def test_get_only_one_private_from_multi(
+    private_flavor_model: PrivateFlavor,
+    flavor_get_dict: dict[str, Any],
+    mgr: CRUDFlavor | CRUDPrivateFlavor,
+    current_cases,
+) -> None:
+    key = current_cases["flavor_get_dict"]["key"].params["attr"]
+    value = flavor_get_dict[key]
+    flavor_model = PrivateFlavor(**flavor_get_dict).save()
+    items = mgr.get_multi(**{key: value})
+    assert len(items) == 1
+    assert isinstance(items[0], PrivateFlavor)
+    assert items[0].uid == flavor_model.uid
+
+
+@parametrize_with_cases("mgr", has_tag=("manager", "shared"))
+def test_get_only_one_shared_from_multi(
+    shared_flavor_model: SharedFlavor,
+    flavor_get_dict: dict[str, Any],
+    mgr: CRUDFlavor | CRUDSharedFlavor,
+    current_cases,
+) -> None:
+    key = current_cases["flavor_get_dict"]["key"].params["attr"]
+    value = flavor_get_dict[key]
+    flavor_model = SharedFlavor(**flavor_get_dict).save()
+    items = mgr.get_multi(**{key: value})
+    assert len(items) == 1
+    assert isinstance(items[0], SharedFlavor)
+    assert items[0].uid == flavor_model.uid

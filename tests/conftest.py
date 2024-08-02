@@ -24,7 +24,6 @@ from fed_reg.provider.schemas_extended import (
     BlockStorageServiceCreateExtended,
     ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
-    FlavorCreateExtended,
     IdentityProviderCreateExtended,
     ImageCreateExtended,
     NetworkCreateExtended,
@@ -32,8 +31,10 @@ from fed_reg.provider.schemas_extended import (
     NetworkServiceCreateExtended,
     ObjectStoreQuotaCreateExtended,
     ObjectStoreServiceCreateExtended,
+    PrivateFlavorCreateExtended,
     ProviderCreateExtended,
     RegionCreateExtended,
+    SharedFlavorCreateExtended,
     SLACreateExtended,
     UserGroupCreateExtended,
 )
@@ -344,8 +345,13 @@ def identity_service_create_schema() -> IdentityServiceCreate:
 
 
 @pytest.fixture
-def flavor_create_ext_schema() -> FlavorCreateExtended:
-    return FlavorCreateExtended(**flavor_schema_dict())
+def private_flavor_create_ext_schema() -> PrivateFlavorCreateExtended:
+    return PrivateFlavorCreateExtended(**flavor_schema_dict(), projects=[uuid4()])
+
+
+@pytest.fixture
+def shared_flavor_create_ext_schema() -> SharedFlavorCreateExtended:
+    return SharedFlavorCreateExtended(**flavor_schema_dict())
 
 
 @pytest.fixture

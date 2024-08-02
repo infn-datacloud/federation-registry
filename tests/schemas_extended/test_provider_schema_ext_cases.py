@@ -9,7 +9,6 @@ from fed_reg.provider.schemas_extended import (
     BlockStorageServiceCreateExtended,
     ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
-    FlavorCreateExtended,
     IdentityProviderCreateExtended,
     ImageCreateExtended,
     NetworkCreateExtended,
@@ -17,6 +16,7 @@ from fed_reg.provider.schemas_extended import (
     NetworkServiceCreateExtended,
     ObjectStoreQuotaCreateExtended,
     ObjectStoreServiceCreateExtended,
+    PrivateFlavorCreateExtended,
     RegionCreateExtended,
     SLACreateExtended,
 )
@@ -184,7 +184,7 @@ class CaseAttr:
         if resource == "quotas":
             compute_service_create_ext_schema.quotas = [compute_quota_create_ext_schema]
         elif resource == "flavors":
-            item = FlavorCreateExtended(
+            item = PrivateFlavorCreateExtended(
                 **flavor_schema_dict(), is_public=False, projects=[uuid4()]
             )
             compute_service_create_ext_schema.flavors = [item]

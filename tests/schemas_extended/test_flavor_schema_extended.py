@@ -53,15 +53,25 @@ def test_create_private_extended(projects: list[UUID]) -> None:
     assert item.projects == [i.hex for i in projects]
 
 
-def test_invalid_create_private_extended() -> None:
+def test_invalid_create_private_extended(projects: list[UUID]) -> None:
     d = flavor_schema_dict()
     with pytest.raises(ValidationError):
         PrivateFlavorCreateExtended(**d)
+    with pytest.raises(ValidationError):
+        PrivateFlavorCreateExtended(**d, projects=projects, is_public=True)
 
 
 def test_create_shared_extended() -> None:
     d = flavor_schema_dict()
     SharedFlavorCreateExtended(**d)
+
+
+def test_invalid_create_shared_extended(projects: list[UUID]) -> None:
+    d = flavor_schema_dict()
+    with pytest.raises(ValidationError):
+        SharedFlavorCreateExtended(**d, projects=projects)
+    with pytest.raises(ValidationError):
+        SharedFlavorCreateExtended(**d, is_public=False)
 
 
 def test_region_read_ext(provider_model: Provider, region_model: Region):
