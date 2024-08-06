@@ -10,6 +10,7 @@ from neomodel import (
 )
 
 from fed_reg.auth_method.models import AuthMethod
+from fed_reg.provider.enum import ProviderStatus
 
 
 class Provider(StructuredNode):
@@ -40,7 +41,7 @@ class Provider(StructuredNode):
     description = StringProperty(default="")
     name = StringProperty(required=True)
     type = StringProperty(required=True)
-    status = StringProperty()
+    status = StringProperty(default=ProviderStatus.ACTIVE.value)
     is_public = BooleanProperty(default=False)
     support_emails = ArrayProperty(StringProperty(), default=[])
 

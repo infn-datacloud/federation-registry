@@ -12,7 +12,7 @@ class CaseAttr:
 
     @case(tags=("attr", "optional", "base_public", "base", "update"))
     @parametrize(value=("description",))
-    def case_base_public_optional(self, value: str) -> str:
+    def case_description(self, value: str) -> str:
         return value
 
     @case(tags=("attr", "optional", "base", "update"))
@@ -33,26 +33,37 @@ class CaseAttr:
     def case_optional(self, value: str) -> str:
         return value
 
-    @case(tags=("attr", "create"))
+    @case(tags=("attr", "read"))
     @parametrize(value=("is_shared", "is_private"))
     def case_visibility(self, value: str) -> str:
         return value
 
 
 class CaseInvalidAttr:
-    @case(tags=("invalid_attr", "base_public", "base"))
+    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
     @parametrize(value=("name", "uuid"))
-    def case_mandatory_attr(self, value: str) -> str:
+    def case_missing_mandatory(self, value: str) -> str:
         return value
 
-    @case(tags=("invalid_attr", "base", "update"))
-    @parametrize(value=("disk", "ram", "vcpus", "swap", "ephemeral", "gpus"))
-    def case_integer(self, value: str) -> str:
+    @case(tags=("invalid_attr", "read_public", "read"))
+    @parametrize(value=("uid",))
+    def case_missing_uid(self, value: str) -> str:
         return value
 
-    @case(tags=("invalid_attr", "base", "update"))
-    @parametrize(value=("gpu_model", "gpu_vendor"))
-    def case_gpu_details(self, value: str) -> str:
+    @case(tags=("invalid_attr", "base", "update", "read"))
+    @parametrize(
+        value=(
+            "disk",
+            "ram",
+            "vcpus",
+            "swap",
+            "ephemeral",
+            "gpus",
+            "gpu_model",
+            "gpu_vendor",
+        )
+    )
+    def case_optional(self, value: str) -> str:
         return value
 
 

@@ -147,3 +147,13 @@ def random_service_name(enum_cls: Enum) -> Any:
 
 def random_image_os_type() -> ImageOS:
     return choice([i for i in ImageOS])
+
+
+def random_date_before(end_date: date):
+    timestamp = int(time.mktime(end_date.timetuple()))
+    return date.fromtimestamp(randrange(0, timestamp))
+
+
+def random_date_after(start_date: date):
+    timestamp = int(time.mktime(start_date.timetuple()))
+    return date.fromtimestamp(randrange(timestamp * 2, timestamp * 3))

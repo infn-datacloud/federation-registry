@@ -1,55 +1,84 @@
-from random import randint
-from typing import Literal, Optional
-
 from pytest_cases import case, parametrize
 
 from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
-from tests.utils import random_lower_string
+from fed_reg.network.schemas import (
+    NetworkBase,
+    PrivateNetworkCreate,
+    SharedNetworkCreate,
+)
 
 
 class CaseAttr:
-    @case(tags=["base_public", "base", "update"])
-    def case_none(self) -> tuple[None, None]:
-        return None, None
+    @case(tags=("attr", "mandatory", "base_public", "base", "update"))
+    @parametrize(value=("name", "uuid"))
+    def case_mandatory(self, value: str) -> str:
+        return value
 
-    @case(tags=["update"])
-    @parametrize(attr=["name", "uuid"])
-    def case_attr(self, attr: str) -> tuple[str, None]:
-        return attr, None
+    @case(tags=("attr", "optional", "base_public", "base", "update"))
+    @parametrize(value=("description",))
+    def case_description(self, value: str) -> str:
+        return value
 
-    @case(tags=["base_public", "base"])
-    def case_desc(self) -> tuple[Literal["description"], str]:
-        return "description", random_lower_string()
+    @case(tags=("attr", "optional", "base", "update"))
+    @parametrize(
+        value=(
+            "is_router_external",
+            "is_default",
+            "mtu",
+            "proxy_host",
+            "proxy_user",
+            "tags",
+        )
+    )
+    def case_optional(self, value: str) -> str:
+        return value
 
-    @case(tags=["base"])
-    @parametrize(attr=("mtu"))
-    def case_integer(self, attr: str) -> tuple[str, int]:
-        return attr, randint(0, 100)
+    @case(tags=("attr", "read"))
+    @parametrize(value=("is_shared", "is_private"))
+    def case_visibility(self, value: str) -> str:
+        return value
 
-    @case(tags=["base"])
-    @parametrize(value=(True, False))
-    @parametrize(attr=["is_router_external", "is_default"])
-    def case_boolean(self, attr: str, value: bool) -> tuple[str, bool]:
-        return attr, value
 
-    @case(tags=["base"])
-    @parametrize(attr=("proxy_host", "proxy_user"))
-    def case_string(self, attr: str) -> tuple[str, str]:
-        return attr, random_lower_string()
+class CaseInvalidAttr:
+    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
+    @parametrize(value=("name", "uuid"))
+    def case_missing_mandatory(self, value: str) -> str:
+        return value
 
-    @case(tags=["base"])
-    @parametrize(len=(0, 1, 2))
-    def case_tag_list(self, len: int) -> tuple[Literal["tags"], Optional[list[str]]]:
-        return "tags", [random_lower_string() for _ in range(len)]
+    @case(tags=("invalid_attr", "read_public", "read"))
+    @parametrize(value=("uid",))
+    def case_missing_uid(self, value: str) -> str:
+        return value
 
-    @case(tags=["model"])
-    def case_private_model(self, private_network_model: PrivateNetwork):
-        return private_network_model
+    @case(tags=("invalid_attr", "base", "update", "read"))
+    @parametrize(value=("mtu",))
+    def case_optional(self, value: str) -> str:
+        return value
 
-    @case(tags=["model"])
-    def case_shared_model(self, shared_network_model: SharedNetwork):
-        return shared_network_model
 
-    @case(tags=["model"])
-    def case_model(self, network_model: Network):
-        return network_model
+class CaseClass:
+    @case(tags="class")
+    def case_base_class(self) -> type[NetworkBase]:
+        return NetworkBase
+
+    @case(tags="class")
+    def case_private_class(self) -> type[PrivateNetworkCreate]:
+        return PrivateNetworkCreate
+
+    @case(tags="class")
+    def case_shared_class(self) -> type[SharedNetworkCreate]:
+        return SharedNetworkCreate
+
+
+class CaseModel:
+    @case(tags="model")
+    def case_private_network(self) -> type[PrivateNetwork]:
+        return PrivateNetwork
+
+    @case(tags="model")
+    def case_shared_network(self) -> type[SharedNetwork]:
+        return SharedNetwork
+
+    @case(tags="model")
+    def case_network(self) -> type[Network]:
+        return Network

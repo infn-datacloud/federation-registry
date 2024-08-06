@@ -1,55 +1,77 @@
-from typing import Literal, Optional
-
 from pytest_cases import case, parametrize
 
-from fed_reg.image.enum import ImageOS
 from fed_reg.image.models import Image, PrivateImage, SharedImage
-from tests.utils import random_lower_string
+from fed_reg.image.schemas import ImageBase, PrivateImageCreate, SharedImageCreate
 
 
 class CaseAttr:
-    @case(tags=["base_public", "base", "update"])
-    def case_none(self) -> tuple[None, None]:
-        return None, None
+    @case(tags=("attr", "mandatory", "base_public", "base", "update"))
+    @parametrize(value=("name", "uuid"))
+    def case_mandatory(self, value: str) -> str:
+        return value
 
-    @case(tags=["update"])
-    @parametrize(attr=["name", "uuid"])
-    def case_attr(self, attr: str) -> tuple[str, None]:
-        return attr, None
+    @case(tags=("attr", "optional", "base_public", "base", "update"))
+    @parametrize(value=("description",))
+    def case_description(self, value: str) -> str:
+        return value
 
-    @case(tags=["base_public", "base"])
-    def case_desc(self) -> tuple[Literal["description"], str]:
-        return "description", random_lower_string()
+    @case(tags=("attr", "optional", "base", "update"))
+    @parametrize(
+        value=(
+            "os_type",
+            "os_distro",
+            "os_version",
+            "architecture",
+            "kernel_id",
+            "cuda_support",
+            "gpu_driver",
+            "tags",
+        )
+    )
+    def case_optional(self, value: str) -> str:
+        return value
 
-    @case(tags=["base"])
-    @parametrize(value=[True, False])
-    @parametrize(attr=["cuda_support", "gpu_driver"])
-    def case_boolean(self, attr: str, value: bool) -> tuple[str, bool]:
-        return attr, value
+    @case(tags=("attr", "read"))
+    @parametrize(value=("is_shared", "is_private"))
+    def case_visibility(self, value: str) -> str:
+        return value
 
-    @case(tags=["base"])
-    @parametrize(attr=["os_distro", "os_version", "architecture", "kernel_id"])
-    def case_string(self, attr: str) -> tuple[str, str]:
-        return attr, random_lower_string()
 
-    @case(tags=["base"])
-    @parametrize(value=[i for i in ImageOS])
-    def case_os_type(self, value: str) -> tuple[Literal["os_type"], ImageOS]:
-        return "os_type", value
+class CaseInvalidAttr:
+    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
+    @parametrize(value=("name", "uuid"))
+    def case_missing_mandatory(self, value: str) -> str:
+        return value
 
-    @case(tags=["base"])
-    @parametrize(len=(0, 1, 2))
-    def case_tag_list(self, len: int) -> tuple[Literal["tags"], Optional[list[str]]]:
-        return "tags", [random_lower_string() for _ in range(len)]
+    @case(tags=("invalid_attr", "read_public", "read"))
+    @parametrize(value=("uid",))
+    def case_missing_uid(self, value: str) -> str:
+        return value
 
-    @case(tags=["model"])
-    def case_private_model(self, private_image_model: PrivateImage):
-        return private_image_model
 
-    @case(tags=["model"])
-    def case_shared_model(self, shared_image_model: SharedImage):
-        return shared_image_model
+class CaseClass:
+    @case(tags="class")
+    def case_base_class(self) -> type[ImageBase]:
+        return ImageBase
 
-    @case(tags=["model"])
-    def case_model(self, image_model: Image):
-        return image_model
+    @case(tags="class")
+    def case_private_class(self) -> type[PrivateImageCreate]:
+        return PrivateImageCreate
+
+    @case(tags="class")
+    def case_shared_class(self) -> type[SharedImageCreate]:
+        return SharedImageCreate
+
+
+class CaseModel:
+    @case(tags="model")
+    def case_private_image(self) -> type[PrivateImage]:
+        return PrivateImage
+
+    @case(tags="model")
+    def case_shared_image(self) -> type[SharedImage]:
+        return SharedImage
+
+    @case(tags="model")
+    def case_image(self) -> type[Image]:
+        return Image

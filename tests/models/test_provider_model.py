@@ -5,6 +5,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.auth_method.models import AuthMethod
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.project.models import Project
+from fed_reg.provider.enum import ProviderStatus
 from fed_reg.provider.models import Provider
 from fed_reg.region.models import Region
 from tests.create_dict import (
@@ -26,7 +27,7 @@ def test_provider_attr(attr: str) -> None:
     assert item.description == d.get("description", "")
     assert item.name == d.get("name")
     assert item.type == d.get("type")
-    assert item.status is d.get("status", None)
+    assert item.status is d.get("status", ProviderStatus.ACTIVE.value)
     assert item.is_public is d.get("is_public", False)
     assert item.support_emails == d.get("support_emails", [])
 

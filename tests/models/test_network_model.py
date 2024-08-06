@@ -12,11 +12,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.project.models import Project
 from fed_reg.service.models import NetworkService
-from tests.create_dict import (
-    network_model_dict,
-    network_service_model_dict,
-    project_model_dict,
-)
+from tests.create_dict import network_model_dict, project_model_dict, service_model_dict
 
 
 @parametrize_with_cases("network_cls", has_tag=("class", "derived"))
@@ -130,9 +126,9 @@ def test_multiple_linked_services_error(
     AttemptCardinalityViolation error.
     Execute this test on Network, PrivateNetwork and SharedNetwork.
     """
-    item = NetworkService(**network_service_model_dict()).save()
+    item = NetworkService(**service_model_dict()).save()
     network_model.service.connect(item)
-    item = NetworkService(**network_service_model_dict()).save()
+    item = NetworkService(**service_model_dict()).save()
     with pytest.raises(AttemptedCardinalityViolation):
         network_model.service.connect(item)
 

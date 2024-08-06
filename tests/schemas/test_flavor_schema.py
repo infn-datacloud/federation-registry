@@ -34,10 +34,12 @@ def test_classes_inheritance() -> None:
     assert issubclass(FlavorReadPublic, BaseNodeRead)
     assert issubclass(FlavorReadPublic, BaseReadPublic)
     assert issubclass(FlavorReadPublic, FlavorBasePublic)
+    assert FlavorReadPublic.__config__.orm_mode
 
     assert issubclass(FlavorRead, BaseNodeRead)
     assert issubclass(FlavorRead, BaseReadPrivate)
     assert issubclass(FlavorRead, FlavorBase)
+    assert FlavorRead.__config__.orm_mode
 
     assert issubclass(PrivateFlavorCreate, FlavorBase)
     assert issubclass(PrivateFlavorCreate, BaseNodeCreate)
@@ -56,11 +58,18 @@ def test_base_public(attr: str) -> None:
     assert item.uuid == d.get("uuid").hex
 
 
+@parametrize_with_cases("flavor_cls", has_tag="class")
 @parametrize_with_cases("attr", has_tag=("attr", "base"))
-def test_base(attr: str) -> None:
-    """Test FalvorBase and FlavorUpdate class' attribute values."""
+def test_base(
+    flavor_cls: type[FlavorBase] | type[PrivateFlavorCreate] | type[SharedFlavorCreate],
+    attr: str,
+) -> None:
+    """Test class' attribute values.
+
+    Execute this test on FlavorBase, PrivateFlavorCreate and SharedFlavorCreate.
+    """
     d = flavor_schema_dict(attr)
-    item = FlavorBase(**d)
+    item = flavor_cls(**d)
     assert item.description == d.get("description", "")
     assert item.name == d.get("name")
     assert item.uuid == d.get("uuid").hex
@@ -76,45 +85,15 @@ def test_base(attr: str) -> None:
     assert item.local_storage == d.get("local_storage", None)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
-def test_create_private(attr: str) -> None:
+def test_create_private() -> None:
     """Test PrivateFlavorCreate class' attribute values."""
-    d = flavor_schema_dict(attr)
-    item = PrivateFlavorCreate(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid").hex
-    assert item.disk == d.get("disk", 0)
-    assert item.ram == d.get("ram", 0)
-    assert item.vcpus == d.get("vcpus", 0)
-    assert item.swap == d.get("swap", 0)
-    assert item.ephemeral == d.get("ephemeral", 0)
-    assert item.gpus == d.get("gpus", 0)
-    assert item.infiniband == d.get("infiniband", False)
-    assert item.gpu_model == d.get("gpu_model", None)
-    assert item.gpu_vendor == d.get("gpu_vendor", None)
-    assert item.local_storage == d.get("local_storage", None)
+    item = PrivateFlavorCreate(**flavor_schema_dict())
     assert item.is_public is False
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
-def test_create_shared(attr: str) -> None:
+def test_create_shared() -> None:
     """Test SharedFlavorCreate class' attribute values."""
-    d = flavor_schema_dict(attr)
-    item = SharedFlavorCreate(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid").hex
-    assert item.disk == d.get("disk", 0)
-    assert item.ram == d.get("ram", 0)
-    assert item.vcpus == d.get("vcpus", 0)
-    assert item.swap == d.get("swap", 0)
-    assert item.ephemeral == d.get("ephemeral", 0)
-    assert item.gpus == d.get("gpus", 0)
-    assert item.infiniband == d.get("infiniband", False)
-    assert item.gpu_model == d.get("gpu_model", None)
-    assert item.gpu_vendor == d.get("gpu_vendor", None)
-    assert item.local_storage == d.get("local_storage", None)
+    item = SharedFlavorCreate(**flavor_schema_dict())
     assert item.is_public is True
 
 
@@ -125,7 +104,7 @@ def test_update(attr: str) -> None:
     item = FlavorUpdate(**d)
     assert item.description == d.get("description", "")
     assert item.name == d.get("name", None)
-    assert item.uuid == (d.get("uuid").hex if d.get("uuid") else None)
+    assert item.uuid == (d.get("uuid").hex if d.get("uuid", None) else None)
     assert item.disk == d.get("disk", 0)
     assert item.ram == d.get("ram", 0)
     assert item.vcpus == d.get("vcpus", 0)
@@ -180,7 +159,7 @@ def test_read(attr: str) -> None:
 @parametrize_with_cases("flavor_cls", has_tag="model")
 @parametrize_with_cases("attr", has_tag=("attr", "base_public"))
 def test_read_public_from_orm(
-    flavor_cls: Flavor | PrivateFlavor | SharedFlavor, attr: str
+    flavor_cls: type[Flavor] | type[PrivateFlavor] | type[SharedFlavor], attr: str
 ) -> None:
     """Use the from_orm function of FlavorReadPublic to read data from an ORM."""
     model = flavor_cls(**flavor_model_dict(attr)).save()
@@ -195,7 +174,7 @@ def test_read_public_from_orm(
 @parametrize_with_cases("flavor_cls", has_tag="model")
 @parametrize_with_cases("attr", has_tag=("attr", "base"))
 def test_read_from_orm(
-    flavor_cls: Flavor | PrivateFlavor | SharedFlavor, attr: str
+    flavor_cls: type[Flavor] | type[PrivateFlavor] | type[SharedFlavor], attr: str
 ) -> None:
     """Use the from_orm function of FlavorRead to read data from an ORM."""
     model = flavor_cls(**flavor_model_dict(attr)).save()
@@ -231,7 +210,8 @@ def test_invalid_base_public(attr: str) -> None:
 @parametrize_with_cases("flavor_cls", has_tag="class")
 @parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
 def test_invalid_base(
-    flavor_cls: FlavorBase | PrivateFlavorCreate | SharedFlavorCreate, attr: str
+    flavor_cls: type[FlavorBase] | type[PrivateFlavorCreate] | type[SharedFlavorCreate],
+    attr: str,
 ) -> None:
     """Test invalid attributes for base and create.
 
@@ -256,14 +236,14 @@ def test_invalid_create_visibility() -> None:
         SharedFlavorCreate(**flavor_schema_dict(), is_public=False)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
+@parametrize_with_cases("attr", has_tag=("invalid_attr", "read_public"))
 def test_invalid_read_public(attr: str) -> None:
     """Test invalid attributes for FlavorReadPublic."""
     with pytest.raises(ValueError):
         FlavorReadPublic(**flavor_schema_dict(attr, valid=False, read=True))
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
+@parametrize_with_cases("attr", has_tag=("invalid_attr", "read"))
 def test_invalid_read(attr: str) -> None:
     """Test invalid attributes for FlavorRead."""
     with pytest.raises(ValueError):
