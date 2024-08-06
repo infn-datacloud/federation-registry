@@ -6,8 +6,8 @@ from fed_reg.auth_method.models import AuthMethod
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.provider.models import Provider
 from fed_reg.user_group.models import UserGroup
-from tests.create_dict import (
-    auth_method_dict,
+from tests.models.utils import (
+    auth_method_model_dict,
     identity_provider_model_dict,
     provider_model_dict,
     user_group_model_dict,
@@ -81,7 +81,7 @@ def test_single_linked_provider(
 
     Connect a single Provider to an IdentityProvider.
     """
-    d = auth_method_dict()
+    d = auth_method_model_dict()
     r = identity_provider_model.providers.connect(provider_model, d)
     assert isinstance(r, AuthMethod)
     assert r.idp_name == d["idp_name"]
@@ -99,9 +99,9 @@ def test_multiple_linked_providers(identity_provider_model: IdentityProvider) ->
     Connect a multiple Provider to a IdentityProvider.
     """
     item = Provider(**provider_model_dict()).save()
-    identity_provider_model.providers.connect(item, auth_method_dict())
+    identity_provider_model.providers.connect(item, auth_method_model_dict())
     item = Provider(**provider_model_dict()).save()
-    identity_provider_model.providers.connect(item, auth_method_dict())
+    identity_provider_model.providers.connect(item, auth_method_model_dict())
     assert len(identity_provider_model.providers.all()) == 2
 
 

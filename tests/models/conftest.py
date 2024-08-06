@@ -27,7 +27,7 @@ from fed_reg.service.models import (
 )
 from fed_reg.sla.models import SLA
 from fed_reg.user_group.models import UserGroup
-from tests.create_dict import (
+from tests.models.utils import (
     flavor_model_dict,
     identity_provider_model_dict,
     image_model_dict,

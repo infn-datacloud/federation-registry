@@ -6,7 +6,7 @@ from fed_reg.quota.models import (
     NetworkQuota,
     ObjectStoreQuota,
 )
-from tests.create_dict import quota_model_dict
+from tests.models.utils import quota_model_dict
 
 
 class CaseAttr:

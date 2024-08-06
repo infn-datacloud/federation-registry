@@ -17,7 +17,8 @@ from fed_reg.models import (
     BaseReadPrivate,
     BaseReadPublic,
 )
-from tests.create_dict import location_model_dict, location_schema_dict
+from tests.models.utils import location_model_dict
+from tests.schemas.utils import location_schema_dict
 
 
 def test_classes_inheritance() -> None:

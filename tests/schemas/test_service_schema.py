@@ -4,7 +4,7 @@ import pytest
 from pytest_cases import parametrize, parametrize_with_cases
 
 from fed_reg.service.schemas import ServiceBase
-from tests.create_dict import service_schema_dict
+from tests.schemas.utils import service_schema_dict
 from tests.utils import random_lower_string
 
 

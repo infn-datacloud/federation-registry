@@ -19,7 +19,8 @@ from fed_reg.network.schemas import (
     PrivateNetworkCreate,
     SharedNetworkCreate,
 )
-from tests.create_dict import network_model_dict, network_schema_dict
+from tests.models.utils import network_model_dict
+from tests.schemas.utils import network_schema_dict
 
 
 def test_classes_inheritance():

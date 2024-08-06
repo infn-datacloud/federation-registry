@@ -12,7 +12,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.project.models import Project
 from fed_reg.sla.models import SLA
 from fed_reg.user_group.models import UserGroup
-from tests.create_dict import project_model_dict, sla_model_dict, user_group_model_dict
+from tests.models.utils import project_model_dict, sla_model_dict, user_group_model_dict
 
 
 @parametrize_with_cases("attr", has_tag="attr")

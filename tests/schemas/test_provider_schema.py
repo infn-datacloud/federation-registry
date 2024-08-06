@@ -18,7 +18,8 @@ from fed_reg.provider.schemas import (
     ProviderReadPublic,
     ProviderUpdate,
 )
-from tests.create_dict import provider_model_dict, provider_schema_dict
+from tests.models.utils import provider_model_dict
+from tests.schemas.utils import provider_schema_dict
 
 
 def test_classes_inheritance() -> None:

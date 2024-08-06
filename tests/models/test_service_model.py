@@ -28,7 +28,7 @@ from fed_reg.service.models import (
     ObjectStoreService,
     Service,
 )
-from tests.create_dict import quota_model_dict, region_model_dict, service_model_dict
+from tests.models.utils import quota_model_dict, region_model_dict, service_model_dict
 
 
 @parametrize_with_cases("service_cls", has_tag=("class", "derived"))

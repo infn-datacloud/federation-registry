@@ -17,7 +17,8 @@ from fed_reg.region.schemas import (
     RegionReadPublic,
     RegionUpdate,
 )
-from tests.create_dict import region_model_dict, region_schema_dict
+from tests.models.utils import region_model_dict
+from tests.schemas.utils import region_schema_dict
 
 
 def test_classes_inheritance() -> None:

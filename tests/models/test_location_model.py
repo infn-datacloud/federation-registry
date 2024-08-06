@@ -4,7 +4,7 @@ from pytest_cases import parametrize_with_cases
 
 from fed_reg.location.models import Location
 from fed_reg.region.models import Region
-from tests.create_dict import location_model_dict, region_model_dict
+from tests.models.utils import location_model_dict, region_model_dict
 
 
 @parametrize_with_cases("attr", has_tag="attr")

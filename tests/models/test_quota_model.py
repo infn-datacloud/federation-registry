@@ -23,7 +23,7 @@ from fed_reg.service.models import (
     NetworkService,
     ObjectStoreService,
 )
-from tests.create_dict import project_model_dict, quota_model_dict, service_model_dict
+from tests.models.utils import project_model_dict, quota_model_dict, service_model_dict
 
 
 @parametrize_with_cases("quota_cls", has_tag=("class", "derived"))

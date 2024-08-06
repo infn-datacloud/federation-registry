@@ -7,7 +7,7 @@ from fed_reg.service.models import (
     NetworkService,
     ObjectStoreService,
 )
-from tests.create_dict import service_model_dict
+from tests.models.utils import service_model_dict
 
 
 class CaseAttr:

@@ -9,7 +9,7 @@ from fed_reg.provider.schemas_extended import (
 )
 from fed_reg.service.models import ComputeService
 from fed_reg.service.schemas import ComputeServiceBase, ComputeServiceRead
-from tests.create_dict import compute_service_schema_dict
+from tests.schemas.utils import compute_service_schema_dict
 
 
 @parametrize_with_cases("key, value", has_tag="base")

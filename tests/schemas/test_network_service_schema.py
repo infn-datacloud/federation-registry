@@ -16,7 +16,7 @@ from fed_reg.service.schemas import (
     NetworkServiceReadPublic,
     NetworkServiceUpdate,
 )
-from tests.create_dict import network_service_schema_dict
+from tests.schemas.utils import network_service_schema_dict
 
 
 @parametrize_with_cases("key, value", has_tag="base")

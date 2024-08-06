@@ -11,7 +11,7 @@ from fed_reg.provider.schemas_extended import (
     SharedImageCreateExtended,
 )
 from fed_reg.service.enum import ComputeServiceName
-from tests.create_dict import flavor_schema_dict, image_schema_dict
+from tests.schemas.utils import flavor_schema_dict, image_schema_dict
 from tests.utils import random_lower_string
 
 

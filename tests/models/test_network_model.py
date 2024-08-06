@@ -12,7 +12,11 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.project.models import Project
 from fed_reg.service.models import NetworkService
-from tests.create_dict import network_model_dict, project_model_dict, service_model_dict
+from tests.models.utils import (
+    network_model_dict,
+    project_model_dict,
+    service_model_dict,
+)
 
 
 @parametrize_with_cases("network_cls", has_tag=("class", "derived"))

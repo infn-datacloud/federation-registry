@@ -19,7 +19,8 @@ from fed_reg.models import (
     BaseReadPrivate,
     BaseReadPublic,
 )
-from tests.create_dict import flavor_model_dict, flavor_schema_dict
+from tests.models.utils import flavor_model_dict
+from tests.schemas.utils import flavor_schema_dict
 
 
 def test_classes_inheritance() -> None:

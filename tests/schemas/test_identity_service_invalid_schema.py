@@ -5,7 +5,7 @@ from pytest_cases import parametrize_with_cases
 
 from fed_reg.service.models import IdentityService
 from fed_reg.service.schemas import IdentityServiceBase, IdentityServiceRead
-from tests.create_dict import identity_service_schema_dict
+from tests.schemas.utils import identity_service_schema_dict
 
 
 @parametrize_with_cases("key, value")

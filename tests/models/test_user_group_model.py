@@ -12,7 +12,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.sla.models import SLA
 from fed_reg.user_group.models import UserGroup
-from tests.create_dict import (
+from tests.models.utils import (
     identity_provider_model_dict,
     sla_model_dict,
     user_group_model_dict,

@@ -20,7 +20,7 @@ from fed_reg.service.models import (
     ObjectStoreService,
     Service,
 )
-from tests.create_dict import (
+from tests.models.utils import (
     location_model_dict,
     provider_model_dict,
     region_model_dict,

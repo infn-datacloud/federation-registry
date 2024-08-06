@@ -1,142 +1,127 @@
-from random import randint
-from typing import Any, Literal, Optional
-
 import pytest
-from pytest_cases import parametrize, parametrize_with_cases
+from pytest_cases import parametrize_with_cases
 
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
-
-
-class CaseSchemaSizeAttr:
-    @parametrize(key=["short", "with_conn"])
-    def case_key(self, key: str) -> str:
-        return key
-
-
-class CasePaginationAttr:
-    @parametrize(key=["page", "size"])
-    def case_key(self, key: str) -> str:
-        return key
-
-
-class CasePaginationInvalidAttr:
-    @parametrize(value=[None, -1])
-    def case_page(self, value: Optional[int]) -> tuple[Literal["page"], Optional[int]]:
-        return "page", value
-
-    @parametrize(value=[-1, 0])
-    def case_size(self, value: Optional[int]) -> tuple[Literal["size"], Optional[int]]:
-        return "size", value
+from fed_reg.query import (
+    DbQueryCommonParams,
+    Pagination,
+    SchemaSize,
+    create_query_model,
+)
+from tests.schemas.utils import (
+    TestModelBool,
+    TestModelDate,
+    TestModelDateTime,
+    TestModelEnum,
+    TestModelFloat,
+    TestModelInt,
+    TestModelStr,
+    db_query_schema_dict,
+    pagination_schema_dict,
+    schema_size_schema_dict,
+)
+from tests.utils import random_lower_string
 
 
-class CaseDbQueryAttr:
-    def case_skip(self) -> tuple[Literal["skip"], int]:
-        return "skip", randint(0, 100)
-
-    def case_limit(self) -> tuple[Literal["limit"], int]:
-        return "limit", randint(0, 100)
-
-    @parametrize(key=["limit", "sort"])
-    def case_none(self, key: str) -> tuple[str, None]:
-        return key, None
-
-
-class CaseSort:
-    @parametrize(value=["test", "test_asc"])
-    def case_sort_asc(self, value: str) -> tuple[str]:
-        return value, "test"
-
-    @parametrize(value=["test_desc", "-test", "-test_desc"])
-    def case_sort_desc(self, value: str) -> tuple[str]:
-        return value, "-test"
-
-
-class CaseDbQueryInvalidAttr:
-    @parametrize(value=[None, -1])
-    def case_skip(self, value) -> tuple[Literal["skip"], Optional[int]]:
-        return "skip", value
-
-    def case_limit(self) -> tuple[Literal["limit"], int]:
-        return "limit", -1
-
-
-def test_default_schema() -> None:
-    item = SchemaSize()
-    assert item.short is not None
-    assert not item.short
-    assert item.with_conn is not None
-    assert not item.with_conn
-
-
-@parametrize_with_cases("key", cases=CaseSchemaSizeAttr)
-def test_valid_schema(key: str) -> None:
-    d = {key: True}
+@parametrize_with_cases("attr", has_tag=("attr", "schema_size"))
+def test_valid_schema(attr: str) -> None:
+    d = schema_size_schema_dict(attr)
     item = SchemaSize(**d)
-    assert item.__getattribute__(key)
+    assert item.short == d.get("short", False)
+    assert item.with_conn == d.get("with_conn", False)
 
 
-@parametrize_with_cases("key", cases=CaseSchemaSizeAttr)
-def test_invalid_schema(key: str) -> None:
-    d = {key: None}
+@parametrize_with_cases("attr", has_tag=("invalid_attr", "schema_size"))
+def test_invalid_schema(attr: str) -> None:
     with pytest.raises(ValueError):
-        SchemaSize(**d)
+        SchemaSize(**schema_size_schema_dict(attr, valid=False))
 
 
-def test_default_pagination() -> None:
-    item = Pagination()
-    assert item.page is not None
-    assert item.page == 0
-    assert item.size is None
-
-
-@parametrize_with_cases("key", cases=CasePaginationAttr)
-def test_valid_pagination(key: str) -> None:
-    d = {key: randint(0 if key == "page" else 1, 100)}
-    if key == "page":
-        d["size"] = 1
+@parametrize_with_cases("attr", has_tag=("attr", "pagination"))
+def test_valid_pagination(attr: str) -> None:
+    d = pagination_schema_dict(attr)
     item = Pagination(**d)
-    assert item.__getattribute__(key) == d.get(key)
+    assert item.page == d.get("page", 0)
+    assert item.size == d.get("size", None)
 
 
 def test_set_page_to_0() -> None:
-    item = Pagination(page=randint(1, 100))
+    item = Pagination(page=1)
     assert item.size is None
     assert item.page == 0
 
 
-@parametrize_with_cases("key, value", cases=CasePaginationInvalidAttr)
-def test_invalid_pagination(key: str, value: Optional[int]) -> None:
-    d = {key: value}
-    if key == "page":
-        d["size"] = 1
+@parametrize_with_cases("attr", has_tag=("invalid_attr", "pagination"))
+def test_invalid_pagination(attr: str) -> None:
     with pytest.raises(ValueError):
-        Pagination(**d)
+        Pagination(**pagination_schema_dict(attr, valid=False))
 
 
-def test_default_db_params() -> None:
-    item = DbQueryCommonParams()
-    assert item.skip is not None
-    assert item.skip == 0
-    assert item.limit is None
-    assert item.sort is None
-
-
-@parametrize_with_cases("key, value", cases=CaseDbQueryAttr)
-def test_valid_db_params(key: str, value: Any) -> None:
-    d = {key: value}
+@parametrize_with_cases("attr", has_tag=("attr", "db_query"))
+def test_valid_db_params(attr: str) -> None:
+    d = db_query_schema_dict(attr)
     item = DbQueryCommonParams(**d)
-    assert item.__getattribute__(key) == d.get(key)
+    assert item.skip == d.get("skip", 0)
+    assert item.limit == d.get("limit", None)
+    assert item.sort == d.get("sort", None)
 
 
-@parametrize_with_cases("input, output", cases=CaseSort)
+@parametrize_with_cases("input, output", has_tag=("attr", "sort"))
 def test_parse_sort(input: str, output: str) -> None:
     item = DbQueryCommonParams(sort=input)
     assert item.sort is not None
     assert item.sort == output
 
 
-@parametrize_with_cases("key, value", cases=CaseDbQueryInvalidAttr)
-def test_invalid_db_params(key: str, value: Optional[int]) -> None:
-    d = {key: value}
+@parametrize_with_cases("attr", has_tag=("invalid_attr", "db_query"))
+def test_invalid_db_params(attr: str) -> None:
     with pytest.raises(ValueError):
-        DbQueryCommonParams(**d)
+        DbQueryCommonParams(**db_query_schema_dict(attr, valid=False))
+
+
+def test_bool() -> None:
+    cls = create_query_model(random_lower_string(), TestModelBool)
+    item = cls()
+    assert item.test_field is None
+
+
+@parametrize_with_cases("model", has_tag=("model", "number"))
+def test_numbers(model: type[TestModelInt] | type[TestModelFloat]) -> None:
+    cls = create_query_model(random_lower_string(), model)
+    item = cls()
+    assert item.test_field is None
+    assert item.test_field__lt is None
+    assert item.test_field__gt is None
+    assert item.test_field__lte is None
+    assert item.test_field__gte is None
+    assert item.test_field__ne is None
+
+
+@parametrize_with_cases("model", has_tag=("model", "date"))
+def test_dates(model: type[TestModelDate] | type[TestModelDateTime]) -> None:
+    cls = create_query_model(random_lower_string(), model)
+    item = cls()
+    assert item.test_field__lt is None
+    assert item.test_field__gt is None
+    assert item.test_field__lte is None
+    assert item.test_field__gte is None
+    assert item.test_field__ne is None
+
+
+@parametrize_with_cases("model", has_tag=("model", "str"))
+def test_str_enum(model: type[TestModelStr] | type[TestModelEnum]) -> None:
+    cls = create_query_model(random_lower_string(), model)
+    item = cls()
+    assert item.test_field is None
+    assert item.test_field__contains is None
+    assert item.test_field__icontains is None
+    assert item.test_field__startswith is None
+    assert item.test_field__istartswith is None
+    assert item.test_field__endswith is None
+    assert item.test_field__iendswith is None
+    assert item.test_field__regex is None
+    assert item.test_field__iregex is None
+
+
+# TODO test lists
+# TODO test get_origin(v.type_)
+# TODO test else case

@@ -9,7 +9,7 @@ from fed_reg.provider.schemas_extended import (
 )
 from fed_reg.service.models import BlockStorageService
 from fed_reg.service.schemas import BlockStorageServiceBase, BlockStorageServiceRead
-from tests.create_dict import block_storage_service_schema_dict
+from tests.schemas.utils import block_storage_service_schema_dict
 
 
 @parametrize_with_cases("key, value", has_tag="base")

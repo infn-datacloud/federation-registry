@@ -9,7 +9,7 @@ from fed_reg.provider.schemas_extended import (
 )
 from fed_reg.service.models import ObjectStoreService
 from fed_reg.service.schemas import ObjectStoreServiceBase, ObjectStoreServiceRead
-from tests.create_dict import object_store_service_schema_dict
+from tests.schemas.utils import object_store_service_schema_dict
 
 
 @parametrize_with_cases("key, value", has_tag="base")

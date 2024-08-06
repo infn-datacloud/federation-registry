@@ -9,7 +9,7 @@ from fed_reg.provider.schemas_extended import (
 )
 from fed_reg.service.models import NetworkService
 from fed_reg.service.schemas import NetworkServiceBase, NetworkServiceRead
-from tests.create_dict import network_service_schema_dict
+from tests.schemas.utils import network_service_schema_dict
 
 
 @parametrize_with_cases("key, value", has_tag="base")

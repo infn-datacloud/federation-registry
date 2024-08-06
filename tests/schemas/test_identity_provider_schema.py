@@ -17,10 +17,8 @@ from fed_reg.models import (
     BaseReadPrivate,
     BaseReadPublic,
 )
-from tests.create_dict import (
-    identity_provider_model_dict,
-    identity_provider_schema_dict,
-)
+from tests.models.utils import identity_provider_model_dict
+from tests.schemas.utils import identity_provider_schema_dict
 
 
 def test_classes_inheritance() -> None:

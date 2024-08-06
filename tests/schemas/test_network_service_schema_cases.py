@@ -9,7 +9,7 @@ from fed_reg.provider.schemas_extended import (
     SharedNetworkCreateExtended,
 )
 from fed_reg.service.enum import NetworkServiceName
-from tests.create_dict import network_schema_dict
+from tests.schemas.utils import network_schema_dict
 from tests.utils import random_lower_string
 
 

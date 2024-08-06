@@ -12,7 +12,7 @@ from fed_reg.service.models import (
     ObjectStoreService,
     Service,
 )
-from tests.create_dict import flavor_model_dict, image_model_dict, network_model_dict
+from tests.models.utils import flavor_model_dict, image_model_dict, network_model_dict
 
 
 class CaseAttr:

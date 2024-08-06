@@ -5,7 +5,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fed_reg.project.models import Project
 from fed_reg.service.models import ComputeService
-from tests.create_dict import flavor_model_dict, project_model_dict, service_model_dict
+from tests.models.utils import flavor_model_dict, project_model_dict, service_model_dict
 
 
 @parametrize_with_cases("flavor_cls", has_tag=("class", "derived"))

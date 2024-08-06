@@ -10,7 +10,7 @@ from fed_reg.service.schemas import (
     IdentityServiceReadPublic,
     IdentityServiceUpdate,
 )
-from tests.create_dict import identity_service_schema_dict
+from tests.schemas.utils import identity_service_schema_dict
 
 
 @parametrize_with_cases("key, value", has_tag="base")

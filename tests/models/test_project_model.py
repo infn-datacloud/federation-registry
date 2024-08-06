@@ -23,7 +23,7 @@ from fed_reg.quota.models import (
 )
 from fed_reg.service.models import ComputeService, NetworkService
 from fed_reg.sla.models import SLA
-from tests.create_dict import (
+from tests.models.utils import (
     flavor_model_dict,
     image_model_dict,
     network_model_dict,

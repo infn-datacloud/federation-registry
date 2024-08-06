@@ -8,8 +8,8 @@ from fed_reg.project.models import Project
 from fed_reg.provider.enum import ProviderStatus
 from fed_reg.provider.models import Provider
 from fed_reg.region.models import Region
-from tests.create_dict import (
-    auth_method_dict,
+from tests.models.utils import (
+    auth_method_model_dict,
     identity_provider_model_dict,
     project_model_dict,
     provider_model_dict,
@@ -149,7 +149,7 @@ def test_single_linked_identity_provider(
 
     Connect a single IdentityProvider to a Provider.
     """
-    d = auth_method_dict()
+    d = auth_method_model_dict()
     r = provider_model.identity_providers.connect(identity_provider_model, d)
     assert isinstance(r, AuthMethod)
     assert r.idp_name == d["idp_name"]
@@ -167,7 +167,7 @@ def test_multiple_linked_identity_providers(provider_model: Provider) -> None:
     Connect multiple IdentityProvider to a Provider.
     """
     item = IdentityProvider(**identity_provider_model_dict()).save()
-    provider_model.identity_providers.connect(item, auth_method_dict())
+    provider_model.identity_providers.connect(item, auth_method_model_dict())
     item = IdentityProvider(**identity_provider_model_dict()).save()
-    provider_model.identity_providers.connect(item, auth_method_dict())
+    provider_model.identity_providers.connect(item, auth_method_model_dict())
     assert len(provider_model.identity_providers.all()) == 2

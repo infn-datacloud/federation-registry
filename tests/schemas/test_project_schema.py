@@ -17,7 +17,8 @@ from fed_reg.project.schemas import (
     ProjectReadPublic,
     ProjectUpdate,
 )
-from tests.create_dict import project_model_dict, project_schema_dict
+from tests.models.utils import project_model_dict
+from tests.schemas.utils import project_schema_dict
 
 
 def test_classes_inheritance() -> None:

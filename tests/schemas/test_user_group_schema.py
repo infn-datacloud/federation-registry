@@ -17,7 +17,8 @@ from fed_reg.user_group.schemas import (
     UserGroupReadPublic,
     UserGroupUpdate,
 )
-from tests.create_dict import user_group_model_dict, user_group_schema_dict
+from tests.models.utils import user_group_model_dict
+from tests.schemas.utils import user_group_schema_dict
 
 
 def test_classes_inheritance() -> None:

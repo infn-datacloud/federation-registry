@@ -17,7 +17,8 @@ from fed_reg.sla.schemas import (
     SLAReadPublic,
     SLAUpdate,
 )
-from tests.create_dict import sla_model_dict, sla_schema_dict
+from tests.models.utils import sla_model_dict
+from tests.schemas.utils import sla_schema_dict
 
 
 def test_classes_inheritance() -> None:
