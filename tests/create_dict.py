@@ -29,14 +29,7 @@ def auth_method_dict() -> dict[str, str]:
     return {"idp_name": random_lower_string(), "protocol": random_lower_string()}
 
 
-def flavor_model_dict(*args) -> dict[str, str]:
-    d = flavor_schema_dict(*args)
-    d["uuid"] = d["uuid"].hex
-    return d
-
-
-def flavor_schema_dict(*args) -> dict[str, str]:
-    d = {"name": random_lower_string(), "uuid": uuid4()}
+def flavor_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in (
             "description",
@@ -45,15 +38,49 @@ def flavor_schema_dict(*args) -> dict[str, str]:
             "gpu_vendor",
             "local_storage",
         ):
-            d[k] = random_lower_string()
+            data[k] = random_lower_string()
+            if k.startswith("gpu_"):
+                data["gpus"] = 1
         elif k in ("uuid",):
-            d[k] = uuid4()
+            data[k] = uuid4()
         elif k in ("disk", "ram", "vcpus", "swap", "ephemeral", "gpus"):
-            d[k] = random_positive_int()
+            data[k] = random_positive_int()
         elif k in ("infiniband",):
-            d[k] = True
+            data[k] = True
+        elif k in ("is_shared",):
+            data["is_public"] = True
+        elif k in ("is_private",):
+            data["is_public"] = False
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
+    return data
+
+
+def flavor_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
+    for k in args:
+        if k in ("name", "uuid", "uid"):
+            data.pop(k)
+        elif k in ("disk", "ram", "vcpus", "swap", "ephemeral", "gpus"):
+            data[k] = -1
+        elif k in ("gpu_model", "gpu_vendor"):
+            data[k] = random_lower_string()
+        else:
+            raise AttributeError(f"attribute {k} not found in class definition")
+    return data
+
+
+def flavor_schema_dict(*args, **kwargs) -> dict[str, str]:
+    d = {"name": random_lower_string(), "uuid": uuid4()}
+    if kwargs.get("read", False):
+        d["uid"] = uuid4()
+    if kwargs.get("valid", True):
+        return flavor_valid_dict(d, *args)
+    return flavor_invalid_dict(d, *args)
+
+
+def flavor_model_dict(*args, **kwargs) -> dict[str, str]:
+    d = flavor_schema_dict(*args, **kwargs)
+    d["uuid"] = d["uuid"].hex
     return d
 
 
