@@ -63,16 +63,20 @@ from fed_reg.service.schemas_extended import (
 
 
 def split_quota(quotas: list[Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """Split quotas in total and per-users."""
+    """Split quotas in usage, per-user, per-project."""
+    db_items_usage = {
+        db_item.project.single().uuid: db_item
+        for db_item in filter(lambda x: x.usage, quotas)
+    }
     db_items_per_user = {
         db_item.project.single().uuid: db_item
-        for db_item in filter(lambda x: x.per_user, quotas)
+        for db_item in filter(lambda x: x.per_user and not x.usage, quotas)
     }
-    db_items_total = {
+    db_items_per_project = {
         db_item.project.single().uuid: db_item
-        for db_item in filter(lambda x: not x.per_user, quotas)
+        for db_item in filter(lambda x: not x.per_user and not x.usage, quotas)
     }
-    return (db_items_per_user, db_items_total)
+    return (db_items_usage, db_items_per_user, db_items_per_project)
 
 
 class CRUDBlockStorageService(
@@ -150,7 +154,7 @@ class CRUDBlockStorageService(
         update_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
         return db_obj if edit else update_data
 
-    def __update_quotas(
+    def __update_quotas(  # noqa: C901
         self,
         *,
         db_obj: BlockStorageService,
@@ -162,17 +166,37 @@ class CRUDBlockStorageService(
         Connect new quotas not already connect, leave untouched already linked ones and
         delete old ones no more connected to the service.
 
-        Split quotas in per_user and total. For each one of them, check the linked
-        project. If the project already has a quota of that type, update that quota with
-        the new received values.
+        Split quotas in usage, per_user and per_project. For each one of them, check the
+        linked project. If the project already has a quota of that type, update that
+        quota with the new received values.
         """
         edit = False
 
-        db_items_per_user, db_items_total = split_quota(db_obj.quotas)
+        db_items_usage, db_items_per_user, db_items_per_project = split_quota(
+            db_obj.quotas
+        )
         db_projects = {db_item.uuid: db_item for db_item in provider_projects}
 
         for item in obj_in.quotas:
-            if item.per_user:
+            if item.usage:
+                db_item = db_items_usage.pop(item.project, None)
+                if not db_item:
+                    block_storage_quota_mng.create(
+                        obj_in=item,
+                        service=db_obj,
+                        project=db_projects.get(item.project),
+                    )
+                    edit = True
+                else:
+                    updated_data = block_storage_quota_mng.update(
+                        db_obj=db_item,
+                        obj_in=item,
+                        projects=provider_projects,
+                        force=True,
+                    )
+                    if not edit and updated_data is not None:
+                        edit = True
+            elif item.per_user:
                 db_item = db_items_per_user.pop(item.project, None)
                 if not db_item:
                     block_storage_quota_mng.create(
@@ -191,7 +215,7 @@ class CRUDBlockStorageService(
                     if not edit and updated_data is not None:
                         edit = True
             else:
-                db_item = db_items_total.pop(item.project, None)
+                db_item = db_items_per_project.pop(item.project, None)
                 if not db_item:
                     block_storage_quota_mng.create(
                         obj_in=item,
@@ -209,10 +233,13 @@ class CRUDBlockStorageService(
                     if not edit and updated_data is not None:
                         edit = True
 
+        for db_item in db_items_usage.values():
+            block_storage_quota_mng.remove(db_obj=db_item)
+            edit = True
         for db_item in db_items_per_user.values():
             block_storage_quota_mng.remove(db_obj=db_item)
             edit = True
-        for db_item in db_items_total.values():
+        for db_item in db_items_per_project.values():
             block_storage_quota_mng.remove(db_obj=db_item)
             edit = True
 
@@ -388,7 +415,7 @@ class CRUDComputeService(
             edit = True
         return edit
 
-    def __update_quotas(
+    def __update_quotas(  # noqa: C901
         self,
         *,
         db_obj: ComputeService,
@@ -406,11 +433,31 @@ class CRUDComputeService(
         """
         edit = False
 
-        db_items_per_user, db_items_total = split_quota(db_obj.quotas)
+        db_items_usage, db_items_per_user, db_items_per_project = split_quota(
+            db_obj.quotas
+        )
         db_projects = {db_item.uuid: db_item for db_item in provider_projects}
 
         for item in obj_in.quotas:
-            if item.per_user:
+            if item.usage:
+                db_item = db_items_usage.pop(item.project, None)
+                if not db_item:
+                    block_storage_quota_mng.create(
+                        obj_in=item,
+                        service=db_obj,
+                        project=db_projects.get(item.project),
+                    )
+                    edit = True
+                else:
+                    updated_data = block_storage_quota_mng.update(
+                        db_obj=db_item,
+                        obj_in=item,
+                        projects=provider_projects,
+                        force=True,
+                    )
+                    if not edit and updated_data is not None:
+                        edit = True
+            elif item.per_user:
                 db_item = db_items_per_user.pop(item.project, None)
                 if not db_item:
                     compute_quota_mng.create(
@@ -429,7 +476,7 @@ class CRUDComputeService(
                     if not edit and updated_data is not None:
                         edit = True
             else:
-                db_item = db_items_total.pop(item.project, None)
+                db_item = db_items_per_project.pop(item.project, None)
                 if not db_item:
                     compute_quota_mng.create(
                         obj_in=item,
@@ -447,10 +494,13 @@ class CRUDComputeService(
                     if not edit and updated_data is not None:
                         edit = True
 
+        for db_item in db_items_usage.values():
+            block_storage_quota_mng.remove(db_obj=db_item)
+            edit = True
         for db_item in db_items_per_user.values():
             compute_quota_mng.remove(db_obj=db_item)
             edit = True
-        for db_item in db_items_total.values():
+        for db_item in db_items_per_project.values():
             compute_quota_mng.remove(db_obj=db_item)
             edit = True
 
@@ -611,7 +661,7 @@ class CRUDNetworkService(
             edit = True
         return edit
 
-    def __update_quotas(
+    def __update_quotas(  # noqa: C901
         self,
         *,
         db_obj: NetworkService,
@@ -629,11 +679,31 @@ class CRUDNetworkService(
         """
         edit = False
 
-        db_items_per_user, db_items_total = split_quota(db_obj.quotas)
+        db_items_usage, db_items_per_user, db_items_per_project = split_quota(
+            db_obj.quotas
+        )
         db_projects = {db_item.uuid: db_item for db_item in provider_projects}
 
         for item in obj_in.quotas:
-            if item.per_user:
+            if item.usage:
+                db_item = db_items_usage.pop(item.project, None)
+                if not db_item:
+                    block_storage_quota_mng.create(
+                        obj_in=item,
+                        service=db_obj,
+                        project=db_projects.get(item.project),
+                    )
+                    edit = True
+                else:
+                    updated_data = block_storage_quota_mng.update(
+                        db_obj=db_item,
+                        obj_in=item,
+                        projects=provider_projects,
+                        force=True,
+                    )
+                    if not edit and updated_data is not None:
+                        edit = True
+            elif item.per_user:
                 db_item = db_items_per_user.pop(item.project, None)
                 if not db_item:
                     network_quota_mng.create(
@@ -652,7 +722,7 @@ class CRUDNetworkService(
                     if not edit and updated_data is not None:
                         edit = True
             else:
-                db_item = db_items_total.pop(item.project, None)
+                db_item = db_items_per_project.pop(item.project, None)
                 if not db_item:
                     network_quota_mng.create(
                         obj_in=item,
@@ -670,10 +740,13 @@ class CRUDNetworkService(
                     if not edit and updated_data is not None:
                         edit = True
 
+        for db_item in db_items_usage.values():
+            block_storage_quota_mng.remove(db_obj=db_item)
+            edit = True
         for db_item in db_items_per_user.values():
             network_quota_mng.remove(db_obj=db_item)
             edit = True
-        for db_item in db_items_total.values():
+        for db_item in db_items_per_project.values():
             network_quota_mng.remove(db_obj=db_item)
             edit = True
 
@@ -755,7 +828,7 @@ class CRUDObjectStoreService(
         update_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
         return db_obj if edit else update_data
 
-    def __update_quotas(
+    def __update_quotas(  # noqa: C901
         self,
         *,
         db_obj: ObjectStoreService,
@@ -773,11 +846,31 @@ class CRUDObjectStoreService(
         """
         edit = False
 
-        db_items_per_user, db_items_total = split_quota(db_obj.quotas)
+        db_items_usage, db_items_per_user, db_items_per_project = split_quota(
+            db_obj.quotas
+        )
         db_projects = {db_item.uuid: db_item for db_item in provider_projects}
 
         for item in obj_in.quotas:
-            if item.per_user:
+            if item.usage:
+                db_item = db_items_usage.pop(item.project, None)
+                if not db_item:
+                    block_storage_quota_mng.create(
+                        obj_in=item,
+                        service=db_obj,
+                        project=db_projects.get(item.project),
+                    )
+                    edit = True
+                else:
+                    updated_data = block_storage_quota_mng.update(
+                        db_obj=db_item,
+                        obj_in=item,
+                        projects=provider_projects,
+                        force=True,
+                    )
+                    if not edit and updated_data is not None:
+                        edit = True
+            elif item.per_user:
                 db_item = db_items_per_user.pop(item.project, None)
                 if not db_item:
                     object_store_quota_mng.create(
@@ -796,7 +889,7 @@ class CRUDObjectStoreService(
                     if not edit and updated_data is not None:
                         edit = True
             else:
-                db_item = db_items_total.pop(item.project, None)
+                db_item = db_items_per_project.pop(item.project, None)
                 if not db_item:
                     object_store_quota_mng.create(
                         obj_in=item,
@@ -814,10 +907,13 @@ class CRUDObjectStoreService(
                     if not edit and updated_data is not None:
                         edit = True
 
+        for db_item in db_items_usage.values():
+            block_storage_quota_mng.remove(db_obj=db_item)
+            edit = True
         for db_item in db_items_per_user.values():
             object_store_quota_mng.remove(db_obj=db_item)
             edit = True
-        for db_item in db_items_total.values():
+        for db_item in db_items_per_project.values():
             object_store_quota_mng.remove(db_obj=db_item)
             edit = True
 
