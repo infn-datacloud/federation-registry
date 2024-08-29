@@ -4,7 +4,7 @@ void pushImage(String srcImage, String targetImageName, String registryUrl, Stri
     docker.withRegistry("${registryUrl}", "${registryCredentials}") {
         if ("${BRANCH_NAME}" == 'main') {
             docker.image("${targetImageName}").push('main')
-            docker.image("${imageName}").push('latest')
+            docker.image("${targetImageName}").push('latest')
         }
         docker.image("${targetImageName}").push("${BRANCH_NAME}")
         docker.image("${targetImageName}").push("${COMMIT_SHA}")
@@ -43,7 +43,7 @@ pipeline {
         HARBOR_ORGANIZATION = 'datacloud-middleware'
         HARBOR_URL = 'https://harbor.cloud.infn.it'
 
-        BRANCH_NAME = "${env.BRANCH_NAME != null ? env.BRANCH_NAME : 'jenkins'}"
+        BRANCH_NAME = "${env.BRANCH_NAME != null ? env.BRANCH_NAME : 'main'}"
         COMMIT_SHA = sh(returnStdout: true, script: 'git rev-parse --short=10 HEAD').trim()
     }
 
