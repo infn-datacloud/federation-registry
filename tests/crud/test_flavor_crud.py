@@ -6,6 +6,7 @@ from pytest_cases import parametrize_with_cases
 
 from fed_reg.flavor.crud import CRUDFlavor, CRUDPrivateFlavor, CRUDSharedFlavor
 from fed_reg.flavor.models import PrivateFlavor, SharedFlavor
+from fed_reg.flavor.schemas import FlavorUpdate
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
     PrivateFlavorCreateExtended,
@@ -280,10 +281,39 @@ def test_get_only_one_shared_from_multi(
 
 @parametrize_with_cases("flavor_model", has_tag="model")
 @parametrize_with_cases("mgr", has_tag="manager")
+def test_update_attr(
+    flavor_model: PrivateFlavor | SharedFlavor,
+    flavor_create_dict: dict[str, Any],
+    mgr: CRUDFlavor | CRUDPrivateFlavor | CRUDSharedFlavor,
+) -> None:
+    flavor_schema = FlavorUpdate(**flavor_create_dict)
+    item = mgr.update(db_obj=flavor_model, obj_in=flavor_schema)
+    flavor_dict = flavor_schema.dict(exclude_unset=True)
+    assert isinstance(item, type(flavor_model))
+    assert item.uid is not None
+    assert item.description == flavor_dict.get("description", flavor_schema.description)
+    assert item.name == flavor_dict.get("name", flavor_schema.name)
+    assert item.uuid == flavor_dict.get("uuid", flavor_schema.uuid)
+    assert item.disk == flavor_dict.get("disk", flavor_schema.disk)
+    assert item.ram == flavor_dict.get("ram", flavor_schema.ram)
+    assert item.vcpus == flavor_dict.get("vcpus", flavor_schema.vcpus)
+    assert item.swap == flavor_dict.get("swap", flavor_schema.swap)
+    assert item.ephemeral == flavor_dict.get("ephemeral", flavor_schema.ephemeral)
+    assert item.infiniband == flavor_dict.get("infiniband", flavor_schema.infiniband)
+    assert item.gpus == flavor_dict.get("gpus", flavor_schema.gpus)
+    assert item.gpu_model == flavor_dict.get("gpu_model", flavor_schema.gpu_model)
+    assert item.gpu_vendor == flavor_dict.get("gpu_vendor", flavor_schema.gpu_vendor)
+    assert item.local_storage == flavor_dict.get(
+        "local_storage", flavor_schema.local_storage
+    )
+
+
+@parametrize_with_cases("flavor_model", has_tag="model")
+@parametrize_with_cases("mgr", has_tag="manager")
 def test_delete(
     flavor_model: PrivateFlavor | SharedFlavor,
     mgr: CRUDFlavor | CRUDPrivateFlavor | CRUDSharedFlavor,
-):
+) -> None:
     assert mgr.remove(db_obj=flavor_model)
     assert flavor_model.deleted
 

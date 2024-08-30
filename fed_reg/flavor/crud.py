@@ -59,7 +59,7 @@ class CRUDPrivateFlavor(
         *,
         db_obj: PrivateFlavor,
         obj_in: FlavorUpdate | PrivateFlavorCreateExtended,
-        projects: list[Project],
+        projects: list[Project] | None = None,
         force: bool = False,
     ) -> PrivateFlavor | None:
         """Update Flavor attributes.
@@ -67,6 +67,8 @@ class CRUDPrivateFlavor(
         By default do not update relationships or default values. If force is True,
         update linked projects and apply default values when explicit.
         """
+        if projects is None:
+            projects = []
         edit = False
         if force:
             edit = self.__update_projects(
