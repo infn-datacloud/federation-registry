@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 from neomodel.exceptions import MultipleNodesReturned
-from pytest_cases import fixture, parametrize_with_cases
+from pytest_cases import parametrize_with_cases
 
 from fed_reg.flavor.crud import CRUDFlavor, CRUDPrivateFlavor, CRUDSharedFlavor
 from fed_reg.flavor.models import PrivateFlavor, SharedFlavor
@@ -15,7 +15,7 @@ from fed_reg.service.models import ComputeService
 from tests.create_dict import flavor_model_dict, flavor_schema_dict, project_model_dict
 
 
-@fixture
+@pytest.fixture
 @parametrize_with_cases("key, value", has_tag="create")
 def flavor_create_dict(key: str, value: Any) -> dict[str, Any]:
     d = flavor_schema_dict()
@@ -26,9 +26,9 @@ def flavor_create_dict(key: str, value: Any) -> dict[str, Any]:
     return d
 
 
-@fixture
+@pytest.fixture
 @parametrize_with_cases("key, value", has_tag="get_single")
-def flavor_get_dict(key: str, value: Any) -> dict[str, Any]:
+def flavor_read_dict(key: str, value: Any) -> dict[str, Any]:
     d = flavor_schema_dict()
     if key:
         d[key] = value
@@ -182,13 +182,13 @@ def test_get_shared_err_multi_match(
 @parametrize_with_cases("mgr", has_tag=("manager", "shared"))
 def test_get_only_one_shared(
     shared_flavor_model: SharedFlavor,
-    flavor_get_dict: dict[str, Any],
+    flavor_read_dict: dict[str, Any],
     mgr: CRUDFlavor | CRUDSharedFlavor,
     current_cases,
 ) -> None:
-    key = current_cases["flavor_get_dict"]["key"].params["attr"]
-    value = flavor_get_dict[key]
-    flavor_model = SharedFlavor(**flavor_get_dict).save()
+    key = current_cases["flavor_read_dict"]["key"].params["attr"]
+    value = flavor_read_dict[key]
+    flavor_model = SharedFlavor(**flavor_read_dict).save()
     item = mgr.get(**{key: value})
     assert isinstance(item, SharedFlavor)
     assert item.uid == flavor_model.uid
@@ -197,13 +197,13 @@ def test_get_only_one_shared(
 @parametrize_with_cases("mgr", has_tag=("manager", "private"))
 def test_get_only_one_private(
     private_flavor_model: PrivateFlavor,
-    flavor_get_dict: dict[str, Any],
+    flavor_read_dict: dict[str, Any],
     mgr: CRUDFlavor | CRUDPrivateFlavor,
     current_cases,
 ) -> None:
-    key = current_cases["flavor_get_dict"]["key"].params["attr"]
-    value = flavor_get_dict[key]
-    flavor_model = PrivateFlavor(**flavor_get_dict).save()
+    key = current_cases["flavor_read_dict"]["key"].params["attr"]
+    value = flavor_read_dict[key]
+    flavor_model = PrivateFlavor(**flavor_read_dict).save()
     item = mgr.get(**{key: value})
     assert isinstance(item, PrivateFlavor)
     assert item.uid == flavor_model.uid
@@ -249,13 +249,13 @@ def test_get_empty_list_because_not_matching(
 @parametrize_with_cases("mgr", has_tag=("manager", "private"))
 def test_get_only_one_private_from_multi(
     private_flavor_model: PrivateFlavor,
-    flavor_get_dict: dict[str, Any],
+    flavor_read_dict: dict[str, Any],
     mgr: CRUDFlavor | CRUDPrivateFlavor,
     current_cases,
 ) -> None:
-    key = current_cases["flavor_get_dict"]["key"].params["attr"]
-    value = flavor_get_dict[key]
-    flavor_model = PrivateFlavor(**flavor_get_dict).save()
+    key = current_cases["flavor_read_dict"]["key"].params["attr"]
+    value = flavor_read_dict[key]
+    flavor_model = PrivateFlavor(**flavor_read_dict).save()
     items = mgr.get_multi(**{key: value})
     assert len(items) == 1
     assert isinstance(items[0], PrivateFlavor)
@@ -265,14 +265,27 @@ def test_get_only_one_private_from_multi(
 @parametrize_with_cases("mgr", has_tag=("manager", "shared"))
 def test_get_only_one_shared_from_multi(
     shared_flavor_model: SharedFlavor,
-    flavor_get_dict: dict[str, Any],
+    flavor_read_dict: dict[str, Any],
     mgr: CRUDFlavor | CRUDSharedFlavor,
     current_cases,
 ) -> None:
-    key = current_cases["flavor_get_dict"]["key"].params["attr"]
-    value = flavor_get_dict[key]
-    flavor_model = SharedFlavor(**flavor_get_dict).save()
+    key = current_cases["flavor_read_dict"]["key"].params["attr"]
+    value = flavor_read_dict[key]
+    flavor_model = SharedFlavor(**flavor_read_dict).save()
     items = mgr.get_multi(**{key: value})
     assert len(items) == 1
     assert isinstance(items[0], SharedFlavor)
     assert items[0].uid == flavor_model.uid
+
+
+@parametrize_with_cases("flavor_model", has_tag="model")
+@parametrize_with_cases("mgr", has_tag="manager")
+def test_delete(
+    flavor_model: PrivateFlavor | SharedFlavor,
+    mgr: CRUDFlavor | CRUDPrivateFlavor | CRUDSharedFlavor,
+):
+    assert mgr.remove(db_obj=flavor_model)
+    assert flavor_model.deleted
+
+    with pytest.raises(ValueError, match="attempted on deleted node"):
+        mgr.remove(db_obj=flavor_model)

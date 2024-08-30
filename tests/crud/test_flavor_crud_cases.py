@@ -7,9 +7,9 @@ from fed_reg.flavor.crud import (
     CRUDFlavor,
     CRUDPrivateFlavor,
     CRUDSharedFlavor,
-    flavor_mng,
-    private_flavor_mng,
-    shared_flavor_mng,
+    flavor_mgr,
+    private_flavor_mgr,
+    shared_flavor_mgr,
 )
 from fed_reg.flavor.models import PrivateFlavor, SharedFlavor
 from tests.utils import random_lower_string
@@ -71,15 +71,15 @@ class CaseMandatoryKeys:
 class CaseManager:
     @case(tags=("manager", "shared", "private"))
     def case_flavor_mgr(self) -> CRUDFlavor:
-        return flavor_mng
+        return flavor_mgr
 
     @case(tags=("manager", "private"))
     def case_private_flavor_mgr(self) -> CRUDPrivateFlavor:
-        return private_flavor_mng
+        return private_flavor_mgr
 
     @case(tags=("manager", "shared"))
     def case_shared_flavor_mgr(self) -> CRUDSharedFlavor:
-        return shared_flavor_mng
+        return shared_flavor_mgr
 
 
 class CaseFlavorModel:
