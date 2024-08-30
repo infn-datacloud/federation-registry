@@ -1,7 +1,7 @@
 """Flavor REST API dependencies."""
 from fastapi import Depends, HTTPException, status
 
-from fed_reg.flavor.crud import flavor_mng
+from fed_reg.flavor.crud import flavor_mgr
 from fed_reg.flavor.models import Flavor
 from fed_reg.flavor.schemas import FlavorUpdate, PrivateFlavorCreate, SharedFlavorCreate
 from fed_reg.service.api.dependencies import valid_compute_service_id
@@ -23,7 +23,7 @@ def valid_flavor_id(flavor_uid: str) -> Flavor:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = flavor_mng.get(uid=flavor_uid.replace("-", ""))
+    item = flavor_mgr.get(uid=flavor_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

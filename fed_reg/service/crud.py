@@ -2,7 +2,7 @@
 from typing import Any, Dict, Optional, Tuple
 
 from fed_reg.crud import CRUDBase
-from fed_reg.flavor.crud import flavor_mng
+from fed_reg.flavor.crud import flavor_mgr
 from fed_reg.image.crud import image_mng
 from fed_reg.network.crud import network_mng
 from fed_reg.project.models import Project
@@ -280,7 +280,7 @@ class CRUDComputeService(
             db_obj.region.connect(region)
         for item in obj_in.flavors:
             db_projects = list(filter(lambda x: x.uuid in item.projects, projects))
-            flavor_mng.create(obj_in=item, service=db_obj, projects=db_projects)
+            flavor_mgr.create(obj_in=item, service=db_obj, projects=db_projects)
         for item in obj_in.images:
             db_projects = list(filter(lambda x: x.uuid in item.projects, projects))
             image_mng.create(obj_in=item, service=db_obj, projects=db_projects)
@@ -302,7 +302,7 @@ class CRUDComputeService(
             compute_quota_mng.remove(db_obj=item)
         for item in db_obj.flavors:
             if len(item.services) == 1:
-                flavor_mng.remove(db_obj=item)
+                flavor_mgr.remove(db_obj=item)
         for item in db_obj.images:
             if len(item.services) == 1:
                 image_mng.remove(db_obj=item)
@@ -363,17 +363,17 @@ class CRUDComputeService(
                 filter(lambda x: x.uuid in item.projects, provider_projects)
             )
             if not db_item:
-                flavor_mng.create(obj_in=item, service=db_obj, projects=db_projects)
+                flavor_mgr.create(obj_in=item, service=db_obj, projects=db_projects)
                 edit = True
             else:
-                updated_data = flavor_mng.update(
+                updated_data = flavor_mgr.update(
                     db_obj=db_item, obj_in=item, projects=db_projects
                 )
                 if not edit and updated_data is not None:
                     edit = True
         for db_item in db_items.values():
             if len(db_item.services) == 1:
-                flavor_mng.remove(db_obj=db_item)
+                flavor_mgr.remove(db_obj=db_item)
             else:
                 db_obj.flavors.disconnect(db_item)
             edit = True
