@@ -442,14 +442,14 @@ class CRUDComputeService(
             if item.usage:
                 db_item = db_items_usage.pop(item.project, None)
                 if not db_item:
-                    block_storage_quota_mng.create(
+                    compute_quota_mng.create(
                         obj_in=item,
                         service=db_obj,
                         project=db_projects.get(item.project),
                     )
                     edit = True
                 else:
-                    updated_data = block_storage_quota_mng.update(
+                    updated_data = compute_quota_mng.update(
                         db_obj=db_item,
                         obj_in=item,
                         projects=provider_projects,
@@ -495,7 +495,7 @@ class CRUDComputeService(
                         edit = True
 
         for db_item in db_items_usage.values():
-            block_storage_quota_mng.remove(db_obj=db_item)
+            compute_quota_mng.remove(db_obj=db_item)
             edit = True
         for db_item in db_items_per_user.values():
             compute_quota_mng.remove(db_obj=db_item)
@@ -688,14 +688,14 @@ class CRUDNetworkService(
             if item.usage:
                 db_item = db_items_usage.pop(item.project, None)
                 if not db_item:
-                    block_storage_quota_mng.create(
+                    network_quota_mng.create(
                         obj_in=item,
                         service=db_obj,
                         project=db_projects.get(item.project),
                     )
                     edit = True
                 else:
-                    updated_data = block_storage_quota_mng.update(
+                    updated_data = network_quota_mng.update(
                         db_obj=db_item,
                         obj_in=item,
                         projects=provider_projects,
@@ -741,7 +741,7 @@ class CRUDNetworkService(
                         edit = True
 
         for db_item in db_items_usage.values():
-            block_storage_quota_mng.remove(db_obj=db_item)
+            network_quota_mng.remove(db_obj=db_item)
             edit = True
         for db_item in db_items_per_user.values():
             network_quota_mng.remove(db_obj=db_item)
@@ -855,14 +855,14 @@ class CRUDObjectStoreService(
             if item.usage:
                 db_item = db_items_usage.pop(item.project, None)
                 if not db_item:
-                    block_storage_quota_mng.create(
+                    object_store_quota_mng.create(
                         obj_in=item,
                         service=db_obj,
                         project=db_projects.get(item.project),
                     )
                     edit = True
                 else:
-                    updated_data = block_storage_quota_mng.update(
+                    updated_data = object_store_quota_mng.update(
                         db_obj=db_item,
                         obj_in=item,
                         projects=provider_projects,
@@ -908,7 +908,7 @@ class CRUDObjectStoreService(
                         edit = True
 
         for db_item in db_items_usage.values():
-            block_storage_quota_mng.remove(db_obj=db_item)
+            object_store_quota_mng.remove(db_obj=db_item)
             edit = True
         for db_item in db_items_per_user.values():
             object_store_quota_mng.remove(db_obj=db_item)
