@@ -56,7 +56,7 @@ class ImageBase(ImageBasePublic):
         kernel_id (str | None): Kernel version.
         cuda_support (str): Support for cuda enabled.
         gpu_driver (str): Support for GPUs drivers.
-        is_public (bool): Public or private Image.
+        is_shared (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
     """
 
@@ -88,11 +88,11 @@ class PrivateImageCreate(BaseNodeCreate, ImageBase):
         kernel_id (str | None): Kernel version.
         cuda_support (str): Support for cuda enabled.
         gpu_driver (str): Support for GPUs drivers.
-        is_public (bool): Public or private Image.
+        is_shared (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
     """
 
-    is_public: Literal[False] = Field(default=False, description=DOC_SHARED)
+    is_shared: Literal[False] = Field(default=False, description=DOC_SHARED)
 
 
 class SharedImageCreate(BaseNodeCreate, ImageBase):
@@ -113,11 +113,11 @@ class SharedImageCreate(BaseNodeCreate, ImageBase):
         kernel_id (str | None): Kernel version.
         cuda_support (str): Support for cuda enabled.
         gpu_driver (str): Support for GPUs drivers.
-        is_public (bool): Public or private Image.
+        is_shared (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
     """
 
-    is_public: Literal[True] = Field(default=True, description=DOC_SHARED)
+    is_shared: Literal[True] = Field(default=True, description=DOC_SHARED)
 
 
 class ImageUpdate(BaseNodeCreate, ImageBase):
@@ -140,7 +140,7 @@ class ImageUpdate(BaseNodeCreate, ImageBase):
         kernel_id (str | None): Kernel version.
         cuda_support (str | None): Support for cuda enabled.
         gpu_driver (str | None): Support for GPUs drivers.
-        is_public (bool | None): Public or private Image.
+        is_shared (bool | None): Public or private Image.
         tags (list of str | None): list of tags associated to this Image.
     """
 
@@ -186,11 +186,11 @@ class ImageRead(BaseNodeRead, BaseReadPrivate, ImageBase):
         kernel_id (str | None): Kernel version.
         cuda_support (str): Support for cuda enabled.
         gpu_driver (str): Support for GPUs drivers.
-        is_public (bool): Public or private Image.
+        is_shared (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
     """
 
-    is_public: bool | None = Field(default=None, description=DOC_SHARED)
+    is_shared: bool | None = Field(default=None, description=DOC_SHARED)
 
 
 ImageQuery = create_query_model("ImageQuery", ImageBase)

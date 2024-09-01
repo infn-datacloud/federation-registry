@@ -51,7 +51,7 @@ class FlavorBase(FlavorBasePublic):
         name (str): Flavor name in the Provider.
         uuid (str): Flavor unique ID in the Provider.
         disk (int): Reserved disk size (GiB).
-        is_public (bool): Public or private Flavor.
+        is_shared (bool): Public or private Flavor.
         ram (int): Reserved RAM (MiB).
         vcpus (int): Number of Virtual CPUs.
         swap (int): Swap size (GiB).
@@ -99,7 +99,7 @@ class PrivateFlavorCreate(BaseNodeCreate, FlavorBase):
         name (str): Flavor name in the Provider.
         uuid (str): Flavor unique ID in the Provider
         disk (int): Reserved disk size (GiB)
-        is_public (bool): Public or private Flavor.
+        is_shared (bool): Public or private Flavor.
         ram (int): Reserved RAM (MiB)
         vcpus (int): Number of Virtual CPUs.
         swap (int): Swap size (GiB).
@@ -111,7 +111,7 @@ class PrivateFlavorCreate(BaseNodeCreate, FlavorBase):
         local_storage (str | None): Local storage presence.
     """
 
-    is_public: Literal[False] = Field(default=False, description=DOC_SHARED)
+    is_shared: Literal[False] = Field(default=False, description=DOC_SHARED)
 
 
 class SharedFlavorCreate(BaseNodeCreate, FlavorBase):
@@ -126,7 +126,7 @@ class SharedFlavorCreate(BaseNodeCreate, FlavorBase):
         name (str): Flavor name in the Provider.
         uuid (str): Flavor unique ID in the Provider
         disk (int): Reserved disk size (GiB)
-        is_public (bool): Public or private Flavor.
+        is_shared (bool): Public or private Flavor.
         ram (int): Reserved RAM (MiB)
         vcpus (int): Number of Virtual CPUs.
         swap (int): Swap size (GiB).
@@ -138,7 +138,7 @@ class SharedFlavorCreate(BaseNodeCreate, FlavorBase):
         local_storage (str | None): Local storage presence.
     """
 
-    is_public: Literal[True] = Field(default=True, description=DOC_SHARED)
+    is_shared: Literal[True] = Field(default=True, description=DOC_SHARED)
 
 
 class FlavorUpdate(BaseNodeCreate, FlavorBase):
@@ -155,7 +155,7 @@ class FlavorUpdate(BaseNodeCreate, FlavorBase):
         name (str | None): Flavor name in the Provider.
         uuid (str | None): Flavor unique ID in the Provider
         disk (int | None): Reserved disk size (GiB)
-        is_public (bool | None): Public or private Flavor.
+        is_shared (bool | None): Public or private Flavor.
         ram (int | None): Reserved RAM (MiB)
         vcpus (int | None): Number of Virtual CPUs.
         swap (int | None): Swap size (GiB).
@@ -203,7 +203,7 @@ class FlavorRead(BaseNodeRead, BaseReadPrivate, FlavorBase):
         name (str): Flavor name in the Provider.
         uuid (str): Flavor unique ID in the Provider
         disk (int): Reserved disk size (GiB)
-        is_public (bool): Public or private Flavor.
+        is_shared (bool): Public or private Flavor.
         ram (int): Reserved RAM (MiB)
         vcpus (int): Number of Virtual CPUs.
         swap (int): Swap size (GiB).
@@ -215,7 +215,7 @@ class FlavorRead(BaseNodeRead, BaseReadPrivate, FlavorBase):
         local_storage (str | None): Local storage presence.
     """
 
-    is_public: bool | None = Field(default=None, description=DOC_SHARED)
+    is_shared: bool | None = Field(default=None, description=DOC_SHARED)
 
 
 FlavorQuery = create_query_model("FlavorQuery", FlavorBase)

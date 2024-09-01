@@ -89,13 +89,13 @@ def test_base(
 def test_create_private() -> None:
     """Test PrivateFlavorCreate class' attribute values."""
     item = PrivateFlavorCreate(**flavor_schema_dict())
-    assert item.is_public is False
+    assert item.is_shared is False
 
 
 def test_create_shared() -> None:
     """Test SharedFlavorCreate class' attribute values."""
     item = SharedFlavorCreate(**flavor_schema_dict())
-    assert item.is_public is True
+    assert item.is_shared is True
 
 
 @parametrize_with_cases("attr", has_tag=("attr", "update"))
@@ -134,7 +134,7 @@ def test_read_public(attr: str) -> None:
 def test_read(attr: str) -> None:
     """Test FlavorRead class' attribute values.
 
-    Consider also cases where we need to set the is_public attribute (usually populated
+    Consider also cases where we need to set the is_shared attribute (usually populated
     by the correct model).
     """
     d = flavor_schema_dict(attr, read=True)
@@ -154,7 +154,7 @@ def test_read(attr: str) -> None:
     assert item.gpu_model == d.get("gpu_model", None)
     assert item.gpu_vendor == d.get("gpu_vendor", None)
     assert item.local_storage == d.get("local_storage", None)
-    assert item.is_public == d.get("is_public", None)
+    assert item.is_shared == d.get("is_shared", None)
 
 
 @parametrize_with_cases("flavor_cls", has_tag="model")
@@ -196,9 +196,9 @@ def test_read_from_orm(
     assert item.gpu_vendor == model.gpu_vendor
     assert item.local_storage == model.local_storage
     if isinstance(model, (PrivateFlavor, SharedFlavor)):
-        assert item.is_public == model.is_public
+        assert item.is_shared == model.is_shared
     else:
-        assert item.is_public is None
+        assert item.is_shared is None
 
 
 @parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
@@ -232,9 +232,9 @@ def test_invalid_update(attr: str) -> None:
 def test_invalid_create_visibility() -> None:
     """Test invalid attributes for PrivateFlavorCreate and SharedFlavorCreate."""
     with pytest.raises(ValidationError):
-        PrivateFlavorCreate(**flavor_schema_dict(), is_public=True)
+        PrivateFlavorCreate(**flavor_schema_dict(), is_shared=True)
     with pytest.raises(ValidationError):
-        SharedFlavorCreate(**flavor_schema_dict(), is_public=False)
+        SharedFlavorCreate(**flavor_schema_dict(), is_shared=False)
 
 
 @parametrize_with_cases("attr", has_tag=("invalid_attr", "read_public"))

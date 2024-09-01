@@ -128,7 +128,7 @@ def validate_new_image_values(
         valid_image_name(item=update_data, services=item.services.all())
     if update_data.uuid != item.uuid:
         valid_image_uuid(item=update_data, services=item.services.all())
-    if update_data.is_public != item.is_public:
+    if update_data.is_shared != item.is_shared:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Image visibility can't be changed",
@@ -151,7 +151,7 @@ def is_private_image(item: Image = Depends(valid_image_id)) -> Image:
         NotFoundError: DB entity with given uid not found.
         BadRequestError: DB entity has not valid visibility
     """
-    if item.is_public:
+    if item.is_shared:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Image {item.uid} is a public image",

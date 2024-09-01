@@ -87,13 +87,13 @@ def test_base(
 def test_create_private() -> None:
     """Test PrivateImageCreate class' attribute values."""
     item = PrivateImageCreate(**image_schema_dict())
-    assert item.is_public is False
+    assert item.is_shared is False
 
 
 def test_create_shared() -> None:
     """Test SharedImageCreate class' attribute values."""
     item = SharedImageCreate(**image_schema_dict())
-    assert item.is_public is True
+    assert item.is_shared is True
 
 
 @parametrize_with_cases("attr", has_tag=("attr", "update"))
@@ -130,7 +130,7 @@ def test_read_public(attr: str) -> None:
 def test_read(attr: str) -> None:
     """Test ImageRead class' attribute values.
 
-    Consider also cases where we need to set the is_public attribute (usually populated
+    Consider also cases where we need to set the is_shared attribute (usually populated
     by the correct model).
     """
     d = image_schema_dict(attr, read=True)
@@ -187,9 +187,9 @@ def test_read_from_orm(
     assert item.gpu_driver == model.gpu_driver
     assert item.tags == model.tags
     if isinstance(model, (PrivateImage, SharedImage)):
-        assert item.is_public == model.is_public
+        assert item.is_shared == model.is_shared
     else:
-        assert item.is_public is None
+        assert item.is_shared is None
 
 
 @parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
@@ -223,9 +223,9 @@ def test_invalid_update(attr: str) -> None:
 def test_invalid_create_visibility() -> None:
     """Test invalid attributes for PrivateImageCreate and SharedImageCreate."""
     with pytest.raises(ValidationError):
-        PrivateImageCreate(**image_schema_dict(), is_public=True)
+        PrivateImageCreate(**image_schema_dict(), is_shared=True)
     with pytest.raises(ValidationError):
-        SharedImageCreate(**image_schema_dict(), is_public=False)
+        SharedImageCreate(**image_schema_dict(), is_shared=False)
 
 
 @parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))

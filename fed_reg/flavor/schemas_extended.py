@@ -85,7 +85,7 @@ class FlavorReadExtended(BaseNodeRead, BaseReadPrivateExtended, FlavorBase):
         name (str): Flavor name in the Provider.
         uuid (str): Flavor unique ID in the Provider
         disk (int): Reserved disk size (GiB)
-        is_public (bool): Public or private Flavor.
+        is_shared (bool): Public or private Flavor.
         ram (int): Reserved RAM (MiB)
         vcpus (int): Number of Virtual CPUs.
         swap (int): Swap size (GiB).
@@ -101,7 +101,7 @@ class FlavorReadExtended(BaseNodeRead, BaseReadPrivateExtended, FlavorBase):
             flavor.
     """
 
-    is_public: bool | None = Field(default=None, description=DOC_SHARED)
+    is_shared: bool | None = Field(default=None, description=DOC_SHARED)
 
     projects: list[ProjectRead] = Field(default_factory=list, description=DOC_EXT_PROJ)
     services: list[ComputeServiceReadExtended] = Field(description=DOC_EXT_SERV)

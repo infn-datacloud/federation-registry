@@ -258,7 +258,7 @@ def test_single_linked_private_flavor(
     flavor = project_model.private_flavors.single()
     assert isinstance(flavor, PrivateFlavor)
     assert flavor.uid == private_flavor_model.uid
-    assert not flavor.is_public
+    assert not flavor.is_shared
 
 
 def test_multiple_linked_private_flavors(project_model: Project) -> None:
@@ -287,7 +287,7 @@ def test_single_linked_private_image(
     image = project_model.private_images.single()
     assert isinstance(image, PrivateImage)
     assert image.uid == private_image_model.uid
-    assert not image.is_public
+    assert not image.is_shared
 
 
 def test_multiple_linked_private_images(project_model: Project) -> None:

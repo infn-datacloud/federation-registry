@@ -98,11 +98,7 @@ def test_read_public(attr: str) -> None:
 
 @parametrize_with_cases("attr", has_tag="attr")
 def test_read(attr: str) -> None:
-    """Test SLARead class' attribute values.
-
-    Consider also cases where we need to set the is_public attribute (usually populated
-    by the correct model).
-    """
+    """Test SLARead class' attribute values."""
     d = sla_schema_dict(attr, read=True)
     item = SLARead(**d)
     assert item.schema_type == "private"

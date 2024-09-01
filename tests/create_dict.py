@@ -49,9 +49,9 @@ def flavor_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
         elif k in ("infiniband",):
             data[k] = True
         elif k in ("is_shared",):
-            data["is_public"] = True
+            data["is_shared"] = True
         elif k in ("is_private",):
-            data["is_public"] = False
+            data["is_shared"] = False
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data
@@ -144,9 +144,9 @@ def image_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
         elif k in ("tags",):
             data[k] = [random_lower_string()]
         elif k in ("is_shared",):
-            data["is_public"] = True
+            data["is_shared"] = True
         elif k in ("is_private",):
-            data["is_public"] = False
+            data["is_shared"] = False
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data

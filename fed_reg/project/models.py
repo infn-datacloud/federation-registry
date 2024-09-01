@@ -104,7 +104,7 @@ class Project(StructuredNode):
                 WHERE q.type = "{ServiceType.COMPUTE.value}"
                 MATCH (q)-[:`APPLY_TO`]-(s)
                 MATCH (s)-[:`AVAILABLE_VM_IMAGE`]->(u:SharedImage)
-                WHERE u.is_public = True
+                WHERE u.is_shared = True
                 RETURN u
             """
         )

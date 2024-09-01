@@ -77,11 +77,11 @@ class PrivateImage(Image):
         kernel_id (str | None): Kernel version.
         cuda_support (str): Support for cuda enabled.
         gpu_driver (str): Support for GPUs drivers.
-        is_public (bool): Public or private Image.
+        is_shared (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
     """
 
-    is_public = BooleanProperty(default=False)
+    is_shared = BooleanProperty(default=False)
 
     projects = RelationshipFrom(
         "fed_reg.project.models.Project",
@@ -108,8 +108,8 @@ class SharedImage(Image):
         kernel_id (str | None): Kernel version.
         cuda_support (str): Support for cuda enabled.
         gpu_driver (str): Support for GPUs drivers.
-        is_public (bool): Public or private Image.
+        is_shared (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
     """
 
-    is_public = BooleanProperty(default=True)
+    is_shared = BooleanProperty(default=True)

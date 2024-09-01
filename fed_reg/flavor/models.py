@@ -73,7 +73,7 @@ class PrivateFlavor(Flavor):
         name (str): Flavor name in the Provider.
         uuid (str): Flavor unique ID in the Provider
         disk (int): Reserved disk size (GiB)
-        is_public (bool): Public or private Flavor.
+        is_shared (bool): Public or private Flavor.
         ram (int): Reserved RAM (MiB)
         vcpus (int): Number of Virtual CPUs.
         swap (int): Swap size (GiB).
@@ -85,7 +85,7 @@ class PrivateFlavor(Flavor):
         local_storage (str | None): Local storage presence.
     """
 
-    is_public = BooleanProperty(default=False)
+    is_shared = BooleanProperty(default=False)
 
     projects = RelationshipFrom(
         "fed_reg.project.models.Project",
@@ -106,7 +106,7 @@ class SharedFlavor(Flavor):
         name (str): Flavor name in the Provider.
         uuid (str): Flavor unique ID in the Provider
         disk (int): Reserved disk size (GiB)
-        is_public (bool): Public or private Flavor.
+        is_shared (bool): Public or private Flavor.
         ram (int): Reserved RAM (MiB)
         vcpus (int): Number of Virtual CPUs.
         swap (int): Swap size (GiB).
@@ -118,4 +118,4 @@ class SharedFlavor(Flavor):
         local_storage (str | None): Local storage presence.
     """
 
-    is_public = BooleanProperty(default=True)
+    is_shared = BooleanProperty(default=True)

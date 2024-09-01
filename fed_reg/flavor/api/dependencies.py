@@ -125,7 +125,7 @@ def validate_new_flavor_values(
         valid_flavor_name(item=update_data, services=item.services.all())
     if update_data.uuid != item.uuid:
         valid_flavor_uuid(item=update_data, services=item.services.all())
-    if update_data.is_public != item.is_public:
+    if update_data.is_shared != item.is_shared:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Flavor visibility can't be changed",
@@ -148,7 +148,7 @@ def is_private_flavor(item: Flavor = Depends(valid_flavor_id)) -> Flavor:
         NotFoundError: DB entity with given uid not found.
         BadRequestError: DB entity has not valid visibility
     """
-    if item.is_public:
+    if item.is_shared:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Flavor {item.uid} is a public flavor",

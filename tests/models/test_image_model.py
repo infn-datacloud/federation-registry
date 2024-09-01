@@ -130,14 +130,14 @@ def test_shared_image_default_attr() -> None:
     """Test SharedImage specific attribute values."""
     d = image_model_dict()
     item = SharedImage(**d)
-    assert item.is_public is True
+    assert item.is_shared is True
 
 
 def test_private_image_default_attr() -> None:
     """Test SharedImage specific attribute values and relationships definition."""
     d = image_model_dict()
     item = PrivateImage(**d)
-    assert item.is_public is False
+    assert item.is_shared is False
 
 
 def test_private_image_rel_def(private_image_model: PrivateImage) -> None:

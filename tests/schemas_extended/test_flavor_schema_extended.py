@@ -58,7 +58,7 @@ def test_invalid_create_private_extended(projects: list[UUID]) -> None:
     with pytest.raises(ValidationError):
         PrivateFlavorCreateExtended(**d)
     with pytest.raises(ValidationError):
-        PrivateFlavorCreateExtended(**d, projects=projects, is_public=True)
+        PrivateFlavorCreateExtended(**d, projects=projects, is_shared=True)
 
 
 def test_create_shared_extended(projects: list[UUID]) -> None:
@@ -73,7 +73,7 @@ def test_create_shared_extended(projects: list[UUID]) -> None:
 def test_invalid_create_shared_extended() -> None:
     d = flavor_schema_dict()
     with pytest.raises(ValidationError):
-        SharedFlavorCreateExtended(**d, is_public=False)
+        SharedFlavorCreateExtended(**d, is_shared=False)
 
 
 def test_region_read_ext(provider_model: Provider, region_model: Region):
@@ -135,7 +135,7 @@ def test_read_shared_ext(
     assert len(item.services) == len(services)
 
     item = FlavorReadExtended.from_orm(shared_flavor_model)
-    assert item.is_public is True
+    assert item.is_shared is True
     assert len(item.projects) == 0
     assert len(item.services) == len(services)
 
@@ -161,7 +161,7 @@ def test_read_private_ext(
     assert len(item.services) == len(services)
 
     item = FlavorReadExtended.from_orm(private_flavor_model)
-    assert item.is_public is False
+    assert item.is_shared is False
     assert len(item.projects) == len(projects)
     assert len(item.services) == len(services)
 
@@ -183,6 +183,6 @@ def test_read_ext(
     assert len(item.services) == len(services)
 
     item = FlavorReadExtended.from_orm(flavor_model)
-    assert item.is_public is None
+    assert item.is_shared is None
     assert len(item.projects) == 0
     assert len(item.services) == len(services)

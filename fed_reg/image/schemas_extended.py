@@ -86,7 +86,7 @@ class ImageReadExtended(BaseNodeRead, BaseReadPrivateExtended, ImageBase):
         kernel_id (str | None): Kernel version.
         cuda_support (str): Support for cuda enabled.
         gpu_driver (str): Support for GPUs drivers.
-        is_public (bool): Public or private Image.
+        is_shared (bool): Public or private Image.
         tags (list of str): list of tags associated to this Image.
         projects (list of ProjectRead): Projects having access to this flavor. The list
             is populated only if the flavor is a private one.
@@ -94,7 +94,7 @@ class ImageReadExtended(BaseNodeRead, BaseReadPrivateExtended, ImageBase):
             flavor.
     """
 
-    is_public: bool | None = Field(default=None, description=DOC_SHARED)
+    is_shared: bool | None = Field(default=None, description=DOC_SHARED)
 
     projects: list[ProjectRead] = Field(default_factory=list, description=DOC_EXT_PROJ)
     services: list[ComputeServiceReadExtended] = Field(description=DOC_EXT_SERV)

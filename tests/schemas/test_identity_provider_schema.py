@@ -94,11 +94,7 @@ def test_read_public(attr: str) -> None:
 
 @parametrize_with_cases("attr", has_tag="attr")
 def test_read(attr: str) -> None:
-    """Test IdentityProviderRead class' attribute values.
-
-    Consider also cases where we need to set the is_public attribute (usually populated
-    by the correct model).
-    """
+    """Test IdentityProviderRead class' attribute values."""
     d = identity_provider_schema_dict(attr, read=True)
     item = IdentityProviderRead(**d)
     assert item.schema_type == "private"

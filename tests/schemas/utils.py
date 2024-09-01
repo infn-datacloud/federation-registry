@@ -6,7 +6,14 @@ from uuid import uuid4
 from neomodel import DateProperty, DateTimeProperty, StringProperty, StructuredNode
 from pydantic import Field
 
-from fed_reg.models import BaseNode, BaseNodeRead
+from fed_reg.models import (
+    BaseNode,
+    BaseNodeRead,
+    BaseReadPrivate,
+    BaseReadPrivateExtended,
+    BaseReadPublic,
+    BaseReadPublicExtended,
+)
 from fed_reg.service.enum import (
     BlockStorageServiceName,
     ComputeServiceName,
@@ -81,6 +88,22 @@ class TestModelUUID(BaseNode):
     )
 
 
+class TestModelReadPrivate(BaseNodeRead, BaseReadPrivate):
+    __test__ = False
+
+
+class TestModelReadPublic(BaseNodeRead, BaseReadPublic):
+    __test__ = False
+
+
+class TestModelReadPrivateExtended(BaseNodeRead, BaseReadPrivateExtended):
+    __test__ = False
+
+
+class TestModelReadPublicExtended(BaseNodeRead, BaseReadPublicExtended):
+    __test__ = False
+
+
 class TestModelReadDate(BaseNodeRead):
     __test__ = False
     date_test: date = Field(..., description="A test field for dates")
@@ -89,6 +112,11 @@ class TestModelReadDate(BaseNodeRead):
 class TestModelReadDateTime(BaseNodeRead):
     __test__ = False
     datetime_test: datetime = Field(..., description="A test field for dates")
+
+
+class TestORMUID(StructuredNode):
+    __test__ = False
+    uid = StringProperty(default=random_lower_string())
 
 
 class TestORMDate(StructuredNode):
@@ -126,9 +154,9 @@ def flavor_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
         elif k in ("infiniband",):
             data[k] = True
         elif k in ("is_shared",):
-            data["is_public"] = True
+            data["is_shared"] = True
         elif k in ("is_private",):
-            data["is_public"] = False
+            data["is_shared"] = False
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data
@@ -211,9 +239,9 @@ def image_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
         elif k in ("tags",):
             data[k] = [random_lower_string()]
         elif k in ("is_shared",):
-            data["is_public"] = True
+            data["is_shared"] = True
         elif k in ("is_private",):
-            data["is_public"] = False
+            data["is_shared"] = False
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data

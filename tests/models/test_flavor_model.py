@@ -133,14 +133,14 @@ def test_shared_flavor_default_attr() -> None:
     """Test SharedFlavor specific attribute values."""
     d = flavor_model_dict()
     item = SharedFlavor(**d)
-    assert item.is_public is True
+    assert item.is_shared is True
 
 
 def test_private_flavor_default_attr() -> None:
     """Test SharedFlavor specific attribute values and relationships definition."""
     d = flavor_model_dict()
     item = PrivateFlavor(**d)
-    assert item.is_public is False
+    assert item.is_shared is False
 
 
 def test_private_flavor_rel_def(private_flavor_model: PrivateFlavor) -> None:
