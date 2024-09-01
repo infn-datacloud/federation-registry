@@ -17,15 +17,69 @@ from fed_reg.models import (
 )
 from tests.generics.utils import (
     TestEnum,
+    TestModelChild,
+    TestModelChildDataInRelation,
+    TestModelChildExtended,
+    TestModelChildMandatoryExtended,
     TestModelCreateInt,
     TestModelEnum,
+    TestModelParent,
+    TestModelParentDataInRelation,
+    TestModelParentExtended,
+    TestModelParentMandatoryExtended,
     TestModelReadDate,
     TestModelReadDateTime,
     TestModelUUID,
+    TestORMChild,
+    TestORMChildDataInRelation,
+    TestORMChildMandatory,
     TestORMDate,
     TestORMDateTime,
+    TestORMParent,
+    TestORMParentDataInRelation,
+    TestORMParentMandatory,
 )
 from tests.utils import random_date, random_datetime, random_int, random_lower_string
+
+
+@pytest.fixture
+def parent_model() -> TestORMParent:
+    return TestORMParent().save()
+
+
+@pytest.fixture
+def parent_mandatory_model() -> TestORMParentMandatory:
+    return TestORMParentMandatory().save()
+
+
+@pytest.fixture
+def parent_with_data_rel_model() -> TestORMParentDataInRelation:
+    return TestORMParentDataInRelation().save()
+
+
+@pytest.fixture
+def child_model1() -> TestORMChild:
+    return TestORMChild().save()
+
+
+@pytest.fixture
+def child_model2() -> TestORMChild:
+    return TestORMChild().save()
+
+
+@pytest.fixture
+def child_mandatory_model1() -> TestORMChildMandatory:
+    return TestORMChildMandatory().save()
+
+
+@pytest.fixture
+def child_mandatory_model2() -> TestORMChildMandatory:
+    return TestORMChildMandatory().save()
+
+
+@pytest.fixture
+def child_with_data_rel_model() -> TestORMChildDataInRelation:
+    return TestORMChildDataInRelation().save()
 
 
 class CaseDates:
@@ -182,7 +236,94 @@ def test_cast_neo4j_datetime(input: date | Date, output: date) -> None:
     assert item.datetime_test == output
 
 
-# TODO test relationships validators
+def test_optional_relationships(
+    parent_model: TestORMParent, child_model1: TestORMChild, child_model2: TestORMChild
+):
+    """Test parent child relationships in pydantic classes.
+
+    Testing ZeroOrOne or ZeroOrMore relationships types.
+    At first no relationships.
+    Then both parent and child has one relationship.
+    Then parent has 2 relationships.
+    """
+    parent = TestModelParentExtended.from_orm(parent_model)
+    assert len(parent.children) == 0
+
+    child = TestModelChildExtended.from_orm(child_model1)
+    assert child.parent is None
+
+    parent_model.children.connect(child_model1)
+
+    parent = TestModelParentExtended.from_orm(parent_model)
+    child = TestModelChild.from_orm(child_model1)
+    assert len(parent.children) == 1
+    assert parent.children[0] == child
+
+    child = TestModelChildExtended.from_orm(child_model1)
+    parent = TestModelParent.from_orm(parent_model)
+    assert child.parent is not None
+    assert child.parent == parent
+
+    parent_model.children.connect(child_model2)
+
+    parent = TestModelParentExtended.from_orm(parent_model)
+    child = TestModelChild.from_orm(child_model2)
+    assert len(parent.children) == 2
+    assert parent.children[1] == child
+
+
+def test_mandatory_relationships(
+    parent_mandatory_model: TestORMParentMandatory,
+    child_mandatory_model1: TestORMChildMandatory,
+    child_mandatory_model2: TestORMChildMandatory,
+):
+    """Test parent child relationships in pydantic classes.
+
+    Testing One or OneOrMore relationships types.
+    Parent and children must have relationships.
+    """
+    parent_mandatory_model.children.connect(child_mandatory_model1)
+    parent_mandatory_model.children.connect(child_mandatory_model2)
+
+    parent = TestModelParentMandatoryExtended.from_orm(parent_mandatory_model)
+    child1 = TestModelChild.from_orm(child_mandatory_model1)
+    child2 = TestModelChild.from_orm(child_mandatory_model2)
+    assert len(parent.children) == 2
+    assert parent.children[0] == child1
+    assert parent.children[1] == child2
+
+    parent = TestModelParent.from_orm(parent_mandatory_model)
+    child = TestModelChildMandatoryExtended.from_orm(child_mandatory_model1)
+    assert child.parent is not None
+    assert child.parent == parent
+    child = TestModelChildMandatoryExtended.from_orm(child_mandatory_model2)
+    assert child.parent is not None
+    assert child.parent == parent
+
+
+def test_relationships_with_data(
+    parent_with_data_rel_model: TestORMParentDataInRelation,
+    child_with_data_rel_model: TestORMChildDataInRelation,
+):
+    """Test parent child relationships in pydantic classes.
+
+    Testing ZeroOrOne or ZeroOrMore relationships types.
+    At first no relationships.
+    Then both parent and child has one relationship.
+    Then parent has 2 relationships.
+    """
+    s = random_lower_string()
+    parent_with_data_rel_model.children.connect(
+        child_with_data_rel_model, {"test_field": s}
+    )
+
+    parent = TestModelParentDataInRelation.from_orm(parent_with_data_rel_model)
+    assert len(parent.children) == 1
+    assert parent.children[0].relationship.test_field == s
+
+    child = TestModelChildDataInRelation.from_orm(child_with_data_rel_model)
+    assert child.parent is not None
+    assert child.parent.relationship.test_field == s
 
 
 @parametrize_with_cases("cls", cases=CaseReadDerived)
