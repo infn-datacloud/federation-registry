@@ -6,7 +6,6 @@ from pydantic import EmailStr, Field
 from fed_reg.models import (
     BaseNode,
     BaseNodeCreate,
-    BaseNodeRead,
     BaseReadPrivate,
     BaseReadPublic,
 )
@@ -92,7 +91,7 @@ class ProviderUpdate(BaseNodeCreate, ProviderBase):
     type: Optional[ProviderType] = Field(default=None, description=DOC_TYPE)
 
 
-class ProviderReadPublic(BaseNodeRead, BaseReadPublic, ProviderBasePublic):
+class ProviderReadPublic(BaseReadPublic, ProviderBasePublic):
     """Model, for non-authenticated users, to read Provider data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -109,7 +108,7 @@ class ProviderReadPublic(BaseNodeRead, BaseReadPublic, ProviderBasePublic):
     """
 
 
-class ProviderRead(BaseNodeRead, BaseReadPrivate, ProviderBase):
+class ProviderRead(BaseReadPrivate, ProviderBase):
     """Model, for authenticated users, to read Provider data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a

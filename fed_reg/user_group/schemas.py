@@ -6,7 +6,6 @@ from pydantic import Field
 from fed_reg.models import (
     BaseNode,
     BaseNodeCreate,
-    BaseNodeRead,
     BaseReadPrivate,
     BaseReadPublic,
 )
@@ -66,7 +65,7 @@ class UserGroupUpdate(BaseNodeCreate, UserGroupBase):
     name: Optional[str] = Field(default=None, description=DOC_NAME)
 
 
-class UserGroupReadPublic(BaseNodeRead, BaseReadPublic, UserGroupBasePublic):
+class UserGroupReadPublic(BaseReadPublic, UserGroupBasePublic):
     """Model, for non-authenticated users, to read UserGroup data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -83,7 +82,7 @@ class UserGroupReadPublic(BaseNodeRead, BaseReadPublic, UserGroupBasePublic):
     """
 
 
-class UserGroupRead(BaseNodeRead, BaseReadPrivate, UserGroupBase):
+class UserGroupRead(BaseReadPrivate, UserGroupBase):
     """Model, for authenticated users, to read UserGroup data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a

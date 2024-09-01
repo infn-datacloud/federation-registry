@@ -6,7 +6,6 @@ from pydantic import Field
 from fed_reg.models import (
     BaseNode,
     BaseNodeCreate,
-    BaseNodeRead,
     BaseReadPrivate,
     BaseReadPublic,
 )
@@ -139,7 +138,7 @@ class NetworkUpdate(BaseNodeCreate, NetworkBase):
     uuid: Optional[str] = Field(default=None, description=DOC_UUID)
 
 
-class NetworkReadPublic(BaseNodeRead, BaseReadPublic, NetworkBasePublic):
+class NetworkReadPublic(BaseReadPublic, NetworkBasePublic):
     """Model, for non-authenticated users, to read Network data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -156,7 +155,7 @@ class NetworkReadPublic(BaseNodeRead, BaseReadPublic, NetworkBasePublic):
     """
 
 
-class NetworkRead(BaseNodeRead, BaseReadPrivate, NetworkBase):
+class NetworkRead(BaseReadPrivate, NetworkBase):
     """Model, for authenticated users, to read Network data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a

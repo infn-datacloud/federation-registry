@@ -8,7 +8,7 @@ from fed_reg.flavor.schemas import (
     FlavorRead,
     FlavorReadPublic,
 )
-from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
+from fed_reg.models import BaseReadPrivateExtended, BaseReadPublicExtended
 from fed_reg.project.schemas import ProjectRead, ProjectReadPublic
 from fed_reg.provider.schemas import ProviderRead, ProviderReadPublic
 from fed_reg.region.constants import DOC_EXT_PROV
@@ -75,7 +75,7 @@ class ComputeServiceReadExtendedPublic(ComputeServiceReadPublic):
     region: RegionReadExtendedPublic = Field(description=DOC_EXT_REG)
 
 
-class FlavorReadExtended(BaseNodeRead, BaseReadPrivateExtended, FlavorBase):
+class FlavorReadExtended(BaseReadPrivateExtended, FlavorBase):
     """Model to extend the Flavor data read from the DB.
 
     Attributes:
@@ -107,7 +107,7 @@ class FlavorReadExtended(BaseNodeRead, BaseReadPrivateExtended, FlavorBase):
     services: list[ComputeServiceReadExtended] = Field(description=DOC_EXT_SERV)
 
 
-class FlavorReadExtendedPublic(BaseNodeRead, BaseReadPublicExtended, FlavorBasePublic):
+class FlavorReadExtendedPublic(BaseReadPublicExtended, FlavorBasePublic):
     """Model to extend the Flavor public data read from the DB.
 
     Attributes:

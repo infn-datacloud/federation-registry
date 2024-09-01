@@ -11,7 +11,7 @@ from fed_reg.identity_provider.schemas import (
     IdentityProviderRead,
     IdentityProviderReadPublic,
 )
-from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
+from fed_reg.models import BaseReadPrivateExtended, BaseReadPublicExtended
 from fed_reg.provider.constants import DOC_EXT_AUTH_METH
 from fed_reg.provider.schemas import ProviderRead, ProviderReadPublic
 from fed_reg.user_group.schemas import UserGroupRead, UserGroupReadPublic
@@ -51,9 +51,7 @@ class ProviderReadExtendedPublic(ProviderReadPublic):
     relationship: AuthMethodRead = Field(description=DOC_EXT_AUTH_METH)
 
 
-class IdentityProviderReadExtended(
-    BaseNodeRead, BaseReadPrivateExtended, IdentityProviderBase
-):
+class IdentityProviderReadExtended(BaseReadPrivateExtended, IdentityProviderBase):
     """Model to extend the Identity Provider data read from the DB.
 
     Attributes:
@@ -72,7 +70,7 @@ class IdentityProviderReadExtended(
 
 
 class IdentityProviderReadExtendedPublic(
-    BaseNodeRead, BaseReadPublicExtended, IdentityProviderBasePublic
+    BaseReadPublicExtended, IdentityProviderBasePublic
 ):
     """Model to extend the Identity Provider public data read from the DB.
 

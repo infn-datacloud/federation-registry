@@ -7,7 +7,7 @@ from fed_reg.identity_provider.schemas import (
     IdentityProviderRead,
     IdentityProviderReadPublic,
 )
-from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
+from fed_reg.models import BaseReadPrivateExtended, BaseReadPublicExtended
 from fed_reg.project.constants import DOC_EXT_PROV
 from fed_reg.project.schemas import ProjectRead, ProjectReadPublic
 from fed_reg.provider.schemas import ProviderRead, ProviderReadPublic
@@ -77,7 +77,7 @@ class UserGroupReadExtendedPublic(UserGroupReadPublic):
     identity_provider: IdentityProviderReadPublic = Field(description=DOC_EXT_IDP)
 
 
-class SLAReadExtended(BaseNodeRead, BaseReadPrivateExtended, SLABase):
+class SLAReadExtended(BaseReadPrivateExtended, SLABase):
     """Model to extend the SLA data read from the DB.
 
     Attributes:
@@ -95,7 +95,7 @@ class SLAReadExtended(BaseNodeRead, BaseReadPrivateExtended, SLABase):
     user_group: UserGroupReadExtended = Field(description=DOC_EXT_GROUP)
 
 
-class SLAReadExtendedPublic(BaseNodeRead, BaseReadPublicExtended, SLABasePublic):
+class SLAReadExtendedPublic(BaseReadPublicExtended, SLABasePublic):
     """Model to extend the SLA public data read from the DB.
 
     Attributes:

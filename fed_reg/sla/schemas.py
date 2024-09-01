@@ -7,7 +7,6 @@ from pydantic import Field, validator
 from fed_reg.models import (
     BaseNode,
     BaseNodeCreate,
-    BaseNodeRead,
     BaseReadPrivate,
     BaseReadPublic,
 )
@@ -87,7 +86,7 @@ class SLAUpdate(BaseNodeCreate, SLABase):
     end_date: Optional[date] = Field(default=None, description=DOC_END)
 
 
-class SLAReadPublic(BaseNodeRead, BaseReadPublic, SLABasePublic):
+class SLAReadPublic(BaseReadPublic, SLABasePublic):
     """Model, for non-authenticated users, to read SLA data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -103,7 +102,7 @@ class SLAReadPublic(BaseNodeRead, BaseReadPublic, SLABasePublic):
     """
 
 
-class SLARead(BaseNodeRead, BaseReadPrivate, SLABase):
+class SLARead(BaseReadPrivate, SLABase):
     """Model, for authenticated users, to read SLA data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a

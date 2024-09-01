@@ -7,7 +7,6 @@ from fed_reg.identity_provider.constants import DOC_CLAIM, DOC_ENDP
 from fed_reg.models import (
     BaseNode,
     BaseNodeCreate,
-    BaseNodeRead,
     BaseReadPrivate,
     BaseReadPublic,
 )
@@ -75,9 +74,7 @@ class IdentityProviderUpdate(BaseNodeCreate, IdentityProviderBase):
     group_claim: Optional[str] = Field(default=None, description=DOC_CLAIM)
 
 
-class IdentityProviderReadPublic(
-    BaseNodeRead, BaseReadPublic, IdentityProviderBasePublic
-):
+class IdentityProviderReadPublic(BaseReadPublic, IdentityProviderBasePublic):
     """Model, for non-authenticated users, to read IdentityProvider data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -93,7 +90,7 @@ class IdentityProviderReadPublic(
     """
 
 
-class IdentityProviderRead(BaseNodeRead, BaseReadPrivate, IdentityProviderBase):
+class IdentityProviderRead(BaseReadPrivate, IdentityProviderBase):
     """Model, for authenticated users, to read IdentityProvider data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a

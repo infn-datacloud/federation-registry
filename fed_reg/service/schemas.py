@@ -6,7 +6,6 @@ from pydantic import AnyHttpUrl, Field
 from fed_reg.models import (
     BaseNode,
     BaseNodeCreate,
-    BaseNodeRead,
     BaseReadPrivate,
     BaseReadPublic,
 )
@@ -105,9 +104,7 @@ class BlockStorageServiceUpdate(BaseNodeCreate, BlockStorageServiceBase):
     name: Optional[BlockStorageServiceName] = Field(default=None, description=DOC_NAME)
 
 
-class BlockStorageServiceReadPublic(
-    BaseNodeRead, BaseReadPublic, BlockStorageServiceBasePublic
-):
+class BlockStorageServiceReadPublic(BaseReadPublic, BlockStorageServiceBasePublic):
     """Model, for non-authenticated users, to read Block Storage data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -123,7 +120,7 @@ class BlockStorageServiceReadPublic(
     """
 
 
-class BlockStorageServiceRead(BaseNodeRead, BaseReadPrivate, BlockStorageServiceBase):
+class BlockStorageServiceRead(BaseReadPrivate, BlockStorageServiceBase):
     """Model, for authenticated users, to read Block Storage data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a
@@ -215,7 +212,7 @@ class ComputeServiceUpdate(BaseNodeCreate, ComputeServiceBase):
     name: Optional[ComputeServiceName] = Field(default=None, description=DOC_NAME)
 
 
-class ComputeServiceReadPublic(BaseNodeRead, BaseReadPublic, ComputeServiceBasePublic):
+class ComputeServiceReadPublic(BaseReadPublic, ComputeServiceBasePublic):
     """Model, for non-authenticated users, to read Compute data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -231,7 +228,7 @@ class ComputeServiceReadPublic(BaseNodeRead, BaseReadPublic, ComputeServiceBaseP
     """
 
 
-class ComputeServiceRead(BaseNodeRead, BaseReadPrivate, ComputeServiceBase):
+class ComputeServiceRead(BaseReadPrivate, ComputeServiceBase):
     """Model, for authenticated users, to read Compute data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a
@@ -321,9 +318,7 @@ class IdentityServiceUpdate(BaseNodeCreate, IdentityServiceBase):
     name: Optional[IdentityServiceName] = Field(default=None, description=DOC_NAME)
 
 
-class IdentityServiceReadPublic(
-    BaseNodeRead, BaseReadPublic, IdentityServiceBasePublic
-):
+class IdentityServiceReadPublic(BaseReadPublic, IdentityServiceBasePublic):
     """Model, for non-authenticated users, to read Identity data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -339,7 +334,7 @@ class IdentityServiceReadPublic(
     """
 
 
-class IdentityServiceRead(BaseNodeRead, BaseReadPrivate, IdentityServiceBase):
+class IdentityServiceRead(BaseReadPrivate, IdentityServiceBase):
     """Model, for authenticated users, to read Identity data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a
@@ -428,7 +423,7 @@ class NetworkServiceUpdate(BaseNodeCreate, NetworkServiceBase):
     name: Optional[NetworkServiceName] = Field(default=None, description=DOC_NAME)
 
 
-class NetworkServiceReadPublic(BaseNodeRead, BaseReadPublic, NetworkServiceBasePublic):
+class NetworkServiceReadPublic(BaseReadPublic, NetworkServiceBasePublic):
     """Model, for non-authenticated users, to read Network data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -444,7 +439,7 @@ class NetworkServiceReadPublic(BaseNodeRead, BaseReadPublic, NetworkServiceBaseP
     """
 
 
-class NetworkServiceRead(BaseNodeRead, BaseReadPrivate, NetworkServiceBase):
+class NetworkServiceRead(BaseReadPrivate, NetworkServiceBase):
     """Model, for authenticated users, to read Network data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a
@@ -534,9 +529,7 @@ class ObjectStoreServiceUpdate(BaseNodeCreate, ObjectStoreServiceBase):
     name: Optional[ObjectStoreServiceName] = Field(default=None, description=DOC_NAME)
 
 
-class ObjectStoreServiceReadPublic(
-    BaseNodeRead, BaseReadPublic, ObjectStoreServiceBasePublic
-):
+class ObjectStoreServiceReadPublic(BaseReadPublic, ObjectStoreServiceBasePublic):
     """Model, for non-authenticated users, to read Object Storage data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -552,7 +545,7 @@ class ObjectStoreServiceReadPublic(
     """
 
 
-class ObjectStoreServiceRead(BaseNodeRead, BaseReadPrivate, ObjectStoreServiceBase):
+class ObjectStoreServiceRead(BaseReadPrivate, ObjectStoreServiceBase):
     """Model, for authenticated users, to read Object Storage data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a

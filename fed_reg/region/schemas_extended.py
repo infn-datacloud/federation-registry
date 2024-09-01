@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from fed_reg.location.schemas import LocationRead, LocationReadPublic
-from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
+from fed_reg.models import BaseReadPrivateExtended, BaseReadPublicExtended
 from fed_reg.provider.schemas import ProviderRead, ProviderReadPublic
 from fed_reg.region.constants import DOC_EXT_LOC, DOC_EXT_PROV, DOC_EXT_SERV
 from fed_reg.region.schemas import (
@@ -25,7 +25,7 @@ from fed_reg.service.schemas import (
 )
 
 
-class RegionReadExtended(BaseNodeRead, BaseReadPrivateExtended, RegionBase):
+class RegionReadExtended(BaseReadPrivateExtended, RegionBase):
     """Model to extend the Region data read from the DB.
 
     Attributes:
@@ -49,7 +49,7 @@ class RegionReadExtended(BaseNodeRead, BaseReadPrivateExtended, RegionBase):
     ] = Field(description=DOC_EXT_SERV)
 
 
-class RegionReadExtendedPublic(BaseNodeRead, BaseReadPublicExtended, RegionBasePublic):
+class RegionReadExtendedPublic(BaseReadPublicExtended, RegionBasePublic):
     """Model to extend the Region public data read from the DB.
 
     Attributes:

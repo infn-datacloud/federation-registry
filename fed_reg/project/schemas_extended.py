@@ -10,7 +10,7 @@ from fed_reg.identity_provider.schemas import (
     IdentityProviderReadPublic,
 )
 from fed_reg.image.schemas import ImageRead, ImageReadPublic
-from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
+from fed_reg.models import BaseReadPrivateExtended, BaseReadPublicExtended
 from fed_reg.network.schemas import NetworkRead, NetworkReadPublic
 from fed_reg.project.constants import (
     DOC_EXT_FLAV,
@@ -496,7 +496,7 @@ class ProviderReadExtendedPublic(ProviderReadPublic):
     regions: list[RegionReadWithIdentityService] = Field(description=DOC_EXT_REG)
 
 
-class ProjectReadExtended(BaseNodeRead, BaseReadPrivateExtended, ProjectBase):
+class ProjectReadExtended(BaseReadPrivateExtended, ProjectBase):
     """Model to extend the Project data read from the DB.
 
     Attributes:
@@ -538,9 +538,7 @@ class ProjectReadExtended(BaseNodeRead, BaseReadPrivateExtended, ProjectBase):
         return super().from_orm(obj)
 
 
-class ProjectReadExtendedPublic(
-    BaseNodeRead, BaseReadPublicExtended, ProjectBasePublic
-):
+class ProjectReadExtendedPublic(BaseReadPublicExtended, ProjectBasePublic):
     """Model to extend the Project public data read from the DB.
 
     Attributes:

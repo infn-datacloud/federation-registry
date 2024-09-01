@@ -7,6 +7,7 @@ from pydantic import Field
 
 from fed_reg.models import (
     BaseNode,
+    BaseNodeCreate,
     BaseNodeRead,
     BaseReadPrivate,
     BaseReadPrivateExtended,
@@ -41,6 +42,11 @@ class TestModelFloat(BaseNode):
     test_field: float = Field(..., description="A test field for floats")
 
 
+class TestModelStr(BaseNode):
+    __test__ = False
+    test_field: str = Field(..., description="A test field for strings")
+
+
 class TestModelDate(BaseNode):
     __test__ = False
     test_field: date = Field(..., description="A test field for dates")
@@ -49,11 +55,6 @@ class TestModelDate(BaseNode):
 class TestModelDateTime(BaseNode):
     __test__ = False
     test_field: datetime = Field(..., description="A test field for datetimes")
-
-
-class TestModelStr(BaseNode):
-    __test__ = False
-    test_field: str = Field(..., description="A test field for strings")
 
 
 class TestModelEnum(BaseNode):
@@ -69,20 +70,9 @@ class TestModelUUID(BaseNode):
     )
 
 
-class TestModelReadPrivate(BaseNodeRead, BaseReadPrivate):
+class TestModelCreateInt(BaseNodeCreate):
     __test__ = False
-
-
-class TestModelReadPublic(BaseNodeRead, BaseReadPublic):
-    __test__ = False
-
-
-class TestModelReadPrivateExtended(BaseNodeRead, BaseReadPrivateExtended):
-    __test__ = False
-
-
-class TestModelReadPublicExtended(BaseNodeRead, BaseReadPublicExtended):
-    __test__ = False
+    test_field: int = Field(..., description="A test field for integers")
 
 
 class TestModelReadDate(BaseNodeRead):
@@ -93,6 +83,22 @@ class TestModelReadDate(BaseNodeRead):
 class TestModelReadDateTime(BaseNodeRead):
     __test__ = False
     datetime_test: datetime = Field(..., description="A test field for dates")
+
+
+class TestModelReadPrivate(BaseReadPrivate):
+    __test__ = False
+
+
+class TestModelReadPublic(BaseReadPublic):
+    __test__ = False
+
+
+class TestModelReadPrivateExtended(BaseReadPrivateExtended):
+    __test__ = False
+
+
+class TestModelReadPublicExtended(BaseReadPublicExtended):
+    __test__ = False
 
 
 class TestORMUID(StructuredNode):

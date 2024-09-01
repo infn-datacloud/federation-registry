@@ -6,7 +6,6 @@ from pydantic import Field
 from fed_reg.models import (
     BaseNode,
     BaseNodeCreate,
-    BaseNodeRead,
     BaseReadPrivate,
     BaseReadPublic,
 )
@@ -134,9 +133,7 @@ class BlockStorageQuotaUpdate(BaseNodeCreate, BlockStorageQuotaBase):
     """
 
 
-class BlockStorageQuotaReadPublic(
-    BaseNodeRead, BaseReadPublic, BlockStorageQuotaBasePublic
-):
+class BlockStorageQuotaReadPublic(BaseReadPublic, BlockStorageQuotaBasePublic):
     """Model, for non-authenticated users, to read Block Storage data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -154,7 +151,7 @@ class BlockStorageQuotaReadPublic(
     """
 
 
-class BlockStorageQuotaRead(BaseNodeRead, BaseReadPrivate, BlockStorageQuotaBase):
+class BlockStorageQuotaRead(BaseReadPrivate, BlockStorageQuotaBase):
     """Model, for authenticated users, to read Block Storage data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a
@@ -261,7 +258,7 @@ class ComputeQuotaUpdate(BaseNodeCreate, ComputeQuotaBase):
     """
 
 
-class ComputeQuotaReadPublic(BaseNodeRead, BaseReadPublic, ComputeQuotaBasePublic):
+class ComputeQuotaReadPublic(BaseReadPublic, ComputeQuotaBasePublic):
     """Model, for non-authenticated users, to read Compute data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -279,7 +276,7 @@ class ComputeQuotaReadPublic(BaseNodeRead, BaseReadPublic, ComputeQuotaBasePubli
     """
 
 
-class ComputeQuotaRead(BaseNodeRead, BaseReadPrivate, ComputeQuotaBase):
+class ComputeQuotaRead(BaseReadPrivate, ComputeQuotaBase):
     """Model, for authenticated users, to read Compute data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a
@@ -407,7 +404,7 @@ class NetworkQuotaUpdate(BaseNodeCreate, NetworkQuotaBase):
     """
 
 
-class NetworkQuotaReadPublic(BaseNodeRead, BaseReadPublic, NetworkQuotaBasePublic):
+class NetworkQuotaReadPublic(BaseReadPublic, NetworkQuotaBasePublic):
     """Model, for non-authenticated users, to read Network data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -427,7 +424,7 @@ class NetworkQuotaReadPublic(BaseNodeRead, BaseReadPublic, NetworkQuotaBasePubli
     type: QuotaType = Field(description="Network type")
 
 
-class NetworkQuotaRead(BaseNodeRead, BaseReadPrivate, NetworkQuotaBase):
+class NetworkQuotaRead(BaseReadPrivate, NetworkQuotaBase):
     """Model, for authenticated users, to read Network data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a
@@ -533,9 +530,7 @@ class ObjectStoreQuotaUpdate(BaseNodeCreate, ObjectStoreQuotaBase):
     """
 
 
-class ObjectStoreQuotaReadPublic(
-    BaseNodeRead, BaseReadPublic, ObjectStoreQuotaBasePublic
-):
+class ObjectStoreQuotaReadPublic(BaseReadPublic, ObjectStoreQuotaBasePublic):
     """Model, for non-authenticated users, to read Object Storage data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -556,7 +551,7 @@ class ObjectStoreQuotaReadPublic(
     """
 
 
-class ObjectStoreQuotaRead(BaseNodeRead, BaseReadPrivate, ObjectStoreQuotaBase):
+class ObjectStoreQuotaRead(BaseReadPrivate, ObjectStoreQuotaBase):
     """Model, for authenticated users, to read Object Storage data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a

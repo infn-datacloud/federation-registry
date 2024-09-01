@@ -1,7 +1,7 @@
 """Pydantic extended models of the Virtual Machine Network owned by a Provider."""
 from pydantic import BaseModel, Field
 
-from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
+from fed_reg.models import BaseReadPrivateExtended, BaseReadPublicExtended
 from fed_reg.network.constants import DOC_EXT_PROJ, DOC_EXT_SERV, DOC_SHARED
 from fed_reg.network.schemas import (
     NetworkBase,
@@ -75,7 +75,7 @@ class NetworkServiceReadExtendedPublic(NetworkServiceReadPublic):
     region: RegionReadExtendedPublic = Field(description=DOC_EXT_REG)
 
 
-class NetworkReadExtended(BaseNodeRead, BaseReadPrivateExtended, NetworkBase):
+class NetworkReadExtended(BaseReadPrivateExtended, NetworkBase):
     """Model to extend the Network data read from the DB.
 
     uid (int): Network unique ID.
@@ -100,9 +100,7 @@ class NetworkReadExtended(BaseNodeRead, BaseReadPrivateExtended, NetworkBase):
     service: NetworkServiceReadExtended = Field(description=DOC_EXT_SERV)
 
 
-class NetworkReadExtendedPublic(
-    BaseNodeRead, BaseReadPublicExtended, NetworkBasePublic
-):
+class NetworkReadExtendedPublic(BaseReadPublicExtended, NetworkBasePublic):
     """Model to extend the Network public data read from the DB.
 
     uid (int): Network unique ID.

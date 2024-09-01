@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field
 
-from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
+from fed_reg.models import BaseReadPrivateExtended, BaseReadPublicExtended
 from fed_reg.project.schemas import ProjectRead, ProjectReadPublic
 from fed_reg.provider.schemas import ProviderRead, ProviderReadPublic
 from fed_reg.quota.constants import DOC_EXT_PROJ, DOC_EXT_SERV
@@ -187,9 +187,7 @@ class ObjectStoreServiceReadExtendedPublic(ObjectStoreServiceReadPublic):
     region: RegionReadExtendedPublic = Field(description=DOC_EXT_REG)
 
 
-class BlockStorageQuotaReadExtended(
-    BaseNodeRead, BaseReadPrivateExtended, BlockStorageQuotaBase
-):
+class BlockStorageQuotaReadExtended(BaseReadPrivateExtended, BlockStorageQuotaBase):
     """Model to extend the Block Storage Quota data read from the DB.
 
     Attributes:
@@ -212,7 +210,7 @@ class BlockStorageQuotaReadExtended(
 
 
 class BlockStorageQuotaReadExtendedPublic(
-    BaseNodeRead, BaseReadPublicExtended, BlockStorageQuotaBasePublic
+    BaseReadPublicExtended, BlockStorageQuotaBasePublic
 ):
     """Model to extend the Block Storage Quota public data read from the DB.
 
@@ -230,7 +228,7 @@ class BlockStorageQuotaReadExtendedPublic(
     service: BlockStorageServiceReadExtendedPublic = Field(description=DOC_EXT_SERV)
 
 
-class ComputeQuotaReadExtended(BaseNodeRead, BaseReadPrivateExtended, ComputeQuotaBase):
+class ComputeQuotaReadExtended(BaseReadPrivateExtended, ComputeQuotaBase):
     """Model to extend the Compute Quota data read from the DB.
 
     Attributes:
@@ -251,9 +249,7 @@ class ComputeQuotaReadExtended(BaseNodeRead, BaseReadPrivateExtended, ComputeQuo
     service: ComputeServiceReadExtended = Field(description=DOC_EXT_SERV)
 
 
-class ComputeQuotaReadExtendedPublic(
-    BaseNodeRead, BaseReadPublicExtended, ComputeQuotaBasePublic
-):
+class ComputeQuotaReadExtendedPublic(BaseReadPublicExtended, ComputeQuotaBasePublic):
     """Model to extend the Compute Quota public data read from the DB.
 
     Attributes:
@@ -270,7 +266,7 @@ class ComputeQuotaReadExtendedPublic(
     service: ComputeServiceReadExtendedPublic = Field(description=DOC_EXT_SERV)
 
 
-class NetworkQuotaReadExtended(BaseNodeRead, BaseReadPrivateExtended, NetworkQuotaBase):
+class NetworkQuotaReadExtended(BaseReadPrivateExtended, NetworkQuotaBase):
     """Model to extend the Network Quota data read from the DB.
 
     Attributes:
@@ -296,9 +292,7 @@ class NetworkQuotaReadExtended(BaseNodeRead, BaseReadPrivateExtended, NetworkQuo
     service: NetworkServiceReadExtended = Field(description=DOC_EXT_SERV)
 
 
-class NetworkQuotaReadExtendedPublic(
-    BaseNodeRead, BaseReadPublicExtended, NetworkQuotaBasePublic
-):
+class NetworkQuotaReadExtendedPublic(BaseReadPublicExtended, NetworkQuotaBasePublic):
     """Model to extend the Network Quota public data read from the DB.
 
     Attributes:
@@ -315,9 +309,7 @@ class NetworkQuotaReadExtendedPublic(
     service: NetworkServiceReadExtendedPublic = Field(description=DOC_EXT_SERV)
 
 
-class ObjectStoreQuotaReadExtended(
-    BaseNodeRead, BaseReadPrivateExtended, ObjectStoreQuotaBase
-):
+class ObjectStoreQuotaReadExtended(BaseReadPrivateExtended, ObjectStoreQuotaBase):
     """Model to extend the Object Storage Quota data read from the DB.
 
     Attributes:
@@ -339,7 +331,7 @@ class ObjectStoreQuotaReadExtended(
 
 
 class ObjectStoreQuotaReadExtendedPublic(
-    BaseNodeRead, BaseReadPublicExtended, ObjectStoreQuotaBasePublic
+    BaseReadPublicExtended, ObjectStoreQuotaBasePublic
 ):
     """Model to extend the Object Storage Quota public data read from the DB.
 

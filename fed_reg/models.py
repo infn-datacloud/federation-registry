@@ -39,6 +39,11 @@ class BaseNode(BaseModel):
     @validator("*", pre=True, always=True)
     @classmethod
     def not_none(cls, v: Any, field: fields.ModelField) -> Any:
+        """Replace None with field's default.
+
+        If the default value is not None but None is given, set the value equals to the
+        field's default one.
+        """
         if all((getattr(field, "default", None) is not None, v is None)):
             return field.default
         else:
@@ -122,8 +127,8 @@ class BaseNodeRead(BaseModel):
         orm_mode = True
 
 
-class BaseReadPublic(BaseModel):
-    """ """
+class BaseReadPublic(BaseNodeRead):
+    """Read schema used to discriminate schemas with public attributes."""
 
     schema_type: Literal["public"] = Field(
         default="public",
@@ -131,8 +136,8 @@ class BaseReadPublic(BaseModel):
     )
 
 
-class BaseReadPrivate(BaseModel):
-    """ """
+class BaseReadPrivate(BaseNodeRead):
+    """Read schema used to discriminate schemas with private attributes."""
 
     schema_type: Literal["private"] = Field(
         default="private",
@@ -140,8 +145,8 @@ class BaseReadPrivate(BaseModel):
     )
 
 
-class BaseReadPublicExtended(BaseModel):
-    """ """
+class BaseReadPublicExtended(BaseNodeRead):
+    """Read schema used to discriminate schemas with public attr and relationships."""
 
     schema_type: Literal["public_extended"] = Field(
         default="public_extended",
@@ -149,8 +154,8 @@ class BaseReadPublicExtended(BaseModel):
     )
 
 
-class BaseReadPrivateExtended(BaseModel):
-    """ """
+class BaseReadPrivateExtended(BaseNodeRead):
+    """Read schema used to discriminate schemas with public attr and relationships."""
 
     schema_type: Literal["private_extended"] = Field(
         default="private_extended",

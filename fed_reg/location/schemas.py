@@ -14,7 +14,6 @@ from fed_reg.location.constants import (
 from fed_reg.models import (
     BaseNode,
     BaseNodeCreate,
-    BaseNodeRead,
     BaseReadPrivate,
     BaseReadPublic,
 )
@@ -98,7 +97,7 @@ class LocationUpdate(BaseNodeCreate, LocationBase):
     country: Optional[str] = Field(default=None, description=DOC_COUNTRY)
 
 
-class LocationReadPublic(BaseNodeRead, BaseReadPublic, LocationBasePublic):
+class LocationReadPublic(BaseReadPublic, LocationBasePublic):
     """Model, for non-authenticated users, to read Location data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -114,7 +113,7 @@ class LocationReadPublic(BaseNodeRead, BaseReadPublic, LocationBasePublic):
     """
 
 
-class LocationRead(BaseNodeRead, BaseReadPrivate, LocationBase):
+class LocationRead(BaseReadPrivate, LocationBase):
     """Model, for authenticated users, to read Location data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a

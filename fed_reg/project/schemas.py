@@ -6,7 +6,6 @@ from pydantic import Field
 from fed_reg.models import (
     BaseNode,
     BaseNodeCreate,
-    BaseNodeRead,
     BaseReadPrivate,
     BaseReadPublic,
 )
@@ -72,7 +71,7 @@ class ProjectUpdate(BaseNodeCreate, ProjectBase):
     uuid: Optional[str] = Field(default=None, description=DOC_UUID)
 
 
-class ProjectReadPublic(BaseNodeRead, BaseReadPublic, ProjectBasePublic):
+class ProjectReadPublic(BaseReadPublic, ProjectBasePublic):
     """Model, for non-authenticated users, to read Project data from DB.
 
     Class to read non-sensible data written in the DB. Expected as output when
@@ -89,7 +88,7 @@ class ProjectReadPublic(BaseNodeRead, BaseReadPublic, ProjectBasePublic):
     """
 
 
-class ProjectRead(BaseNodeRead, BaseReadPrivate, ProjectBase):
+class ProjectRead(BaseReadPrivate, ProjectBase):
     """Model, for authenticated users, to read Project data from DB.
 
     Class to read all data written in the DB. Expected as output when performing a
