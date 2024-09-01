@@ -62,12 +62,16 @@ from fed_reg.user_group.models import UserGroup
 from fed_reg.user_group.schemas import (
     UserGroupQuery,
     UserGroupRead,
+    UserGroupReadPublic,
     UserGroupUpdate,
 )
 from fed_reg.user_group.schemas_extended import (
+    UserGroupReadExtended,
+    UserGroupReadExtendedPublic,
     UserGroupReadMulti,
     UserGroupReadSingle,
 )
+from fed_reg.utils import choose_out_schema, paginate
 
 router = APIRouter(prefix="/user_groups", tags=["user_groups"])
 
@@ -128,9 +132,16 @@ def get_user_groups(
     region_query = RegionQuery(name=region_name)
     items = filter_on_region_attr(items=items, region_query=region_query)
 
-    items = user_group_mng.paginate(items=items, page=page.page, size=page.size)
-    return user_group_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=UserGroupReadPublic,
+        schema_read_private=UserGroupRead,
+        schema_read_public_extended=UserGroupReadExtendedPublic,
+        schema_read_private_extended=UserGroupReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -160,8 +171,15 @@ def get_user_group(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return user_group_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=UserGroupReadPublic,
+        schema_read_private=UserGroupRead,
+        schema_read_public_extended=UserGroupReadExtendedPublic,
+        schema_read_private_extended=UserGroupReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 

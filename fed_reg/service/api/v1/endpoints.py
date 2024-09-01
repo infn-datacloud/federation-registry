@@ -56,32 +56,48 @@ from fed_reg.service.models import (
 from fed_reg.service.schemas import (
     BlockStorageServiceQuery,
     BlockStorageServiceRead,
+    BlockStorageServiceReadPublic,
     BlockStorageServiceUpdate,
     ComputeServiceQuery,
     ComputeServiceRead,
+    ComputeServiceReadPublic,
     ComputeServiceUpdate,
     IdentityServiceQuery,
     IdentityServiceRead,
+    IdentityServiceReadPublic,
     IdentityServiceUpdate,
     NetworkServiceQuery,
     NetworkServiceRead,
+    NetworkServiceReadPublic,
     NetworkServiceUpdate,
     ObjectStoreServiceQuery,
     ObjectStoreServiceRead,
+    ObjectStoreServiceReadPublic,
     ObjectStoreServiceUpdate,
 )
 from fed_reg.service.schemas_extended import (
+    BlockStorageServiceReadExtended,
+    BlockStorageServiceReadExtendedPublic,
     BlockStorageServiceReadMulti,
     BlockStorageServiceReadSingle,
+    ComputeServiceReadExtended,
+    ComputeServiceReadExtendedPublic,
     ComputeServiceReadMulti,
     ComputeServiceReadSingle,
+    IdentityServiceReadExtended,
+    IdentityServiceReadExtendedPublic,
     IdentityServiceReadMulti,
     IdentityServiceReadSingle,
+    NetworkServiceReadExtended,
+    NetworkServiceReadExtendedPublic,
     NetworkServiceReadMulti,
     NetworkServiceReadSingle,
+    ObjectStoreServiceReadExtended,
+    ObjectStoreServiceReadExtendedPublic,
     ObjectStoreServiceReadMulti,
     ObjectStoreServiceReadSingle,
 )
+from fed_reg.utils import choose_out_schema, paginate
 
 bs_router = APIRouter(prefix="/block_storage_services", tags=["block_storage_services"])
 
@@ -118,11 +134,16 @@ def get_block_storage_services(
     items = block_storage_service_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = block_storage_service_mng.paginate(
-        items=items, page=page.page, size=page.size
-    )
-    return block_storage_service_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=BlockStorageServiceReadPublic,
+        schema_read_private=BlockStorageServiceRead,
+        schema_read_public_extended=BlockStorageServiceReadExtendedPublic,
+        schema_read_private_extended=BlockStorageServiceReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -152,8 +173,15 @@ def get_block_storage_service(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return block_storage_service_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=BlockStorageServiceReadPublic,
+        schema_read_private=BlockStorageServiceRead,
+        schema_read_public_extended=BlockStorageServiceReadExtendedPublic,
+        schema_read_private_extended=BlockStorageServiceReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 
@@ -267,9 +295,16 @@ def get_compute_services(
     items = compute_service_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = compute_service_mng.paginate(items=items, page=page.page, size=page.size)
-    return compute_service_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=ComputeServiceReadPublic,
+        schema_read_private=ComputeServiceRead,
+        schema_read_public_extended=ComputeServiceReadExtendedPublic,
+        schema_read_private_extended=ComputeServiceReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -299,8 +334,15 @@ def get_compute_service(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return compute_service_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=ComputeServiceReadPublic,
+        schema_read_private=ComputeServiceRead,
+        schema_read_public_extended=ComputeServiceReadExtendedPublic,
+        schema_read_private_extended=ComputeServiceReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 
@@ -414,9 +456,16 @@ def get_identity_services(
     items = identity_service_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = identity_service_mng.paginate(items=items, page=page.page, size=page.size)
-    return identity_service_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=IdentityServiceReadPublic,
+        schema_read_private=IdentityServiceRead,
+        schema_read_public_extended=IdentityServiceReadExtendedPublic,
+        schema_read_private_extended=IdentityServiceReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -446,8 +495,15 @@ def get_identity_service(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return identity_service_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=IdentityServiceReadPublic,
+        schema_read_private=IdentityServiceRead,
+        schema_read_public_extended=IdentityServiceReadExtendedPublic,
+        schema_read_private_extended=IdentityServiceReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 
@@ -561,9 +617,16 @@ def get_network_services(
     items = network_service_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = network_service_mng.paginate(items=items, page=page.page, size=page.size)
-    return network_service_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=NetworkServiceReadPublic,
+        schema_read_private=NetworkServiceRead,
+        schema_read_public_extended=NetworkServiceReadExtendedPublic,
+        schema_read_private_extended=NetworkServiceReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -593,8 +656,15 @@ def get_network_service(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return network_service_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=NetworkServiceReadPublic,
+        schema_read_private=NetworkServiceRead,
+        schema_read_public_extended=NetworkServiceReadExtendedPublic,
+        schema_read_private_extended=NetworkServiceReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 
@@ -708,11 +778,16 @@ def get_object_store_services(
     items = object_store_service_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = object_store_service_mng.paginate(
-        items=items, page=page.page, size=page.size
-    )
-    return object_store_service_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=ObjectStoreServiceReadPublic,
+        schema_read_private=ObjectStoreServiceRead,
+        schema_read_public_extended=ObjectStoreServiceReadExtendedPublic,
+        schema_read_private_extended=ObjectStoreServiceReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -742,8 +817,15 @@ def get_object_store_service(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return object_store_service_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=ObjectStoreServiceReadPublic,
+        schema_read_private=ObjectStoreServiceRead,
+        schema_read_public_extended=ObjectStoreServiceReadExtendedPublic,
+        schema_read_private_extended=ObjectStoreServiceReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 

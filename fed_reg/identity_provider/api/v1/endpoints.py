@@ -29,9 +29,12 @@ from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.identity_provider.schemas import (
     IdentityProviderQuery,
     IdentityProviderRead,
+    IdentityProviderReadPublic,
     IdentityProviderUpdate,
 )
 from fed_reg.identity_provider.schemas_extended import (
+    IdentityProviderReadExtended,
+    IdentityProviderReadExtendedPublic,
     IdentityProviderReadMulti,
     IdentityProviderReadSingle,
 )
@@ -40,6 +43,7 @@ from fed_reg.identity_provider.schemas_extended import (
 # from app.provider.api.dependencies import valid_provider_id
 # from app.provider.models import Provider
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
+from fed_reg.utils import choose_out_schema, paginate
 
 router = APIRouter(prefix="/identity_providers", tags=["identity_providers"])
 
@@ -76,9 +80,16 @@ def get_identity_providers(
     items = identity_provider_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = identity_provider_mng.paginate(items=items, page=page.page, size=page.size)
-    return identity_provider_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=IdentityProviderReadPublic,
+        schema_read_private=IdentityProviderRead,
+        schema_read_public_extended=IdentityProviderReadExtendedPublic,
+        schema_read_private_extended=IdentityProviderReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -108,8 +119,15 @@ def get_identity_provider(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return identity_provider_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=IdentityProviderReadPublic,
+        schema_read_private=IdentityProviderRead,
+        schema_read_public_extended=IdentityProviderReadExtendedPublic,
+        schema_read_private_extended=IdentityProviderReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 

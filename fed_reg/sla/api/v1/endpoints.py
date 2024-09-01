@@ -30,12 +30,16 @@ from fed_reg.sla.models import SLA
 from fed_reg.sla.schemas import (
     SLAQuery,
     SLARead,
+    SLAReadPublic,
     SLAUpdate,
 )
 from fed_reg.sla.schemas_extended import (
+    SLAReadExtended,
+    SLAReadExtendedPublic,
     SLAReadMulti,
     SLAReadSingle,
 )
+from fed_reg.utils import choose_out_schema, paginate
 
 router = APIRouter(prefix="/slas", tags=["slas"])
 
@@ -72,9 +76,16 @@ def get_slas(
     items = sla_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = sla_mng.paginate(items=items, page=page.page, size=page.size)
-    return sla_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=SLAReadPublic,
+        schema_read_private=SLARead,
+        schema_read_public_extended=SLAReadExtendedPublic,
+        schema_read_private_extended=SLAReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -145,8 +156,15 @@ def get_sla(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return sla_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=SLAReadPublic,
+        schema_read_private=SLARead,
+        schema_read_public_extended=SLAReadExtendedPublic,
+        schema_read_private_extended=SLAReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 

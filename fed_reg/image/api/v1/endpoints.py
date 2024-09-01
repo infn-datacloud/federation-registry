@@ -24,13 +24,17 @@ from fed_reg.image.models import Image
 from fed_reg.image.schemas import (
     ImageQuery,
     ImageRead,
+    ImageReadPublic,
     ImageUpdate,
 )
 from fed_reg.image.schemas_extended import (
+    ImageReadExtended,
+    ImageReadExtendedPublic,
     ImageReadMulti,
     ImageReadSingle,
 )
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
+from fed_reg.utils import choose_out_schema, paginate
 
 router = APIRouter(prefix="/images", tags=["images"])
 
@@ -67,9 +71,16 @@ def get_images(
     items = image_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = image_mng.paginate(items=items, page=page.page, size=page.size)
-    return image_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=ImageReadPublic,
+        schema_read_private=ImageRead,
+        schema_read_public_extended=ImageReadExtendedPublic,
+        schema_read_private_extended=ImageReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -99,8 +110,15 @@ def get_image(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return image_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=ImageReadPublic,
+        schema_read_private=ImageRead,
+        schema_read_public_extended=ImageReadExtendedPublic,
+        schema_read_private_extended=ImageReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 

@@ -57,15 +57,18 @@ from fed_reg.provider.models import Provider
 from fed_reg.provider.schemas import (
     ProviderQuery,
     ProviderRead,
+    ProviderReadPublic,
     ProviderUpdate,
 )
 from fed_reg.provider.schemas_extended import (
     ProviderCreateExtended,
     ProviderReadExtended,
+    ProviderReadExtendedPublic,
     ProviderReadMulti,
     ProviderReadSingle,
 )
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
+from fed_reg.utils import choose_out_schema, paginate
 
 router = APIRouter(prefix="/providers", tags=["providers"])
 
@@ -102,9 +105,16 @@ def get_providers(
     items = provider_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = provider_mng.paginate(items=items, page=page.page, size=page.size)
-    return provider_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=ProviderReadPublic,
+        schema_read_private=ProviderRead,
+        schema_read_public_extended=ProviderReadExtendedPublic,
+        schema_read_private_extended=ProviderReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -164,8 +174,15 @@ def get_provider(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return provider_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=ProviderReadPublic,
+        schema_read_private=ProviderRead,
+        schema_read_public_extended=ProviderReadExtendedPublic,
+        schema_read_private_extended=ProviderReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 

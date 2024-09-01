@@ -26,12 +26,16 @@ from fed_reg.region.models import Region
 from fed_reg.region.schemas import (
     RegionQuery,
     RegionRead,
+    RegionReadPublic,
     RegionUpdate,
 )
 from fed_reg.region.schemas_extended import (
+    RegionReadExtended,
+    RegionReadExtendedPublic,
     RegionReadMulti,
     RegionReadSingle,
 )
+from fed_reg.utils import choose_out_schema, paginate
 
 router = APIRouter(prefix="/regions", tags=["regions"])
 
@@ -68,9 +72,16 @@ def get_regions(
     items = region_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = region_mng.paginate(items=items, page=page.page, size=page.size)
-    return region_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=RegionReadPublic,
+        schema_read_private=RegionRead,
+        schema_read_public_extended=RegionReadExtendedPublic,
+        schema_read_private_extended=RegionReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -100,8 +111,15 @@ def get_region(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return region_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=RegionReadPublic,
+        schema_read_private=RegionRead,
+        schema_read_public_extended=RegionReadExtendedPublic,
+        schema_read_private_extended=RegionReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 

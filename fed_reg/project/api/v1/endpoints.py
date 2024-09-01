@@ -36,14 +36,18 @@ from fed_reg.project.models import Project
 from fed_reg.project.schemas import (
     ProjectQuery,
     ProjectRead,
+    ProjectReadPublic,
     ProjectUpdate,
 )
 from fed_reg.project.schemas_extended import (
+    ProjectReadExtended,
+    ProjectReadExtendedPublic,
     ProjectReadMulti,
     ProjectReadSingle,
 )
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 from fed_reg.region.schemas import RegionQuery
+from fed_reg.utils import choose_out_schema, paginate
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -90,11 +94,18 @@ def get_projects(
             lambda x: x.sla.single().user_group.single().uid == user_group_uid, items
         )
 
-    items = project_mng.paginate(items=items, page=page.page, size=page.size)
+    items = paginate(items=items, page=page.page, size=page.size)
     region_query = RegionQuery(name=region_name)
     items = filter_on_region_attr(items=items, region_query=region_query)
-    items = project_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = choose_out_schema(
+        schema_read_public=ProjectReadPublic,
+        schema_read_private=ProjectRead,
+        schema_read_public_extended=ProjectReadExtendedPublic,
+        schema_read_private_extended=ProjectReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
     if provider_uid and size.with_conn:
         for item in items:
@@ -134,8 +145,15 @@ def get_project(
     """
     region_query = RegionQuery(name=region_name)
     items = filter_on_region_attr(items=[item], region_query=region_query)
-    items = project_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = choose_out_schema(
+        schema_read_public=ProjectReadPublic,
+        schema_read_private=ProjectRead,
+        schema_read_public_extended=ProjectReadExtendedPublic,
+        schema_read_private_extended=ProjectReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
     return items[0]
 

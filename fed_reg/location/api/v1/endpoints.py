@@ -24,13 +24,17 @@ from fed_reg.location.models import Location
 from fed_reg.location.schemas import (
     LocationQuery,
     LocationRead,
+    LocationReadPublic,
     LocationUpdate,
 )
 from fed_reg.location.schemas_extended import (
+    LocationReadExtended,
+    LocationReadExtendedPublic,
     LocationReadMulti,
     LocationReadSingle,
 )
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
+from fed_reg.utils import choose_out_schema, paginate
 
 # from app.region.models import Region
 # from app.region.api.dependencies import valid_region_id
@@ -70,9 +74,16 @@ def get_locations(
     items = location_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = location_mng.paginate(items=items, page=page.page, size=page.size)
-    return location_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=LocationReadPublic,
+        schema_read_private=LocationRead,
+        schema_read_public_extended=LocationReadExtendedPublic,
+        schema_read_private_extended=LocationReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -102,8 +113,15 @@ def get_location(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return location_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=LocationReadPublic,
+        schema_read_private=LocationRead,
+        schema_read_public_extended=LocationReadExtendedPublic,
+        schema_read_private_extended=LocationReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 

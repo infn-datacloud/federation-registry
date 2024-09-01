@@ -24,13 +24,17 @@ from fed_reg.network.models import Network
 from fed_reg.network.schemas import (
     NetworkQuery,
     NetworkRead,
+    NetworkReadPublic,
     NetworkUpdate,
 )
 from fed_reg.network.schemas_extended import (
+    NetworkReadExtended,
+    NetworkReadExtendedPublic,
     NetworkReadMulti,
     NetworkReadSingle,
 )
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
+from fed_reg.utils import choose_out_schema, paginate
 
 router = APIRouter(prefix="/networks", tags=["networks"])
 
@@ -67,9 +71,16 @@ def get_networks(
     items = network_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = network_mng.paginate(items=items, page=page.page, size=page.size)
-    return network_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=NetworkReadPublic,
+        schema_read_private=NetworkRead,
+        schema_read_public_extended=NetworkReadExtendedPublic,
+        schema_read_private_extended=NetworkReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -99,8 +110,15 @@ def get_network(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return network_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=NetworkReadPublic,
+        schema_read_private=NetworkRead,
+        schema_read_public_extended=NetworkReadExtendedPublic,
+        schema_read_private_extended=NetworkReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 

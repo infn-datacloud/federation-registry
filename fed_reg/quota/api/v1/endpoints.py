@@ -41,27 +41,40 @@ from fed_reg.quota.models import (
 from fed_reg.quota.schemas import (
     BlockStorageQuotaQuery,
     BlockStorageQuotaRead,
+    BlockStorageQuotaReadPublic,
     BlockStorageQuotaUpdate,
     ComputeQuotaQuery,
     ComputeQuotaRead,
+    ComputeQuotaReadPublic,
     ComputeQuotaUpdate,
     NetworkQuotaQuery,
     NetworkQuotaRead,
+    NetworkQuotaReadPublic,
     NetworkQuotaUpdate,
     ObjectStoreQuotaQuery,
     ObjectStoreQuotaRead,
+    ObjectStoreQuotaReadPublic,
     ObjectStoreQuotaUpdate,
 )
 from fed_reg.quota.schemas_extended import (
+    BlockStorageQuotaReadExtended,
+    BlockStorageQuotaReadExtendedPublic,
     BlockStorageQuotaReadMulti,
     BlockStorageQuotaReadSingle,
+    ComputeQuotaReadExtended,
+    ComputeQuotaReadExtendedPublic,
     ComputeQuotaReadMulti,
     ComputeQuotaReadSingle,
+    NetworkQuotaReadExtended,
+    NetworkQuotaReadExtendedPublic,
     NetworkQuotaReadMulti,
     NetworkQuotaReadSingle,
+    ObjectStoreQuotaReadExtended,
+    ObjectStoreQuotaReadExtendedPublic,
     ObjectStoreQuotaReadMulti,
     ObjectStoreQuotaReadSingle,
 )
+from fed_reg.utils import choose_out_schema, paginate
 
 bs_router = APIRouter(prefix="/block_storage_quotas", tags=["block_storage_quotas"])
 
@@ -98,11 +111,16 @@ def get_block_storage_quotas(
     items = block_storage_quota_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = block_storage_quota_mng.paginate(
-        items=items, page=page.page, size=page.size
-    )
-    return block_storage_quota_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=BlockStorageQuotaReadPublic,
+        schema_read_private=BlockStorageQuotaRead,
+        schema_read_public_extended=BlockStorageQuotaReadExtendedPublic,
+        schema_read_private_extended=BlockStorageQuotaReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -169,8 +187,15 @@ def get_block_storage_quota(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return block_storage_quota_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=BlockStorageQuotaReadPublic,
+        schema_read_private=BlockStorageQuotaRead,
+        schema_read_public_extended=BlockStorageQuotaReadExtendedPublic,
+        schema_read_private_extended=BlockStorageQuotaReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 
@@ -281,9 +306,16 @@ def get_compute_quotas(
     items = compute_quota_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = compute_quota_mng.paginate(items=items, page=page.page, size=page.size)
-    return compute_quota_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=ComputeQuotaReadPublic,
+        schema_read_private=ComputeQuotaRead,
+        schema_read_public_extended=ComputeQuotaReadExtendedPublic,
+        schema_read_private_extended=ComputeQuotaReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -350,8 +382,15 @@ def get_compute_quota(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return compute_quota_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=ComputeQuotaReadPublic,
+        schema_read_private=ComputeQuotaRead,
+        schema_read_public_extended=ComputeQuotaReadExtendedPublic,
+        schema_read_private_extended=ComputeQuotaReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 
@@ -462,9 +501,16 @@ def get_network_quotas(
     items = network_quota_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = network_quota_mng.paginate(items=items, page=page.page, size=page.size)
-    return network_quota_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=NetworkQuotaReadPublic,
+        schema_read_private=NetworkQuotaRead,
+        schema_read_public_extended=NetworkQuotaReadExtendedPublic,
+        schema_read_private_extended=NetworkQuotaReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -494,8 +540,15 @@ def get_network_quota(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return network_quota_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=NetworkQuotaReadPublic,
+        schema_read_private=NetworkQuotaRead,
+        schema_read_public_extended=NetworkQuotaReadExtendedPublic,
+        schema_read_private_extended=NetworkQuotaReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 
@@ -606,9 +659,16 @@ def get_object_store_quotas(
     items = object_store_quota_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = object_store_quota_mng.paginate(items=items, page=page.page, size=page.size)
-    return object_store_quota_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_out_schema(
+        schema_read_public=ObjectStoreQuotaReadPublic,
+        schema_read_private=ObjectStoreQuotaRead,
+        schema_read_public_extended=ObjectStoreQuotaReadExtendedPublic,
+        schema_read_private_extended=ObjectStoreQuotaReadExtended,
+        items=items,
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )
 
 
@@ -675,8 +735,15 @@ def get_object_store_quota(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return object_store_quota_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
+    return choose_out_schema(
+        schema_read_public=ObjectStoreQuotaReadPublic,
+        schema_read_private=ObjectStoreQuotaRead,
+        schema_read_public_extended=ObjectStoreQuotaReadExtendedPublic,
+        schema_read_private_extended=ObjectStoreQuotaReadExtended,
+        items=[item],
+        auth=user_infos,
+        short=size.short,
+        with_conn=size.with_conn,
     )[0]
 
 
