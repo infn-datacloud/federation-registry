@@ -1,13 +1,12 @@
 import pytest
-from pytest_cases import parametrize_with_cases
+from pytest_cases import case, parametrize, parametrize_with_cases
 
 from fed_reg.query import (
     DbQueryCommonParams,
-    Pagination,
     SchemaSize,
     create_query_model,
 )
-from tests.schemas.utils import (
+from tests.generics.utils import (
     TestModelBool,
     TestModelDate,
     TestModelDateTime,
@@ -16,13 +15,65 @@ from tests.schemas.utils import (
     TestModelInt,
     TestModelStr,
     db_query_schema_dict,
-    pagination_schema_dict,
     schema_size_schema_dict,
 )
 from tests.utils import random_lower_string
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "schema_size"))
+class CaseModel:
+    @case(tags=("model", "str"))
+    def case_model_str(self) -> type[TestModelStr]:
+        return TestModelStr
+
+    @case(tags=("model", "str"))
+    def case_model_enum(self) -> type[TestModelEnum]:
+        return TestModelEnum
+
+    @case(tags=("model", "number"))
+    def case_model_int(self) -> type[TestModelInt]:
+        return TestModelInt
+
+    @case(tags=("model", "number"))
+    def case_model_float(self) -> type[TestModelFloat]:
+        return TestModelFloat
+
+    @case(tags=("model", "date"))
+    def case_model_date(self) -> type[TestModelDate]:
+        return TestModelDate
+
+    @case(tags=("model", "date"))
+    def case_model_datetime(self) -> type[TestModelDateTime]:
+        return TestModelDateTime
+
+
+class CaseAttr:
+    @case(tags=("attr", "invalid_attr", "schema_size"))
+    @parametrize(value=["short", "with_conn"])
+    def case_schema_size(self, value: str) -> str:
+        return value
+
+    @case(tags=("attr", "db_query"))
+    @parametrize(value=["limit", "skip", "sort"])
+    def case_valid_db_query(self, value: str) -> str:
+        return value
+
+    @case(tags=("attr", "sort"))
+    @parametrize(value=["test", "test_asc"])
+    def case_sort_asc(self, value: str) -> tuple[str]:
+        return value, "test"
+
+    @case(tags=("attr", "sort"))
+    @parametrize(value=["test_desc", "-test", "-test_desc"])
+    def case_sort_desc(self, value: str) -> tuple[str]:
+        return value, "-test"
+
+    @case(tags=("invalid_attr", "db_query"))
+    @parametrize(value=("limit", "skip"))
+    def case_invalid_db_query(self, value: str) -> str:
+        return value
+
+
+@parametrize_with_cases("attr", cases=CaseAttr, has_tag=("attr", "schema_size"))
 def test_valid_schema(attr: str) -> None:
     d = schema_size_schema_dict(attr)
     item = SchemaSize(**d)
@@ -30,33 +81,13 @@ def test_valid_schema(attr: str) -> None:
     assert item.with_conn == d.get("with_conn", False)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "schema_size"))
+@parametrize_with_cases("attr", cases=CaseAttr, has_tag=("invalid_attr", "schema_size"))
 def test_invalid_schema(attr: str) -> None:
     with pytest.raises(ValueError):
         SchemaSize(**schema_size_schema_dict(attr, valid=False))
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "pagination"))
-def test_valid_pagination(attr: str) -> None:
-    d = pagination_schema_dict(attr)
-    item = Pagination(**d)
-    assert item.page == d.get("page", 0)
-    assert item.size == d.get("size", None)
-
-
-def test_set_page_to_0() -> None:
-    item = Pagination(page=1)
-    assert item.size is None
-    assert item.page == 0
-
-
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "pagination"))
-def test_invalid_pagination(attr: str) -> None:
-    with pytest.raises(ValueError):
-        Pagination(**pagination_schema_dict(attr, valid=False))
-
-
-@parametrize_with_cases("attr", has_tag=("attr", "db_query"))
+@parametrize_with_cases("attr", cases=CaseAttr, has_tag=("attr", "db_query"))
 def test_valid_db_params(attr: str) -> None:
     d = db_query_schema_dict(attr)
     item = DbQueryCommonParams(**d)
@@ -65,14 +96,14 @@ def test_valid_db_params(attr: str) -> None:
     assert item.sort == d.get("sort", None)
 
 
-@parametrize_with_cases("input, output", has_tag=("attr", "sort"))
+@parametrize_with_cases("input, output", cases=CaseAttr, has_tag=("attr", "sort"))
 def test_parse_sort(input: str, output: str) -> None:
     item = DbQueryCommonParams(sort=input)
     assert item.sort is not None
     assert item.sort == output
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "db_query"))
+@parametrize_with_cases("attr", cases=CaseAttr, has_tag=("invalid_attr", "db_query"))
 def test_invalid_db_params(attr: str) -> None:
     with pytest.raises(ValueError):
         DbQueryCommonParams(**db_query_schema_dict(attr, valid=False))
@@ -84,7 +115,7 @@ def test_bool() -> None:
     assert item.test_field is None
 
 
-@parametrize_with_cases("model", has_tag=("model", "number"))
+@parametrize_with_cases("model", cases=CaseModel, has_tag=("model", "number"))
 def test_numbers(model: type[TestModelInt] | type[TestModelFloat]) -> None:
     cls = create_query_model(random_lower_string(), model)
     item = cls()
@@ -96,7 +127,7 @@ def test_numbers(model: type[TestModelInt] | type[TestModelFloat]) -> None:
     assert item.test_field__ne is None
 
 
-@parametrize_with_cases("model", has_tag=("model", "date"))
+@parametrize_with_cases("model", cases=CaseModel, has_tag=("model", "date"))
 def test_dates(model: type[TestModelDate] | type[TestModelDateTime]) -> None:
     cls = create_query_model(random_lower_string(), model)
     item = cls()
@@ -107,7 +138,7 @@ def test_dates(model: type[TestModelDate] | type[TestModelDateTime]) -> None:
     assert item.test_field__ne is None
 
 
-@parametrize_with_cases("model", has_tag=("model", "str"))
+@parametrize_with_cases("model", cases=CaseModel, has_tag=("model", "str"))
 def test_str_enum(model: type[TestModelStr] | type[TestModelEnum]) -> None:
     cls = create_query_model(random_lower_string(), model)
     item = cls()

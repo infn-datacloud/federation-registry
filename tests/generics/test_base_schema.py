@@ -1,12 +1,12 @@
-from datetime import date
+from datetime import date, datetime
 from uuid import uuid4
 
 import pytest
-from neo4j.time import Date
-from pytest_cases import parametrize_with_cases
+from neo4j.time import Date, DateTime
+from pytest_cases import case, parametrize_with_cases
 
 from fed_reg.models import BaseNode, BaseNodeRead
-from tests.schemas.utils import (
+from tests.generics.utils import (
     TestEnum,
     TestModelEnum,
     TestModelReadDate,
@@ -15,7 +15,31 @@ from tests.schemas.utils import (
     TestORMDate,
     TestORMDateTime,
 )
-from tests.utils import random_lower_string
+from tests.utils import random_date, random_datetime, random_lower_string
+
+
+class CaseDates:
+    @case(tags=["date"])
+    def case_py_date(self) -> tuple[date, date]:
+        d = random_date()
+        return d, d
+
+    @case(tags=["date"])
+    def case_neo4j_date(self) -> tuple[date, date]:
+        d = random_date()
+        return Date(d.year, d.month, d.day), d
+
+    @case(tags=["datetime"])
+    def case_py_datetime(self) -> tuple[datetime, datetime]:
+        d = random_datetime()
+        return d, d
+
+    @case(tags=["datetime"])
+    def case_neo4j_datetime(self) -> tuple[datetime, datetime]:
+        d = random_datetime()
+        return DateTime(
+            d.year, d.month, d.day, d.hour, d.minute, d.second, tzinfo=d.tzinfo
+        ), d
 
 
 def test_default() -> None:
@@ -88,7 +112,7 @@ def test_invalid_read_schema() -> None:
         BaseNodeRead()
 
 
-@parametrize_with_cases("input, output", has_tag="date")
+@parametrize_with_cases("input, output", cases=CaseDates, has_tag="date")
 def test_cast_neo4j_date(input: date | Date, output: date) -> None:
     item = TestORMDate(date_test=input)
     item = TestModelReadDate.from_orm(item)
@@ -96,7 +120,7 @@ def test_cast_neo4j_date(input: date | Date, output: date) -> None:
     assert item.date_test == output
 
 
-@parametrize_with_cases("input, output", has_tag="datetime")
+@parametrize_with_cases("input, output", cases=CaseDates, has_tag="datetime")
 def test_cast_neo4j_datetime(input: date | Date, output: date) -> None:
     item = TestORMDateTime(datetime_test=input)
     item = TestModelReadDateTime.from_orm(item)

@@ -1,8 +1,11 @@
 from typing import Literal
 
-from pytest_cases import case, parametrize_with_cases
+import pytest
+from pytest_cases import case, parametrize, parametrize_with_cases
 
+from fed_reg.query import Pagination
 from fed_reg.utils import paginate
+from tests.generics.utils import pagination_schema_dict
 
 
 class CaseItems:
@@ -33,6 +36,38 @@ class CasePage:
 
     def case_1(self) -> Literal[1]:
         return 1
+
+
+class CasePaginationAttr:
+    @case(tags="attr")
+    @parametrize(value=["page", "size"])
+    def case_valid_pagination(self, value: str) -> str:
+        return value
+
+    @case(tags="invalid_attr")
+    @parametrize(value=["page", "size_0", "negative_size"])
+    def case_invalid_pagination(self, value: str) -> str:
+        return value
+
+
+@parametrize_with_cases("attr", cases=CasePaginationAttr, has_tag="attr")
+def test_valid_pagination_schema(attr: str) -> None:
+    d = pagination_schema_dict(attr)
+    item = Pagination(**d)
+    assert item.page == d.get("page", 0)
+    assert item.size == d.get("size", None)
+
+
+def test_set_schema_page_to_0() -> None:
+    item = Pagination(page=1)
+    assert item.size is None
+    assert item.page == 0
+
+
+@parametrize_with_cases("attr", cases=CasePaginationAttr, has_tag="invalid_attr")
+def test_invalid_pagination_schema(attr: str) -> None:
+    with pytest.raises(ValueError):
+        Pagination(**pagination_schema_dict(attr, valid=False))
 
 
 @parametrize_with_cases("items", cases=CaseItems)

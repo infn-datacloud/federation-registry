@@ -4,7 +4,7 @@ import pytest
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.utils import choose_out_schema
-from tests.schemas.utils import (
+from tests.generics.utils import (
     TestModelReadPrivate,
     TestModelReadPrivateExtended,
     TestModelReadPublic,
