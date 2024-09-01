@@ -86,7 +86,16 @@ class BaseNodeRead(BaseModel):
     @classmethod
     def get_single_relation(cls, v: Any) -> Any:
         """From One or ZeroOrOne relationships get that single relationship."""
-        return v.single() if isinstance(v, (One, ZeroOrOne)) else v
+        if isinstance(v, (One, ZeroOrOne)):
+            node = v.single()
+            if v.definition.get("model") is None:
+                return node
+            else:
+                item = node.__dict__
+                item["relationship"] = v.relationship(node)
+                return item
+        else:
+            return v
 
     @validator("*", pre=True)
     @classmethod
