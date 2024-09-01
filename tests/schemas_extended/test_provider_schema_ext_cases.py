@@ -20,7 +20,7 @@ from fed_reg.provider.schemas_extended import (
     RegionCreateExtended,
     SLACreateExtended,
 )
-from tests.create_dict import (
+from tests.schemas.utils import (
     flavor_schema_dict,
     image_schema_dict,
     network_schema_dict,

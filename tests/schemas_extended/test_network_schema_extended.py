@@ -28,7 +28,7 @@ from fed_reg.provider.schemas_extended import (
 )
 from fed_reg.region.models import Region
 from fed_reg.service.models import NetworkService
-from tests.create_dict import network_schema_dict
+from tests.schemas.utils import network_schema_dict
 
 
 def test_class_inheritance():

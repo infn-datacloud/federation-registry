@@ -7,7 +7,7 @@ from fed_reg.provider.schemas_extended import (
     ProviderCreateExtended,
     RegionCreateExtended,
 )
-from tests.create_dict import provider_schema_dict
+from tests.schemas.utils import provider_schema_dict
 from tests.utils import random_lower_string
 
 

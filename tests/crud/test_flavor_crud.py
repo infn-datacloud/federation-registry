@@ -13,7 +13,8 @@ from fed_reg.provider.schemas_extended import (
     SharedFlavorCreateExtended,
 )
 from fed_reg.service.models import ComputeService
-from tests.create_dict import flavor_model_dict, flavor_schema_dict, project_model_dict
+from tests.models.utils import flavor_model_dict, project_model_dict
+from tests.schemas.utils import flavor_schema_dict
 
 
 @pytest.fixture

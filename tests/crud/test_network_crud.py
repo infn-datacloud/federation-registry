@@ -12,10 +12,8 @@ from fed_reg.provider.schemas_extended import (
     SharedNetworkCreateExtended,
 )
 from fed_reg.service.models import NetworkService
-from tests.create_dict import (
-    network_model_dict,
-    network_schema_dict,
-)
+from tests.models.utils import network_model_dict
+from tests.schemas.utils import network_schema_dict
 
 
 @fixture

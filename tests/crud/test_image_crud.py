@@ -12,7 +12,8 @@ from fed_reg.provider.schemas_extended import (
     SharedImageCreateExtended,
 )
 from fed_reg.service.models import ComputeService
-from tests.create_dict import image_model_dict, image_schema_dict, project_model_dict
+from tests.models.utils import image_model_dict, project_model_dict
+from tests.schemas.utils import image_schema_dict
 
 
 @fixture

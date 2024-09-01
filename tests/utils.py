@@ -91,18 +91,6 @@ def random_non_negative_float() -> float:
     return float(random_non_negative_int())
 
 
-def detect_public_extended_details(read_class: Type[BaseNodeRead]) -> tuple[bool, bool]:
-    """From class name detect if it public or not, extended or not."""
-    cls_name = read_class.__name__
-    is_public = False
-    is_extended = False
-    if "Public" in cls_name:
-        is_public = True
-    if "Extended" in cls_name:
-        is_extended = True
-    return is_public, is_extended
-
-
 def random_country() -> str:
     """Return random country."""
     return choice([i.name for i in countries])
@@ -157,3 +145,15 @@ def random_date_before(end_date: date):
 def random_date_after(start_date: date):
     timestamp = int(time.mktime(start_date.timetuple()))
     return date.fromtimestamp(randrange(timestamp * 2, timestamp * 3))
+
+
+def detect_public_extended_details(read_class: Type[BaseNodeRead]) -> tuple[bool, bool]:
+    """From class name detect if it public or not, extended or not."""
+    cls_name = read_class.__name__
+    is_public = False
+    is_extended = False
+    if "Public" in cls_name:
+        is_public = True
+    if "Extended" in cls_name:
+        is_extended = True
+    return is_public, is_extended

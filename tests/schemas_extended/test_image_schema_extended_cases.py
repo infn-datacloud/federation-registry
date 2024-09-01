@@ -4,7 +4,7 @@ from pytest_cases import case, parametrize
 
 from fed_reg.project.models import Project
 from fed_reg.service.models import ComputeService
-from tests.create_dict import project_model_dict, service_model_dict
+from tests.models.utils import project_model_dict, service_model_dict
 
 
 class CaseAttr:

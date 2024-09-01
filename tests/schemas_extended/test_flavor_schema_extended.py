@@ -29,7 +29,7 @@ from fed_reg.provider.schemas_extended import (
 )
 from fed_reg.region.models import Region
 from fed_reg.service.models import ComputeService
-from tests.create_dict import flavor_schema_dict
+from tests.schemas.utils import flavor_schema_dict
 
 
 def test_class_inheritance():

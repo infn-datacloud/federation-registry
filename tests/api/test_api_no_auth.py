@@ -29,7 +29,8 @@ from fed_reg.service.models import (
 )
 from fed_reg.sla.models import SLA
 from fed_reg.user_group.models import UserGroup
-from tests.create_dict import provider_schema_dict, region_model_dict
+from tests.models.utils import region_model_dict
+from tests.schemas.utils import provider_schema_dict
 from tests.utils import random_lower_string
 
 

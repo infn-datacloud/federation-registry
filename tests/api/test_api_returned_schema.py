@@ -31,7 +31,7 @@ from fed_reg.service.models import (
 )
 from fed_reg.sla.models import SLA
 from fed_reg.user_group.models import UserGroup
-from tests.create_dict import auth_method_dict
+from tests.models.utils import auth_method_model_dict
 
 
 @parametrize(single=[True, False])
@@ -76,7 +76,7 @@ class CaseItemEndpointSchemaDir:
     ) -> tuple[TestClient, bool, bool, str, IdentityProvider, str, str]:
         if with_conn:
             provider_model.identity_providers.connect(
-                identity_provider_model, auth_method_dict()
+                identity_provider_model, auth_method_model_dict()
             )
         client = client_no_authn if is_public else client_with_token
         schema = self._determine_schema(with_conn=with_conn, is_public=is_public)
@@ -478,7 +478,7 @@ class CaseItemEndpointSchemaDir:
     ) -> tuple[TestClient, bool, bool, str, SLA, str, str]:
         if with_conn:
             provider_model.identity_providers.connect(
-                identity_provider_model, auth_method_dict()
+                identity_provider_model, auth_method_model_dict()
             )
             identity_provider_model.user_groups.connect(user_group_model)
             user_group_model.slas.connect(sla_model)
@@ -501,7 +501,7 @@ class CaseItemEndpointSchemaDir:
     ) -> tuple[TestClient, bool, bool, str, UserGroup, str, str]:
         if with_conn:
             provider_model.identity_providers.connect(
-                identity_provider_model, auth_method_dict()
+                identity_provider_model, auth_method_model_dict()
             )
             identity_provider_model.user_groups.connect(user_group_model)
         client = client_no_authn if is_public else client_with_token

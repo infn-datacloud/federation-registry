@@ -4,7 +4,7 @@ from pytest_cases import case, parametrize
 
 from fed_reg.provider.enum import ProviderStatus, ProviderType
 from fed_reg.provider.models import Provider
-from tests.create_dict import provider_model_dict
+from tests.models.utils import provider_model_dict
 from tests.utils import random_lower_string
 
 
