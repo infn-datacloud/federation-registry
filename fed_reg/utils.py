@@ -74,7 +74,7 @@ def paginate(*, items: list[Any], page: int, size: int | None) -> list[Any]:
     -------
         list[Any]. Chunk with index equal to page and length equal to, at most, size.
     """
-    if size is None:
+    if size is None or size == 0:
         return items
     start = page * size
     end = start + size
