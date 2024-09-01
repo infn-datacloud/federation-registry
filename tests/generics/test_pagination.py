@@ -3,8 +3,7 @@ from typing import Literal
 import pytest
 from pytest_cases import case, parametrize, parametrize_with_cases
 
-from fed_reg.query import Pagination
-from fed_reg.utils import paginate
+from fed_reg.pagination import Pagination, paginate
 from tests.generics.utils import pagination_schema_dict
 
 

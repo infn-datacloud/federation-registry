@@ -33,8 +33,9 @@ from fed_reg.location.schemas_extended import (
     LocationReadMulti,
     LocationReadSingle,
 )
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
-from fed_reg.utils import choose_out_schema, paginate
+from fed_reg.pagination import Pagination, paginate
+from fed_reg.query import DbQueryCommonParams, SchemaSize
+from fed_reg.utils import choose_out_schema
 
 # from app.region.models import Region
 # from app.region.api.dependencies import valid_region_id

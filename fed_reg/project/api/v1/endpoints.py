@@ -15,17 +15,7 @@ from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.auth import custom, flaat, get_user_infos, security
-
-# from app.flavor.api.dependencies import is_private_flavor, valid_flavor_id
-# from app.flavor.crud import flavor
-# from app.flavor.models import Flavor
-# from app.flavor.schemas import FlavorRead, FlavorReadPublic, FlavorReadShort
-# from app.flavor.schemas_extended import FlavorReadExtended, FlavorReadExtendedPublic
-# from app.image.api.dependencies import is_private_image, valid_image_id
-# from app.image.crud import image
-# from app.image.models import Image
-# from app.image.schemas import ImageRead, ImageReadPublic, ImageReadShort
-# from app.image.schemas_extended import ImageReadExtended, ImageReadExtendedPublic
+from fed_reg.pagination import Pagination, paginate
 from fed_reg.project.api.dependencies import (
     valid_project_id,
     validate_new_project_values,
@@ -45,9 +35,21 @@ from fed_reg.project.schemas_extended import (
     ProjectReadMulti,
     ProjectReadSingle,
 )
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
+from fed_reg.query import DbQueryCommonParams, SchemaSize
 from fed_reg.region.schemas import RegionQuery
-from fed_reg.utils import choose_out_schema, paginate
+from fed_reg.utils import choose_out_schema
+
+# from app.flavor.api.dependencies import is_private_flavor, valid_flavor_id
+# from app.flavor.crud import flavor
+# from app.flavor.models import Flavor
+# from app.flavor.schemas import FlavorRead, FlavorReadPublic, FlavorReadShort
+# from app.flavor.schemas_extended import FlavorReadExtended, FlavorReadExtendedPublic
+# from app.image.api.dependencies import is_private_image, valid_image_id
+# from app.image.crud import image
+# from app.image.models import Image
+# from app.image.schemas import ImageRead, ImageReadPublic, ImageReadShort
+# from app.image.schemas_extended import ImageReadExtended, ImageReadExtendedPublic
+
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 

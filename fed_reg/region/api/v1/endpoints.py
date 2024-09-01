@@ -15,7 +15,8 @@ from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.auth import custom, flaat, get_user_infos, security
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
+from fed_reg.pagination import Pagination, paginate
+from fed_reg.query import DbQueryCommonParams, SchemaSize
 from fed_reg.region.api.dependencies import (
     not_last_region,
     valid_region_id,
@@ -35,7 +36,7 @@ from fed_reg.region.schemas_extended import (
     RegionReadMulti,
     RegionReadSingle,
 )
-from fed_reg.utils import choose_out_schema, paginate
+from fed_reg.utils import choose_out_schema
 
 router = APIRouter(prefix="/regions", tags=["regions"])
 

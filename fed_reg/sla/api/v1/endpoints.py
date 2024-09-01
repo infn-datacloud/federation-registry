@@ -1,8 +1,6 @@
 """SLA endpoints to execute POST, GET, PUT, PATCH and DELETE operations."""
 from typing import Optional
 
-# from app.user_group.api.dependencies import valid_user_group_id
-# from app.user_group.models import UserGroup
 from fastapi import (
     APIRouter,
     Depends,
@@ -17,10 +15,8 @@ from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.auth import custom, flaat, get_user_infos, security
-
-# from app.project.api.dependencies import project_has_no_sla
-# from app.project.models import Project
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
+from fed_reg.pagination import Pagination, paginate
+from fed_reg.query import DbQueryCommonParams, SchemaSize
 from fed_reg.sla.api.dependencies import (  # is_unique_sla,
     valid_sla_id,
     validate_new_sla_values,
@@ -39,7 +35,13 @@ from fed_reg.sla.schemas_extended import (
     SLAReadMulti,
     SLAReadSingle,
 )
-from fed_reg.utils import choose_out_schema, paginate
+from fed_reg.utils import choose_out_schema
+
+# from app.user_group.api.dependencies import valid_user_group_id
+# from app.user_group.models import UserGroup
+# from app.project.api.dependencies import project_has_no_sla
+# from app.project.models import Project
+
 
 router = APIRouter(prefix="/slas", tags=["slas"])
 

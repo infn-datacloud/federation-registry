@@ -15,8 +15,31 @@ from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.pagination import Pagination, paginate
 from fed_reg.provider.enum import ProviderStatus, ProviderType
 from fed_reg.provider.schemas import ProviderQuery
+from fed_reg.query import DbQueryCommonParams, SchemaSize
+from fed_reg.region.schemas import RegionQuery
+from fed_reg.user_group.api.dependencies import (
+    valid_user_group_id,
+    validate_new_user_group_values,
+)
+from fed_reg.user_group.api.utils import filter_on_provider_attr, filter_on_region_attr
+from fed_reg.user_group.crud import user_group_mng
+from fed_reg.user_group.models import UserGroup
+from fed_reg.user_group.schemas import (
+    UserGroupQuery,
+    UserGroupRead,
+    UserGroupReadPublic,
+    UserGroupUpdate,
+)
+from fed_reg.user_group.schemas_extended import (
+    UserGroupReadExtended,
+    UserGroupReadExtendedPublic,
+    UserGroupReadMulti,
+    UserGroupReadSingle,
+)
+from fed_reg.utils import choose_out_schema
 
 # from app.flavor.crud import flavor
 # from app.flavor.schemas import FlavorRead, FlavorReadPublic, FlavorReadShort
@@ -30,8 +53,6 @@ from fed_reg.provider.schemas import ProviderQuery
 # from app.image.schemas_extended import ImageReadExtended, ImageReadExtendedPublic
 # from app.provider.crud import provider
 # from app.provider.schemas import ProviderRead, ProviderReadPublic, ProviderReadShort
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
-from fed_reg.region.schemas import RegionQuery
 
 # from app.service.schemas import (
 #     BlockStorageServiceRead,
@@ -52,26 +73,6 @@ from fed_reg.region.schemas import RegionQuery
 #     IdentityServiceReadExtended,
 #     IdentityServiceReadExtendedPublic,
 # )
-from fed_reg.user_group.api.dependencies import (
-    valid_user_group_id,
-    validate_new_user_group_values,
-)
-from fed_reg.user_group.api.utils import filter_on_provider_attr, filter_on_region_attr
-from fed_reg.user_group.crud import user_group_mng
-from fed_reg.user_group.models import UserGroup
-from fed_reg.user_group.schemas import (
-    UserGroupQuery,
-    UserGroupRead,
-    UserGroupReadPublic,
-    UserGroupUpdate,
-)
-from fed_reg.user_group.schemas_extended import (
-    UserGroupReadExtended,
-    UserGroupReadExtendedPublic,
-    UserGroupReadMulti,
-    UserGroupReadSingle,
-)
-from fed_reg.utils import choose_out_schema, paginate
 
 router = APIRouter(prefix="/user_groups", tags=["user_groups"])
 

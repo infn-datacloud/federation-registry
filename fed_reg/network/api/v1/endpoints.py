@@ -33,8 +33,9 @@ from fed_reg.network.schemas_extended import (
     NetworkReadMulti,
     NetworkReadSingle,
 )
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
-from fed_reg.utils import choose_out_schema, paginate
+from fed_reg.pagination import Pagination, paginate
+from fed_reg.query import DbQueryCommonParams, SchemaSize
+from fed_reg.utils import choose_out_schema
 
 router = APIRouter(prefix="/networks", tags=["networks"])
 

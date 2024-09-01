@@ -1,4 +1,4 @@
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from neomodel import StructuredNode
 
@@ -59,23 +59,3 @@ def choose_out_schema(
     if with_conn:
         return [schema_read_public_extended.from_orm(i) for i in items]
     return [schema_read_public.from_orm(i) for i in items]
-
-
-def paginate(*, items: list[Any], page: int, size: int | None) -> list[Any]:
-    """Divide the list in chunks.
-
-    Args:
-    ----
-        items (list[Any]): list to split.
-        page (int): Target chunk (start from 0).
-        size (int | None): Chunk size.
-
-    Returns:
-    -------
-        list[Any]. Chunk with index equal to page and length equal to, at most, size.
-    """
-    if size is None or size == 0:
-        return items
-    start = page * size
-    end = start + size
-    return items[start:end]

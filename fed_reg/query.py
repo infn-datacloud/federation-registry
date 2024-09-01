@@ -1,7 +1,7 @@
 """Module defining the classes with query common attributes."""
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, Optional, Type, get_origin
+from typing import Optional, get_origin
 
 from pydantic import BaseModel, Field, create_model, validator
 from pydantic.fields import SHAPE_LIST
@@ -25,27 +25,6 @@ class SchemaSize(BaseModel):
     with_conn: bool = Field(default=False, description="Show related items.")
 
 
-class Pagination(BaseModel):
-    """Model to filter lists in GET operations with multiple items.
-
-    Attributes:
-    ----------
-        page (int): Divide the list in chunks.
-        size (int | None): Chunk size.
-    """
-
-    size: Optional[int] = Field(default=None, ge=1, description="Chunk size.")
-    page: int = Field(default=0, ge=0, description="Divide the list in chunks")
-
-    @validator("page", pre=True)
-    @classmethod
-    def set_page_to_0(cls, v: int, values: Dict[str, Any]) -> int:
-        """If chunk size is 0 set page index to 0."""
-        if values.get("size") is None:
-            return 0
-        return v
-
-
 class DbQueryCommonParams(BaseModel):
     """Model to read common query attributes passed to GET operations.
 
@@ -61,10 +40,10 @@ class DbQueryCommonParams(BaseModel):
         ge=0,
         description="Number of items to skip from the first one in the list.",
     )
-    limit: Optional[int] = Field(
+    limit: int | None = Field(
         default=None, ge=0, description="Maximum number or returned items."
     )
-    sort: Optional[str] = Field(default=None, description="Sorting rule.")
+    sort: str | None = Field(default=None, description="Sorting rule.")
 
     @validator("sort")
     @classmethod
@@ -86,8 +65,8 @@ class DbQueryCommonParams(BaseModel):
 
 
 def create_query_model(
-    model_name: str, base_model: Type[BaseNode]
-) -> Type[BaseNodeQuery]:
+    model_name: str, base_model: type[BaseNode]
+) -> type[BaseNodeQuery]:
     """Create a Query Model from Base Model.
 
     The new model has the given model name.
@@ -98,12 +77,12 @@ def create_query_model(
     Args:
     ----
         model_name (str): New model name.
-        base_model (Type[BaseNode]): Input base model from which retrieve the
+        base_model (type[BaseNode]): Input base model from which retrieve the
             attributes.
 
     Returns:
     -------
-        Type[BaseNodeQuery].
+        type[BaseNodeQuery].
     """
     d = {}
     for k, v in base_model.__fields__.items():

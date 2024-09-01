@@ -15,7 +15,8 @@ from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.auth import custom, flaat, get_user_infos, security
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
+from fed_reg.pagination import Pagination, paginate
+from fed_reg.query import DbQueryCommonParams, SchemaSize
 from fed_reg.quota.api.dependencies import (
     valid_block_storage_quota_id,
     valid_compute_quota_id,
@@ -74,7 +75,7 @@ from fed_reg.quota.schemas_extended import (
     ObjectStoreQuotaReadMulti,
     ObjectStoreQuotaReadSingle,
 )
-from fed_reg.utils import choose_out_schema, paginate
+from fed_reg.utils import choose_out_schema
 
 bs_router = APIRouter(prefix="/block_storage_quotas", tags=["block_storage_quotas"])
 

@@ -1,24 +1,6 @@
 """Provider endpoints to execute POST, GET, PUT, PATCH, DELETE operations."""
 from typing import Optional
 
-# from app.service.api.dependencies import valid_service_endpoint
-# from app.service.crud import (
-#     block_storage_service,
-#     compute_service,
-#     identity_service,
-#     network_service,
-# )
-# from app.service.schemas import (
-#     BlockStorageServiceCreate,
-#     ComputeServiceCreate,
-#     IdentityServiceCreate,
-#     NetworkServiceCreate,
-# )
-# from app.service.schemas_extended import (
-#     BlockStorageServiceReadExtended,
-#     ComputeServiceReadExtended,
-#     IdentityServiceReadExtended,
-# )
 from fastapi import (
     APIRouter,
     Depends,
@@ -33,20 +15,7 @@ from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.auth import custom, flaat, get_user_infos, security
-
-# from app.auth_method.schemas import AuthMethodCreate
-# from app.identity_provider.api.dependencies import (
-#     valid_identity_provider_endpoint,
-#     valid_identity_provider_id,
-# )
-# from app.identity_provider.crud import identity_provider
-# from app.identity_provider.models import IdentityProvider
-# from app.identity_provider.schemas import IdentityProviderCreate
-# from app.identity_provider.schemas_extended import IdentityProviderReadExtended
-# from app.project.api.dependencies import valid_project_name, valid_project_uuid
-# from app.project.crud import project
-# from app.project.schemas import ProjectCreate
-# from app.project.schemas_extended import ProjectReadExtended
+from fed_reg.pagination import Pagination, paginate
 from fed_reg.provider.api.dependencies import (
     valid_provider,
     valid_provider_id,
@@ -67,8 +36,40 @@ from fed_reg.provider.schemas_extended import (
     ProviderReadMulti,
     ProviderReadSingle,
 )
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
-from fed_reg.utils import choose_out_schema, paginate
+from fed_reg.query import DbQueryCommonParams, SchemaSize
+from fed_reg.utils import choose_out_schema
+
+# from app.service.api.dependencies import valid_service_endpoint
+# from app.service.crud import (
+#     block_storage_service,
+#     compute_service,
+#     identity_service,
+#     network_service,
+# )
+# from app.service.schemas import (
+#     BlockStorageServiceCreate,
+#     ComputeServiceCreate,
+#     IdentityServiceCreate,
+#     NetworkServiceCreate,
+# )
+# from app.service.schemas_extended import (
+#     BlockStorageServiceReadExtended,
+#     ComputeServiceReadExtended,
+#     IdentityServiceReadExtended,
+# )
+# from app.auth_method.schemas import AuthMethodCreate
+# from app.identity_provider.api.dependencies import (
+#     valid_identity_provider_endpoint,
+#     valid_identity_provider_id,
+# )
+# from app.identity_provider.crud import identity_provider
+# from app.identity_provider.models import IdentityProvider
+# from app.identity_provider.schemas import IdentityProviderCreate
+# from app.identity_provider.schemas_extended import IdentityProviderReadExtended
+# from app.project.api.dependencies import valid_project_name, valid_project_uuid
+# from app.project.crud import project
+# from app.project.schemas import ProjectCreate
+# from app.project.schemas_extended import ProjectReadExtended
 
 router = APIRouter(prefix="/providers", tags=["providers"])
 
