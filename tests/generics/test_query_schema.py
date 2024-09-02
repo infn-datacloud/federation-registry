@@ -21,27 +21,27 @@ from tests.utils import random_lower_string
 
 
 class CaseModel:
-    @case(tags=("model", "str"))
+    @case(tags="str")
     def case_model_str(self) -> type[TestModelStr]:
         return TestModelStr
 
-    @case(tags=("model", "str"))
+    @case(tags="str")
     def case_model_enum(self) -> type[TestModelEnum]:
         return TestModelEnum
 
-    @case(tags=("model", "number"))
+    @case(tags="number")
     def case_model_int(self) -> type[TestModelInt]:
         return TestModelInt
 
-    @case(tags=("model", "number"))
+    @case(tags="number")
     def case_model_float(self) -> type[TestModelFloat]:
         return TestModelFloat
 
-    @case(tags=("model", "date"))
+    @case(tags="date")
     def case_model_date(self) -> type[TestModelDate]:
         return TestModelDate
 
-    @case(tags=("model", "date"))
+    @case(tags="date")
     def case_model_datetime(self) -> type[TestModelDateTime]:
         return TestModelDateTime
 
@@ -115,7 +115,7 @@ def test_bool() -> None:
     assert item.test_field is None
 
 
-@parametrize_with_cases("model", cases=CaseModel, has_tag=("model", "number"))
+@parametrize_with_cases("model", cases=CaseModel, has_tag="number")
 def test_numbers(model: type[TestModelInt] | type[TestModelFloat]) -> None:
     cls = create_query_model(random_lower_string(), model)
     item = cls()
@@ -127,7 +127,7 @@ def test_numbers(model: type[TestModelInt] | type[TestModelFloat]) -> None:
     assert item.test_field__ne is None
 
 
-@parametrize_with_cases("model", cases=CaseModel, has_tag=("model", "date"))
+@parametrize_with_cases("model", cases=CaseModel, has_tag="date")
 def test_dates(model: type[TestModelDate] | type[TestModelDateTime]) -> None:
     cls = create_query_model(random_lower_string(), model)
     item = cls()
@@ -138,7 +138,7 @@ def test_dates(model: type[TestModelDate] | type[TestModelDateTime]) -> None:
     assert item.test_field__ne is None
 
 
-@parametrize_with_cases("model", cases=CaseModel, has_tag=("model", "str"))
+@parametrize_with_cases("model", cases=CaseModel, has_tag="str")
 def test_str_enum(model: type[TestModelStr] | type[TestModelEnum]) -> None:
     cls = create_query_model(random_lower_string(), model)
     item = cls()
