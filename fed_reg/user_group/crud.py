@@ -1,36 +1,21 @@
 """Module with Create, Read, Update and Delete operations for a User Group."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
+from fed_reg.crud2 import CRUDInterface
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import UserGroupCreateExtended
-from fed_reg.sla.crud import sla_mng
+from fed_reg.sla.crud import sla_mgr
 from fed_reg.user_group.models import UserGroup
-from fed_reg.user_group.schemas import (
-    UserGroupCreate,
-    UserGroupRead,
-    UserGroupReadPublic,
-    UserGroupUpdate,
-)
-from fed_reg.user_group.schemas_extended import (
-    UserGroupReadExtended,
-    UserGroupReadExtendedPublic,
-)
+from fed_reg.user_group.schemas import UserGroupCreate, UserGroupUpdate
 
 
-class CRUDUserGroup(
-    CRUDBase[
-        UserGroup,
-        UserGroupCreate,
-        UserGroupUpdate,
-        UserGroupRead,
-        UserGroupReadPublic,
-        UserGroupReadExtended,
-        UserGroupReadExtendedPublic,
-    ]
-):
+class CRUDUserGroup(CRUDInterface[UserGroup, UserGroupCreate, UserGroupUpdate]):
     """User Group Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[UserGroup]:
+        return UserGroup
 
     def create(
         self,
@@ -58,8 +43,8 @@ class CRUDUserGroup(
             db_sla = db_project.sla.single()
             if db_sla is not None:
                 if len(db_sla.projects) == 1:
-                    sla_mng.remove(db_obj=db_sla)
-            sla_mng.create(obj_in=obj_in.sla, user_group=db_obj, project=db_project)
+                    sla_mgr.remove(db_obj=db_sla)
+            sla_mgr.create(obj_in=obj_in.sla, user_group=db_obj, project=db_project)
         return db_obj
 
     def remove(self, *, db_obj: UserGroup) -> bool:
@@ -68,7 +53,7 @@ class CRUDUserGroup(
         At first delete its SLAs. Finally delete the user group.
         """
         for item in db_obj.slas:
-            sla_mng.remove(db_obj=item)
+            sla_mgr.remove(db_obj=item)
         return super().remove(db_obj=db_obj)
 
     def update(
@@ -128,11 +113,11 @@ class CRUDUserGroup(
         if db_sla_target_provider:
             if db_sla_target_provider.doc_uuid != obj_in.sla.doc_uuid:
                 if len(db_sla_target_provider.projects) == 1:
-                    sla_mng.remove(db_obj=db_sla_target_provider)
-                sla_mng.create(obj_in=obj_in.sla, project=db_project, user_group=db_obj)
+                    sla_mgr.remove(db_obj=db_sla_target_provider)
+                sla_mgr.create(obj_in=obj_in.sla, project=db_project, user_group=db_obj)
                 edit = True
             else:
-                updated_data = sla_mng.update(
+                updated_data = sla_mgr.update(
                     db_obj=db_sla_target_provider,
                     obj_in=obj_in.sla,
                     projects=provider_projects,
@@ -141,16 +126,9 @@ class CRUDUserGroup(
                 if updated_data:
                     edit = True
         else:
-            sla_mng.create(obj_in=obj_in.sla, project=db_project, user_group=db_obj)
+            sla_mgr.create(obj_in=obj_in.sla, project=db_project, user_group=db_obj)
             edit = True
         return edit
 
 
-user_group_mng = CRUDUserGroup(
-    model=UserGroup,
-    create_schema=UserGroupCreate,
-    read_schema=UserGroupRead,
-    read_public_schema=UserGroupReadPublic,
-    read_extended_schema=UserGroupReadExtended,
-    read_extended_public_schema=UserGroupReadExtendedPublic,
-)
+user_group_mgr = CRUDUserGroup()

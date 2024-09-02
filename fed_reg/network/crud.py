@@ -1,18 +1,12 @@
 """Module with Create, Read, Update and Delete operations for a Network."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
+from fed_reg.crud2 import CRUDInterface
 from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.network.schemas import (
-    NetworkRead,
-    NetworkReadPublic,
     NetworkUpdate,
     PrivateNetworkCreate,
     SharedNetworkCreate,
-)
-from fed_reg.network.schemas_extended import (
-    NetworkReadExtended,
-    NetworkReadExtendedPublic,
 )
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
@@ -23,17 +17,13 @@ from fed_reg.service.models import NetworkService
 
 
 class CRUDPrivateNetwork(
-    CRUDBase[
-        PrivateNetwork,
-        PrivateNetworkCreate,
-        NetworkUpdate,
-        NetworkRead,
-        NetworkReadPublic,
-        NetworkReadExtended,
-        NetworkReadExtendedPublic,
-    ]
+    CRUDInterface[PrivateNetwork, PrivateNetworkCreate, NetworkUpdate]
 ):
     """Network Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[PrivateNetwork]:
+        return PrivateNetwork
 
     def create(
         self,
@@ -82,17 +72,13 @@ class CRUDPrivateNetwork(
 
 
 class CRUDSharedNetwork(
-    CRUDBase[
-        SharedNetwork,
-        SharedNetworkCreate,
-        NetworkUpdate,
-        NetworkRead,
-        NetworkReadPublic,
-        NetworkReadExtended,
-        NetworkReadExtendedPublic,
-    ]
+    CRUDInterface[SharedNetwork, SharedNetworkCreate, NetworkUpdate]
 ):
     """Network Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[SharedNetwork]:
+        return SharedNetwork
 
     def create(
         self, *, obj_in: SharedNetworkCreateExtended, service: NetworkService
@@ -110,37 +96,18 @@ class CRUDSharedNetwork(
         return db_obj
 
 
-private_network_mng = CRUDPrivateNetwork(
-    model=PrivateNetwork,
-    create_schema=PrivateNetworkCreate,
-    read_schema=NetworkRead,
-    read_public_schema=NetworkReadPublic,
-    read_extended_schema=NetworkReadExtended,
-    read_extended_public_schema=NetworkReadExtendedPublic,
-)
-
-shared_network_mng = CRUDSharedNetwork(
-    model=SharedNetwork,
-    create_schema=SharedNetworkCreate,
-    read_schema=NetworkRead,
-    read_public_schema=NetworkReadPublic,
-    read_extended_schema=NetworkReadExtended,
-    read_extended_public_schema=NetworkReadExtendedPublic,
-)
-
-
 class CRUDNetwork(
-    CRUDBase[
+    CRUDInterface[
         Network,
         PrivateNetworkCreateExtended | SharedNetworkCreateExtended,
         NetworkUpdate,
-        NetworkRead,
-        NetworkReadPublic,
-        NetworkReadExtended,
-        NetworkReadExtendedPublic,
     ]
 ):
     """Network Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Network]:
+        return Network
 
     def create(
         self,
@@ -154,10 +121,10 @@ class CRUDNetwork(
         Connect the network to the given service and to the optional received project.
         """
         if isinstance(obj_in, PrivateNetworkCreateExtended):
-            return private_network_mng.create(
+            return CRUDPrivateNetwork().create(
                 obj_in=obj_in, service=service, project=project
             )
-        return shared_network_mng.create(obj_in=obj_in, service=service)
+        return CRUDSharedNetwork().create(obj_in=obj_in, service=service)
 
     def update(
         self,
@@ -175,19 +142,14 @@ class CRUDNetwork(
         update linked project and apply default values when explicit.
         """
         if isinstance(obj_in, PrivateNetworkCreateExtended):
-            return private_network_mng.update(
+            return CRUDPrivateNetwork().update(
                 db_obj=db_obj, obj_in=obj_in, project=project, force=force
             )
         elif isinstance(obj_in, SharedNetworkCreateExtended):
-            return shared_network_mng.update(db_obj=db_obj, obj_in=obj_in, force=force)
+            return CRUDSharedNetwork().update(db_obj=db_obj, obj_in=obj_in, force=force)
         return super().update(db_obj=db_obj, obj_in=obj_in, force=force)
 
 
-network_mng = CRUDNetwork(
-    model=Network,
-    create_schema=PrivateNetworkCreateExtended | SharedNetworkCreateExtended,
-    read_schema=NetworkRead,
-    read_public_schema=NetworkReadPublic,
-    read_extended_schema=NetworkReadExtended,
-    read_extended_public_schema=NetworkReadExtendedPublic,
-)
+private_network_mgr = CRUDPrivateNetwork()
+shared_network_mgr = CRUDSharedNetwork()
+network_mgr = CRUDNetwork()

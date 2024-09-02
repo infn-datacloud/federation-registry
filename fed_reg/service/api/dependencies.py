@@ -3,11 +3,11 @@
 from fastapi import Depends, HTTPException, status
 
 from fed_reg.service.crud import (
-    block_storage_service_mng,
-    compute_service_mng,
-    identity_service_mng,
-    network_service_mng,
-    object_store_service_mng,
+    block_storage_service_mgr,
+    compute_service_mgr,
+    identity_service_mgr,
+    network_service_mgr,
+    object_store_service_mgr,
 )
 from fed_reg.service.models import (
     BlockStorageService,
@@ -47,7 +47,7 @@ def valid_block_storage_service_id(
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = block_storage_service_mng.get(uid=service_uid.replace("-", ""))
+    item = block_storage_service_mgr.get(uid=service_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -73,7 +73,7 @@ def valid_block_storage_service_endpoint(
     ------
         BadRequestError: DB entity with given endpoint already exists.
     """
-    db_item = block_storage_service_mng.get(endpoint=item.endpoint)
+    db_item = block_storage_service_mgr.get(endpoint=item.endpoint)
     if db_item is not None:
         msg = (
             f"Block Storage Service with endpoint '{item.endpoint}' already registered."
@@ -124,7 +124,7 @@ def valid_compute_service_id(
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = compute_service_mng.get(uid=service_uid.replace("-", ""))
+    item = compute_service_mgr.get(uid=service_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -150,7 +150,7 @@ def valid_compute_service_endpoint(
     ------
         BadRequestError: DB entity with given endpoint already exists.
     """
-    db_item = compute_service_mng.get(endpoint=item.endpoint)
+    db_item = compute_service_mgr.get(endpoint=item.endpoint)
     if db_item is not None:
         msg = f"Compute Service with endpoint '{item.endpoint}' already registered."
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
@@ -199,7 +199,7 @@ def valid_identity_service_id(
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = identity_service_mng.get(uid=service_uid.replace("-", ""))
+    item = identity_service_mgr.get(uid=service_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -225,7 +225,7 @@ def valid_identity_service_endpoint(
     ------
         BadRequestError: DB entity with given endpoint already exists.
     """
-    db_item = identity_service_mng.get(endpoint=item.endpoint)
+    db_item = identity_service_mgr.get(endpoint=item.endpoint)
     if db_item is not None:
         msg = f"Identity Service with endpoint '{item.endpoint}' already registered."
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
@@ -274,7 +274,7 @@ def valid_network_service_id(
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = network_service_mng.get(uid=service_uid.replace("-", ""))
+    item = network_service_mgr.get(uid=service_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -300,7 +300,7 @@ def valid_network_service_endpoint(
     ------
         BadRequestError: DB entity with given endpoint already exists.
     """
-    db_item = network_service_mng.get(endpoint=item.endpoint)
+    db_item = network_service_mgr.get(endpoint=item.endpoint)
     if db_item is not None:
         msg = f"Network Service with endpoint '{item.endpoint}' already registered."
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
@@ -349,7 +349,7 @@ def valid_object_store_service_id(
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = object_store_service_mng.get(uid=service_uid.replace("-", ""))
+    item = object_store_service_mgr.get(uid=service_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -375,7 +375,7 @@ def valid_object_store_service_endpoint(
     ------
         BadRequestError: DB entity with given endpoint already exists.
     """
-    db_item = object_store_service_mng.get(endpoint=item.endpoint)
+    db_item = object_store_service_mgr.get(endpoint=item.endpoint)
     if db_item is not None:
         msg = (
             "Object Storage Service with endpoint "

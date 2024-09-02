@@ -2,7 +2,7 @@
 
 from fastapi import Depends, HTTPException, status
 
-from fed_reg.network.crud import network_mng
+from fed_reg.network.crud import network_mgr
 from fed_reg.network.models import Network
 from fed_reg.network.schemas import (
     NetworkUpdate,
@@ -28,7 +28,7 @@ def valid_network_id(network_uid: str) -> Network:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = network_mng.get(uid=network_uid.replace("-", ""))
+    item = network_mgr.get(uid=network_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

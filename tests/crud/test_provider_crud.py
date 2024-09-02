@@ -1,14 +1,14 @@
 import pytest
 from pytest_cases import parametrize_with_cases
 
-from fed_reg.provider.crud import provider_mng
+from fed_reg.provider.crud import provider_mgr
 from fed_reg.provider.models import Provider
 from fed_reg.provider.schemas_extended import ProviderCreateExtended
 
 
 # TODO parametrize with possible extended cases
 def test_create(provider_create_ext_schema: ProviderCreateExtended) -> None:
-    item = provider_mng.create(obj_in=provider_create_ext_schema)
+    item = provider_mgr.create(obj_in=provider_create_ext_schema)
     assert isinstance(item, Provider)
     assert item.uid is not None
     assert item.description == provider_create_ext_schema.description
@@ -26,7 +26,7 @@ def test_create(provider_create_ext_schema: ProviderCreateExtended) -> None:
 
 @parametrize_with_cases("providers", has_tag="multi")
 def test_read_multi(providers: Provider) -> None:
-    items = provider_mng.get_multi()
+    items = provider_mgr.get_multi()
     assert len(items) == len(providers)
     for item in items:
         assert isinstance(item, Provider)
@@ -38,7 +38,7 @@ def test_read_multi_with_attr_single_match(
     providers: list[Provider], attr: str
 ) -> None:
     kwargs = {attr: providers[0].__getattribute__(attr)}
-    items = provider_mng.get_multi(**kwargs)
+    items = provider_mgr.get_multi(**kwargs)
     assert len(items) == 1
     assert items[0].uid == providers[0].uid
 
@@ -47,7 +47,7 @@ def test_read_multi_with_attr_single_match(
 @parametrize_with_cases("attr", has_tag="not-uid")
 def test_read_multi_with_attr_dup_matches(providers: list[Provider], attr: str) -> None:
     kwargs = {attr: providers[0].__getattribute__(attr)}
-    items = provider_mng.get_multi(**kwargs)
+    items = provider_mgr.get_multi(**kwargs)
     assert len(items) == 2
 
 
@@ -55,7 +55,7 @@ def test_read_multi_with_attr_dup_matches(providers: list[Provider], attr: str) 
 @parametrize_with_cases("attr", has_tag="not-enum")
 def test_read_multi_sort(providers: list[Provider], attr: str) -> None:
     kwargs = {"sort": attr}
-    items = provider_mng.get_multi(**kwargs)
+    items = provider_mgr.get_multi(**kwargs)
     assert len(items) == len(providers)
     sorted_providers = sorted(providers, key=lambda x: x.__getattribute__(attr))
     assert items[0].__getattribute__(attr) == sorted_providers[0].__getattribute__(attr)
@@ -66,7 +66,7 @@ def test_read_multi_sort(providers: list[Provider], attr: str) -> None:
 @parametrize_with_cases("attr", has_tag="enum")
 def test_read_multi_sort_enums(providers: list[Provider], attr: str) -> None:
     kwargs = {"sort": attr}
-    items = provider_mng.get_multi(**kwargs)
+    items = provider_mgr.get_multi(**kwargs)
     assert len(items) == len(providers)
     sorted_providers = sorted(providers, key=lambda x: x.__getattribute__(attr).value)
     assert items[0].__getattribute__(attr) == str(
@@ -81,12 +81,12 @@ def test_read_multi_sort_enums(providers: list[Provider], attr: str) -> None:
 
 
 def test_read_empty_list() -> None:
-    items = provider_mng.get_multi()
+    items = provider_mgr.get_multi()
     assert len(items) == 0
 
 
 def test_read_single(provider_model: Provider) -> None:
-    item = provider_mng.get()
+    item = provider_mgr.get()
     assert isinstance(item, Provider)
     assert item.uid == provider_model.uid
 
@@ -96,25 +96,25 @@ def test_read_single(provider_model: Provider) -> None:
 def test_read_single_with_attr(provider: Provider, attr: str) -> None:
     kwargs = {attr: provider.__getattribute__(attr)}
     if kwargs[attr] is None:
-        assert not provider_mng.get(**kwargs)
+        assert not provider_mgr.get(**kwargs)
     else:
-        item = provider_mng.get(**kwargs)
+        item = provider_mgr.get(**kwargs)
         assert item.uid == provider.uid
 
 
 def test_read_none() -> None:
-    assert not provider_mng.get()
+    assert not provider_mgr.get()
 
 
 def test_delete(provider_model: Provider) -> None:
-    assert provider_mng.remove(db_obj=provider_model)
+    assert provider_mgr.remove(db_obj=provider_model)
     assert provider_model.deleted
 
 
 def test_delete_not_existing(provider_model: Provider) -> None:
-    assert provider_mng.remove(db_obj=provider_model)
+    assert provider_mgr.remove(db_obj=provider_model)
     with pytest.raises(ValueError):
-        provider_mng.remove(db_obj=provider_model)
+        provider_mgr.remove(db_obj=provider_model)
 
 
 # TODO test update

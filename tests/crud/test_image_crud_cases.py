@@ -6,9 +6,9 @@ from fed_reg.image.crud import (
     CRUDImage,
     CRUDPrivateImage,
     CRUDSharedImage,
-    image_mng,
-    private_image_mng,
-    shared_image_mng,
+    image_mgr,
+    private_image_mgr,
+    shared_image_mgr,
 )
 from fed_reg.image.enum import ImageOS
 from fed_reg.image.models import PrivateImage, SharedImage
@@ -85,15 +85,15 @@ class CaseMandatoryKeys:
 class CaseManager:
     @case(tags=("manager", "shared", "private"))
     def case_image_mgr(self) -> CRUDImage:
-        return image_mng
+        return image_mgr
 
     @case(tags=("manager", "private"))
     def case_private_image_mgr(self) -> CRUDPrivateImage:
-        return private_image_mng
+        return private_image_mgr
 
     @case(tags=("manager", "shared"))
     def case_shared_image_mgr(self) -> CRUDSharedImage:
-        return shared_image_mng
+        return shared_image_mgr
 
 
 class CaseImageModel:

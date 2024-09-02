@@ -1,22 +1,13 @@
 """Module with Create, Read, Update and Delete operations for a Project."""
-from fed_reg.crud import CRUDBase
+from fed_reg.crud2 import CRUDInterface
 from fed_reg.project.models import Project
-from fed_reg.project.schemas import (
-    ProjectCreate,
-    ProjectRead,
-    ProjectReadPublic,
-    ProjectUpdate,
-)
-from fed_reg.project.schemas_extended import (
-    ProjectReadExtended,
-    ProjectReadExtendedPublic,
-)
+from fed_reg.project.schemas import ProjectCreate, ProjectUpdate
 from fed_reg.provider.models import Provider
 from fed_reg.quota.crud import (
-    block_storage_quota_mng,
-    compute_quota_mng,
-    network_quota_mng,
-    object_store_quota_mng,
+    block_storage_quota_mgr,
+    compute_quota_mgr,
+    network_quota_mgr,
+    object_store_quota_mgr,
 )
 from fed_reg.quota.models import (
     BlockStorageQuota,
@@ -24,21 +15,15 @@ from fed_reg.quota.models import (
     NetworkQuota,
     ObjectStoreQuota,
 )
-from fed_reg.sla.crud import sla_mng
+from fed_reg.sla.crud import sla_mgr
 
 
-class CRUDProject(
-    CRUDBase[
-        Project,
-        ProjectCreate,
-        ProjectUpdate,
-        ProjectRead,
-        ProjectReadPublic,
-        ProjectReadExtended,
-        ProjectReadExtendedPublic,
-    ]
-):
+class CRUDProject(CRUDInterface[Project, ProjectCreate, ProjectUpdate]):
     """Flavor Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Project]:
+        return Project
 
     def create(self, *, obj_in: ProjectCreate, provider: Provider) -> Project:
         """Create a new Project.
@@ -57,24 +42,17 @@ class CRUDProject(
         """
         for item in db_obj.quotas:
             if isinstance(item, BlockStorageQuota):
-                block_storage_quota_mng.remove(db_obj=item)
+                block_storage_quota_mgr.remove(db_obj=item)
             elif isinstance(item, ComputeQuota):
-                compute_quota_mng.remove(db_obj=item)
+                compute_quota_mgr.remove(db_obj=item)
             elif isinstance(item, NetworkQuota):
-                network_quota_mng.remove(db_obj=item)
+                network_quota_mgr.remove(db_obj=item)
             elif isinstance(item, ObjectStoreQuota):
-                object_store_quota_mng.remove(db_obj=item)
+                object_store_quota_mgr.remove(db_obj=item)
         item = db_obj.sla.single()
         if item and len(item.projects) == 1:
-            sla_mng.remove(db_obj=item)
+            sla_mgr.remove(db_obj=item)
         return super().remove(db_obj=db_obj)
 
 
-project_mng = CRUDProject(
-    model=Project,
-    create_schema=ProjectCreate,
-    read_schema=ProjectRead,
-    read_public_schema=ProjectReadPublic,
-    read_extended_schema=ProjectReadExtended,
-    read_extended_public_schema=ProjectReadExtendedPublic,
-)
+project_mgr = CRUDProject()

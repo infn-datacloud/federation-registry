@@ -1,27 +1,20 @@
 """Module with Create, Read, Update and Delete operations for an SLA."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
+from fed_reg.crud2 import CRUDInterface
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import SLACreateExtended
 from fed_reg.sla.models import SLA
-from fed_reg.sla.schemas import SLACreate, SLARead, SLAReadPublic, SLAUpdate
-from fed_reg.sla.schemas_extended import SLAReadExtended, SLAReadExtendedPublic
+from fed_reg.sla.schemas import SLACreate, SLAUpdate
 from fed_reg.user_group.models import UserGroup
 
 
-class CRUDSLA(
-    CRUDBase[
-        SLA,
-        SLACreate,
-        SLAUpdate,
-        SLARead,
-        SLAReadPublic,
-        SLAReadExtended,
-        SLAReadExtendedPublic,
-    ]
-):
+class CRUDSLA(CRUDInterface[SLA, SLACreate, SLAUpdate]):
     """SLA Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[SLA]:
+        return SLA
 
     def create(
         self, *, obj_in: SLACreate, project: Project, user_group: UserGroup
@@ -83,11 +76,4 @@ class CRUDSLA(
         return db_obj if edit else updated_data
 
 
-sla_mng = CRUDSLA(
-    model=SLA,
-    create_schema=SLACreate,
-    read_schema=SLARead,
-    read_public_schema=SLAReadPublic,
-    read_extended_schema=SLAReadExtended,
-    read_extended_public_schema=SLAReadExtendedPublic,
-)
+sla_mgr = CRUDSLA()

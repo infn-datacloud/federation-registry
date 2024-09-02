@@ -1,25 +1,19 @@
 """Module with Create, Read, Update and Delete operations for a Region."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
-from fed_reg.location.crud import location_mng
+from fed_reg.crud2 import CRUDInterface
+from fed_reg.location.crud import location_mgr
 from fed_reg.project.models import Project
 from fed_reg.provider.models import Provider
 from fed_reg.provider.schemas_extended import RegionCreateExtended
 from fed_reg.region.models import Region
-from fed_reg.region.schemas import (
-    RegionCreate,
-    RegionRead,
-    RegionReadPublic,
-    RegionUpdate,
-)
-from fed_reg.region.schemas_extended import RegionReadExtended, RegionReadExtendedPublic
+from fed_reg.region.schemas import RegionCreate, RegionUpdate
 from fed_reg.service.crud import (
-    block_storage_service_mng,
-    compute_service_mng,
-    identity_service_mng,
-    network_service_mng,
-    object_store_service_mng,
+    block_storage_service_mgr,
+    compute_service_mgr,
+    identity_service_mgr,
+    network_service_mgr,
+    object_store_service_mgr,
 )
 from fed_reg.service.models import (
     BlockStorageService,
@@ -30,18 +24,12 @@ from fed_reg.service.models import (
 )
 
 
-class CRUDRegion(
-    CRUDBase[
-        Region,
-        RegionCreate,
-        RegionUpdate,
-        RegionRead,
-        RegionReadPublic,
-        RegionReadExtended,
-        RegionReadExtendedPublic,
-    ]
-):
+class CRUDRegion(CRUDInterface[Region, RegionCreate, RegionUpdate]):
     """Region Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Region]:
+        return Region
 
     def create(self, *, obj_in: RegionCreateExtended, provider: Provider) -> Region:
         """Create a new Region.
@@ -52,23 +40,23 @@ class CRUDRegion(
         db_obj = super().create(obj_in=obj_in)
         db_obj.provider.connect(provider)
         if obj_in.location is not None:
-            location_mng.create(obj_in=obj_in.location, region=db_obj)
+            location_mgr.create(obj_in=obj_in.location, region=db_obj)
         for item in obj_in.block_storage_services:
-            block_storage_service_mng.create(
+            block_storage_service_mgr.create(
                 obj_in=item, region=db_obj, projects=provider.projects
             )
         for item in obj_in.compute_services:
-            compute_service_mng.create(
+            compute_service_mgr.create(
                 obj_in=item, region=db_obj, projects=provider.projects
             )
         for item in obj_in.identity_services:
-            identity_service_mng.create(obj_in=item, region=db_obj)
+            identity_service_mgr.create(obj_in=item, region=db_obj)
         for item in obj_in.network_services:
-            network_service_mng.create(
+            network_service_mgr.create(
                 obj_in=item, region=db_obj, projects=provider.projects
             )
         for item in obj_in.object_store_services:
-            object_store_service_mng.create(
+            object_store_service_mgr.create(
                 obj_in=item, region=db_obj, projects=provider.projects
             )
         return db_obj
@@ -84,19 +72,19 @@ class CRUDRegion(
         """
         for db_serv in db_obj.services:
             if isinstance(db_serv, BlockStorageService):
-                block_storage_service_mng.remove(db_obj=db_serv)
+                block_storage_service_mgr.remove(db_obj=db_serv)
             elif isinstance(db_serv, ComputeService):
-                compute_service_mng.remove(db_obj=db_serv)
+                compute_service_mgr.remove(db_obj=db_serv)
             elif isinstance(db_serv, IdentityService):
-                identity_service_mng.remove(db_obj=db_serv)
+                identity_service_mgr.remove(db_obj=db_serv)
             elif isinstance(db_serv, NetworkService):
-                network_service_mng.remove(db_obj=db_serv)
+                network_service_mgr.remove(db_obj=db_serv)
             elif isinstance(db_serv, ObjectStoreService):
-                object_store_service_mng.remove(db_obj=db_serv)
+                object_store_service_mgr.remove(db_obj=db_serv)
 
         item = db_obj.location.single()
         if item and len(item.regions) == 1:
-            location_mng.remove(db_obj=item)
+            location_mgr.remove(db_obj=item)
 
         result = super().remove(db_obj=db_obj)
         return result
@@ -167,7 +155,7 @@ class CRUDRegion(
 
         if db_loc and (not loc_in or db_loc.site != loc_in.site):
             if len(db_loc.regions) == 1:
-                location_mng.remove(db_obj=db_loc)
+                location_mgr.remove(db_obj=db_loc)
             else:
                 db_obj.location.disconnect(db_loc)
             edit = True
@@ -177,10 +165,10 @@ class CRUDRegion(
         if (not db_loc and loc_in) or (
             db_loc and loc_in and db_loc.site != loc_in.site
         ):
-            location_mng.create(obj_in=loc_in, region=db_obj)
+            location_mgr.create(obj_in=loc_in, region=db_obj)
             edit = True
         elif db_loc and loc_in and db_loc.site == loc_in.site:
-            updated_data = location_mng.update(db_obj=db_loc, obj_in=loc_in, force=True)
+            updated_data = location_mgr.update(db_obj=db_loc, obj_in=loc_in, force=True)
             edit = updated_data is not None
 
         return edit
@@ -206,12 +194,12 @@ class CRUDRegion(
         for item in obj_in.block_storage_services:
             db_item = db_items.pop(item.endpoint, None)
             if not db_item:
-                block_storage_service_mng.create(
+                block_storage_service_mgr.create(
                     obj_in=item, region=db_obj, projects=provider_projects
                 )
                 edit = True
             else:
-                updated_data = block_storage_service_mng.update(
+                updated_data = block_storage_service_mgr.update(
                     db_obj=db_item,
                     obj_in=item,
                     projects=provider_projects,
@@ -220,7 +208,7 @@ class CRUDRegion(
                 if not edit and updated_data is not None:
                     edit = True
         for db_item in db_items.values():
-            block_storage_service_mng.remove(db_obj=db_item)
+            block_storage_service_mgr.remove(db_obj=db_item)
             edit = True
         return edit
 
@@ -245,12 +233,12 @@ class CRUDRegion(
         for item in obj_in.compute_services:
             db_item = db_items.pop(item.endpoint, None)
             if not db_item:
-                compute_service_mng.create(
+                compute_service_mgr.create(
                     obj_in=item, region=db_obj, projects=provider_projects
                 )
                 edit = True
             else:
-                updated_data = compute_service_mng.update(
+                updated_data = compute_service_mgr.update(
                     db_obj=db_item,
                     obj_in=item,
                     projects=provider_projects,
@@ -259,7 +247,7 @@ class CRUDRegion(
                 if not edit and updated_data is not None:
                     edit = True
         for db_item in db_items.values():
-            compute_service_mng.remove(db_obj=db_item)
+            compute_service_mgr.remove(db_obj=db_item)
             edit = True
         return edit
 
@@ -283,16 +271,16 @@ class CRUDRegion(
         for item in obj_in.identity_services:
             db_item = db_items.pop(item.endpoint, None)
             if not db_item:
-                identity_service_mng.create(obj_in=item, region=db_obj)
+                identity_service_mgr.create(obj_in=item, region=db_obj)
                 edit = True
             else:
-                updated_data = identity_service_mng.update(
+                updated_data = identity_service_mgr.update(
                     db_obj=db_item, obj_in=item, force=True
                 )
                 if not edit and updated_data is not None:
                     edit = True
         for db_item in db_items.values():
-            identity_service_mng.remove(db_obj=db_item)
+            identity_service_mgr.remove(db_obj=db_item)
             edit = True
         return edit
 
@@ -317,12 +305,12 @@ class CRUDRegion(
         for item in obj_in.network_services:
             db_item = db_items.pop(item.endpoint, None)
             if not db_item:
-                network_service_mng.create(
+                network_service_mgr.create(
                     obj_in=item, region=db_obj, projects=provider_projects
                 )
                 edit = True
             else:
-                updated_data = network_service_mng.update(
+                updated_data = network_service_mgr.update(
                     db_obj=db_item,
                     obj_in=item,
                     projects=provider_projects,
@@ -331,7 +319,7 @@ class CRUDRegion(
                 if not edit and updated_data is not None:
                     edit = True
         for db_item in db_items.values():
-            network_service_mng.remove(db_obj=db_item)
+            network_service_mgr.remove(db_obj=db_item)
         edit = True
         return edit
 
@@ -356,12 +344,12 @@ class CRUDRegion(
         for item in obj_in.object_store_services:
             db_item = db_items.pop(item.endpoint, None)
             if not db_item:
-                object_store_service_mng.create(
+                object_store_service_mgr.create(
                     obj_in=item, region=db_obj, projects=provider_projects
                 )
                 edit = True
             else:
-                updated_data = object_store_service_mng.update(
+                updated_data = object_store_service_mgr.update(
                     db_obj=db_item,
                     obj_in=item,
                     projects=provider_projects,
@@ -370,16 +358,9 @@ class CRUDRegion(
                 if not edit and updated_data is not None:
                     edit = True
         for db_item in db_items.values():
-            object_store_service_mng.remove(db_obj=db_item)
+            object_store_service_mgr.remove(db_obj=db_item)
             edit = True
         return edit
 
 
-region_mng = CRUDRegion(
-    model=Region,
-    create_schema=RegionCreate,
-    read_schema=RegionRead,
-    read_public_schema=RegionReadPublic,
-    read_extended_schema=RegionReadExtended,
-    read_extended_public_schema=RegionReadExtendedPublic,
-)
+region_mgr = CRUDRegion()

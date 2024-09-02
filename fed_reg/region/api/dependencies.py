@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, status
 
 from fed_reg.provider.api.dependencies import valid_provider_id
 from fed_reg.provider.models import Provider
-from fed_reg.region.crud import region_mng
+from fed_reg.region.crud import region_mgr
 from fed_reg.region.models import Region
 from fed_reg.region.schemas import RegionCreate, RegionUpdate
 
@@ -24,7 +24,7 @@ def valid_region_id(region_uid: str) -> Region:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = region_mng.get(uid=region_uid.replace("-", ""))
+    item = region_mgr.get(uid=region_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

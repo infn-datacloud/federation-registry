@@ -2,7 +2,7 @@
 
 from fastapi import Depends, HTTPException, status
 
-from fed_reg.image.crud import image_mng
+from fed_reg.image.crud import image_mgr
 from fed_reg.image.models import Image
 from fed_reg.image.schemas import (
     ImageUpdate,
@@ -28,7 +28,7 @@ def valid_image_id(image_uid: str) -> Image:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = image_mng.get(uid=image_uid.replace("-", ""))
+    item = image_mgr.get(uid=image_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

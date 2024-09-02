@@ -1,36 +1,25 @@
 """Module with Create, Read, Update and Delete operations for an Identity Provider."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
+from fed_reg.crud2 import CRUDInterface
 from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.identity_provider.schemas import (
-    IdentityProviderCreate,
-    IdentityProviderRead,
-    IdentityProviderReadPublic,
-    IdentityProviderUpdate,
-)
-from fed_reg.identity_provider.schemas_extended import (
-    IdentityProviderReadExtended,
-    IdentityProviderReadExtendedPublic,
-)
+from fed_reg.identity_provider.schemas import IdentityProviderUpdate
 from fed_reg.project.models import Project
 from fed_reg.provider.models import Provider
 from fed_reg.provider.schemas_extended import IdentityProviderCreateExtended
-from fed_reg.user_group.crud import user_group_mng
+from fed_reg.user_group.crud import user_group_mgr
 
 
 class CRUDIdentityProvider(
-    CRUDBase[
-        IdentityProvider,
-        IdentityProviderCreate,
-        IdentityProviderUpdate,
-        IdentityProviderRead,
-        IdentityProviderReadPublic,
-        IdentityProviderReadExtended,
-        IdentityProviderReadExtendedPublic,
+    CRUDInterface[
+        IdentityProvider, IdentityProviderCreateExtended, IdentityProviderUpdate
     ]
 ):
     """Identity Provider Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[IdentityProvider]:
+        return IdentityProvider
 
     def create(
         self, *, obj_in: IdentityProviderCreateExtended, provider: Provider
@@ -61,14 +50,14 @@ class CRUDIdentityProvider(
         for item in obj_in.user_groups:
             db_user_group = db_obj.user_groups.get_or_none(name=item.name)
             if db_user_group:
-                user_group_mng.update(
+                user_group_mgr.update(
                     db_obj=db_user_group,
                     obj_in=item,
                     projects=provider.projects,
                     force=True,
                 )
             else:
-                user_group_mng.create(
+                user_group_mgr.create(
                     obj_in=item, identity_provider=db_obj, projects=provider.projects
                 )
 
@@ -80,7 +69,7 @@ class CRUDIdentityProvider(
         At first delete its user groups. Finally delete the identity provider.
         """
         for item in db_obj.user_groups:
-            user_group_mng.remove(db_obj=item)
+            user_group_mgr.remove(db_obj=item)
         return super().remove(db_obj=db_obj)
 
     def update(
@@ -136,12 +125,12 @@ class CRUDIdentityProvider(
         for item in obj_in.user_groups:
             db_item = db_items.pop(item.name, None)
             if not db_item:
-                user_group_mng.create(
+                user_group_mgr.create(
                     obj_in=item, identity_provider=db_obj, projects=provider_projects
                 )
                 edit = True
             else:
-                updated_data = user_group_mng.update(
+                updated_data = user_group_mgr.update(
                     db_obj=db_item, obj_in=item, projects=provider_projects, force=True
                 )
                 if not edit and updated_data is not None:
@@ -149,16 +138,9 @@ class CRUDIdentityProvider(
         # User groups in the DB not involved in the current provider
         for db_item in db_items.values():
             if len(db_item.slas) == 0:
-                user_group_mng.remove(db_obj=db_item)
+                user_group_mgr.remove(db_obj=db_item)
                 edit = True
         return edit
 
 
-identity_provider_mng = CRUDIdentityProvider(
-    model=IdentityProvider,
-    create_schema=IdentityProviderCreate,
-    read_schema=IdentityProviderRead,
-    read_public_schema=IdentityProviderReadPublic,
-    read_extended_schema=IdentityProviderReadExtended,
-    read_extended_public_schema=IdentityProviderReadExtendedPublic,
-)
+identity_provider_mgr = CRUDIdentityProvider()

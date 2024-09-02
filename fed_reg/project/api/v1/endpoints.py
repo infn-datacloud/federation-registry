@@ -21,7 +21,7 @@ from fed_reg.project.api.dependencies import (
     validate_new_project_values,
 )
 from fed_reg.project.api.utils import filter_on_region_attr
-from fed_reg.project.crud import project_mng
+from fed_reg.project.crud import project_mgr
 from fed_reg.project.models import Project
 from fed_reg.project.schemas import (
     ProjectQuery,
@@ -86,7 +86,7 @@ def get_projects(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = project_mng.get_multi(
+    items = project_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     if provider_uid:
@@ -197,7 +197,7 @@ def put_project(
 
     Only authenticated users can view this function.
     """
-    db_item = project_mng.update(db_obj=item, obj_in=update_data)
+    db_item = project_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -228,7 +228,7 @@ def delete_project(
 
     Only authenticated users can view this function.
     """
-    if not project_mng.remove(db_obj=item):
+    if not project_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

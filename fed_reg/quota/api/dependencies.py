@@ -2,10 +2,10 @@
 from fastapi import Depends, HTTPException, status
 
 from fed_reg.quota.crud import (
-    block_storage_quota_mng,
-    compute_quota_mng,
-    network_quota_mng,
-    object_store_quota_mng,
+    block_storage_quota_mgr,
+    compute_quota_mgr,
+    network_quota_mgr,
+    object_store_quota_mgr,
 )
 from fed_reg.quota.models import (
     BlockStorageQuota,
@@ -36,7 +36,7 @@ def valid_block_storage_quota_id(quota_uid: str) -> BlockStorageQuota:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = block_storage_quota_mng.get(uid=quota_uid.replace("-", ""))
+    item = block_storage_quota_mgr.get(uid=quota_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -98,7 +98,7 @@ def valid_compute_quota_id(quota_uid: str) -> ComputeQuota:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = compute_quota_mng.get(uid=quota_uid.replace("-", ""))
+    item = compute_quota_mgr.get(uid=quota_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -160,7 +160,7 @@ def valid_network_quota_id(quota_uid: str) -> NetworkQuota:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = network_quota_mng.get(uid=quota_uid.replace("-", ""))
+    item = network_quota_mgr.get(uid=quota_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -222,7 +222,7 @@ def valid_object_store_quota_id(quota_uid: str) -> ObjectStoreQuota:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = object_store_quota_mng.get(uid=quota_uid.replace("-", ""))
+    item = object_store_quota_mgr.get(uid=quota_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

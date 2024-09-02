@@ -1,31 +1,16 @@
 """Module with Create, Read, Update and Delete operations for a Location."""
-from fed_reg.crud import CRUDBase
+from fed_reg.crud2 import CRUDInterface
 from fed_reg.location.models import Location
-from fed_reg.location.schemas import (
-    LocationCreate,
-    LocationRead,
-    LocationReadPublic,
-    LocationUpdate,
-)
-from fed_reg.location.schemas_extended import (
-    LocationReadExtended,
-    LocationReadExtendedPublic,
-)
+from fed_reg.location.schemas import LocationCreate, LocationUpdate
 from fed_reg.region.models import Region
 
 
-class CRUDLocation(
-    CRUDBase[
-        Location,
-        LocationCreate,
-        LocationUpdate,
-        LocationRead,
-        LocationReadPublic,
-        LocationReadExtended,
-        LocationReadExtendedPublic,
-    ]
-):
+class CRUDLocation(CRUDInterface[Location, LocationCreate, LocationUpdate]):
     """Location Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Location]:
+        return Location
 
     def create(self, *, obj_in: LocationCreate, region: Region) -> Location:
         """Create a new Location.
@@ -46,11 +31,4 @@ class CRUDLocation(
         return db_obj
 
 
-location_mng = CRUDLocation(
-    model=Location,
-    create_schema=LocationCreate,
-    read_schema=LocationRead,
-    read_public_schema=LocationReadPublic,
-    read_extended_schema=LocationReadExtended,
-    read_extended_public_schema=LocationReadExtendedPublic,
-)
+location_mgr = CRUDLocation()

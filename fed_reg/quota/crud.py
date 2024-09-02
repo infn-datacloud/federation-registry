@@ -1,7 +1,7 @@
 """Module with Create, Read, Update and Delete operations for a Quotas."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
+from fed_reg.crud2 import CRUDInterface
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
     BlockStorageQuotaCreateExtended,
@@ -17,31 +17,13 @@ from fed_reg.quota.models import (
 )
 from fed_reg.quota.schemas import (
     BlockStorageQuotaCreate,
-    BlockStorageQuotaRead,
-    BlockStorageQuotaReadPublic,
     BlockStorageQuotaUpdate,
     ComputeQuotaCreate,
-    ComputeQuotaRead,
-    ComputeQuotaReadPublic,
     ComputeQuotaUpdate,
     NetworkQuotaCreate,
-    NetworkQuotaRead,
-    NetworkQuotaReadPublic,
     NetworkQuotaUpdate,
     ObjectStoreQuotaCreate,
-    ObjectStoreQuotaRead,
-    ObjectStoreQuotaReadPublic,
     ObjectStoreQuotaUpdate,
-)
-from fed_reg.quota.schemas_extended import (
-    BlockStorageQuotaReadExtended,
-    BlockStorageQuotaReadExtendedPublic,
-    ComputeQuotaReadExtended,
-    ComputeQuotaReadExtendedPublic,
-    NetworkQuotaReadExtended,
-    NetworkQuotaReadExtendedPublic,
-    ObjectStoreQuotaReadExtended,
-    ObjectStoreQuotaReadExtendedPublic,
 )
 from fed_reg.service.models import (
     BlockStorageService,
@@ -52,17 +34,13 @@ from fed_reg.service.models import (
 
 
 class CRUDBlockStorageQuota(
-    CRUDBase[
-        BlockStorageQuota,
-        BlockStorageQuotaCreate,
-        BlockStorageQuotaUpdate,
-        BlockStorageQuotaRead,
-        BlockStorageQuotaReadPublic,
-        BlockStorageQuotaReadExtended,
-        BlockStorageQuotaReadExtendedPublic,
-    ]
+    CRUDInterface[BlockStorageQuota, BlockStorageQuotaCreate, BlockStorageQuotaUpdate]
 ):
     """Block Storage Quota Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[BlockStorageQuota]:
+        return BlockStorageQuota
 
     def create(
         self,
@@ -113,17 +91,13 @@ class CRUDBlockStorageQuota(
 
 
 class CRUDComputeQuota(
-    CRUDBase[
-        ComputeQuota,
-        ComputeQuotaCreate,
-        ComputeQuotaUpdate,
-        ComputeQuotaRead,
-        ComputeQuotaReadPublic,
-        ComputeQuotaReadExtended,
-        ComputeQuotaReadExtendedPublic,
-    ]
+    CRUDInterface[ComputeQuota, ComputeQuotaCreate, ComputeQuotaUpdate]
 ):
     """Compute Quota Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[ComputeQuota]:
+        return ComputeQuota
 
     def create(
         self,
@@ -174,17 +148,13 @@ class CRUDComputeQuota(
 
 
 class CRUDNetworkQuota(
-    CRUDBase[
-        NetworkQuota,
-        NetworkQuotaCreate,
-        NetworkQuotaUpdate,
-        NetworkQuotaRead,
-        NetworkQuotaReadPublic,
-        NetworkQuotaReadExtended,
-        NetworkQuotaReadExtendedPublic,
-    ]
+    CRUDInterface[NetworkQuota, NetworkQuotaCreate, NetworkQuotaUpdate]
 ):
     """Network Quota Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[NetworkQuota]:
+        return NetworkQuota
 
     def create(
         self,
@@ -235,17 +205,13 @@ class CRUDNetworkQuota(
 
 
 class CRUDObjectStoreQuota(
-    CRUDBase[
-        ObjectStoreQuota,
-        ObjectStoreQuotaCreate,
-        ObjectStoreQuotaUpdate,
-        ObjectStoreQuotaRead,
-        ObjectStoreQuotaReadPublic,
-        ObjectStoreQuotaReadExtended,
-        ObjectStoreQuotaReadExtendedPublic,
-    ]
+    CRUDInterface[ObjectStoreQuota, ObjectStoreQuotaCreate, ObjectStoreQuotaUpdate]
 ):
     """Object Storage Quota Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[ObjectStoreQuota]:
+        return ObjectStoreQuota
 
     def create(
         self,
@@ -295,35 +261,7 @@ class CRUDObjectStoreQuota(
         return db_obj if edit else updated_data
 
 
-block_storage_quota_mng = CRUDBlockStorageQuota(
-    model=BlockStorageQuota,
-    create_schema=BlockStorageQuotaCreate,
-    read_schema=BlockStorageQuotaRead,
-    read_public_schema=BlockStorageQuotaReadPublic,
-    read_extended_schema=BlockStorageQuotaReadExtended,
-    read_extended_public_schema=BlockStorageQuotaReadExtendedPublic,
-)
-compute_quota_mng = CRUDComputeQuota(
-    model=ComputeQuota,
-    create_schema=ComputeQuotaCreate,
-    read_schema=ComputeQuotaRead,
-    read_public_schema=ComputeQuotaReadPublic,
-    read_extended_schema=ComputeQuotaReadExtended,
-    read_extended_public_schema=ComputeQuotaReadExtendedPublic,
-)
-network_quota_mng = CRUDNetworkQuota(
-    model=NetworkQuota,
-    create_schema=NetworkQuotaCreate,
-    read_schema=NetworkQuotaRead,
-    read_public_schema=NetworkQuotaReadPublic,
-    read_extended_schema=NetworkQuotaReadExtended,
-    read_extended_public_schema=NetworkQuotaReadExtendedPublic,
-)
-object_store_quota_mng = CRUDObjectStoreQuota(
-    model=ObjectStoreQuota,
-    create_schema=ObjectStoreQuotaCreate,
-    read_schema=ObjectStoreQuotaRead,
-    read_public_schema=ObjectStoreQuotaReadPublic,
-    read_extended_schema=ObjectStoreQuotaReadExtended,
-    read_extended_public_schema=ObjectStoreQuotaReadExtendedPublic,
-)
+block_storage_quota_mgr = CRUDBlockStorageQuota()
+compute_quota_mgr = CRUDComputeQuota()
+network_quota_mgr = CRUDNetworkQuota()
+object_store_quota_mgr = CRUDObjectStoreQuota()

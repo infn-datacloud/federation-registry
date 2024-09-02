@@ -7,9 +7,9 @@ from fed_reg.network.crud import (
     CRUDNetwork,
     CRUDPrivateNetwork,
     CRUDSharedNetwork,
-    network_mng,
-    private_network_mng,
-    shared_network_mng,
+    network_mgr,
+    private_network_mgr,
+    shared_network_mgr,
 )
 from fed_reg.network.models import PrivateNetwork, SharedNetwork
 from tests.utils import random_lower_string
@@ -81,15 +81,15 @@ class CaseMandatoryKeys:
 class CaseManager:
     @case(tags=("manager", "shared", "private"))
     def case_network_mgr(self) -> CRUDNetwork:
-        return network_mng
+        return network_mgr
 
     @case(tags=("manager", "private"))
     def case_private_network_mgr(self) -> CRUDPrivateNetwork:
-        return private_network_mng
+        return private_network_mgr
 
     @case(tags=("manager", "shared"))
     def case_shared_network_mgr(self) -> CRUDSharedNetwork:
-        return shared_network_mng
+        return shared_network_mgr
 
 
 class CaseNetworkModel:

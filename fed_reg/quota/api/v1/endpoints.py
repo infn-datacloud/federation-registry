@@ -28,10 +28,10 @@ from fed_reg.quota.api.dependencies import (
     validate_new_object_store_quota_values,
 )
 from fed_reg.quota.crud import (
-    block_storage_quota_mng,
-    compute_quota_mng,
-    network_quota_mng,
-    object_store_quota_mng,
+    block_storage_quota_mgr,
+    compute_quota_mgr,
+    network_quota_mgr,
+    object_store_quota_mgr,
 )
 from fed_reg.quota.models import (
     BlockStorageQuota,
@@ -109,7 +109,7 @@ def get_block_storage_quotas(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = block_storage_quota_mng.get_multi(
+    items = block_storage_quota_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     items = paginate(items=items, page=page.page, size=page.size)
@@ -235,7 +235,7 @@ def put_block_storage_quota(
 
     Only authenticated users can view this function.
     """
-    db_item = block_storage_quota_mng.update(db_obj=item, obj_in=update_data)
+    db_item = block_storage_quota_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -265,7 +265,7 @@ def delete_block_storage_quotas(
 
     Only authenticated users can view this function.
     """
-    if not block_storage_quota_mng.remove(db_obj=item):
+    if not block_storage_quota_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",
@@ -304,7 +304,7 @@ def get_compute_quotas(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = compute_quota_mng.get_multi(
+    items = compute_quota_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     items = paginate(items=items, page=page.page, size=page.size)
@@ -430,7 +430,7 @@ def put_compute_quota(
 
     Only authenticated users can view this function.
     """
-    db_item = compute_quota_mng.update(db_obj=item, obj_in=update_data)
+    db_item = compute_quota_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -460,7 +460,7 @@ def delete_compute_quotas(
 
     Only authenticated users can view this function.
     """
-    if not compute_quota_mng.remove(db_obj=item):
+    if not compute_quota_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",
@@ -499,7 +499,7 @@ def get_network_quotas(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = network_quota_mng.get_multi(
+    items = network_quota_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     items = paginate(items=items, page=page.page, size=page.size)
@@ -588,7 +588,7 @@ def put_network_quota(
 
     Only authenticated users can view this function.
     """
-    db_item = network_quota_mng.update(db_obj=item, obj_in=update_data)
+    db_item = network_quota_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -618,7 +618,7 @@ def delete_network_quotas(
 
     Only authenticated users can view this function.
     """
-    if not network_quota_mng.remove(db_obj=item):
+    if not network_quota_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",
@@ -657,7 +657,7 @@ def get_object_store_quotas(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = object_store_quota_mng.get_multi(
+    items = object_store_quota_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     items = paginate(items=items, page=page.page, size=page.size)
@@ -783,7 +783,7 @@ def put_object_store_quota(
 
     Only authenticated users can view this function.
     """
-    db_item = object_store_quota_mng.update(db_obj=item, obj_in=update_data)
+    db_item = object_store_quota_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -813,7 +813,7 @@ def delete_object_store_quotas(
 
     Only authenticated users can view this function.
     """
-    if not object_store_quota_mng.remove(db_obj=item):
+    if not object_store_quota_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

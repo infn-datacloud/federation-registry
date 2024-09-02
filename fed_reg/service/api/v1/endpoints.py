@@ -30,11 +30,11 @@ from fed_reg.service.api.dependencies import (
     validate_new_object_store_service_values,
 )
 from fed_reg.service.crud import (
-    block_storage_service_mng,
-    compute_service_mng,
-    identity_service_mng,
-    network_service_mng,
-    object_store_service_mng,
+    block_storage_service_mgr,
+    compute_service_mgr,
+    identity_service_mgr,
+    network_service_mgr,
+    object_store_service_mgr,
 )
 from fed_reg.service.models import (
     BlockStorageService,
@@ -132,7 +132,7 @@ def get_block_storage_services(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = block_storage_service_mng.get_multi(
+    items = block_storage_service_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     items = paginate(items=items, page=page.page, size=page.size)
@@ -223,7 +223,7 @@ def put_block_storage_service(
 
     Only authenticated users can view this function.
     """
-    db_item = block_storage_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = block_storage_service_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -254,7 +254,7 @@ def delete_block_storage_services(
 
     Only authenticated users can view this function.
     """
-    if not block_storage_service_mng.remove(db_obj=item):
+    if not block_storage_service_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",
@@ -293,7 +293,7 @@ def get_compute_services(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = compute_service_mng.get_multi(
+    items = compute_service_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     items = paginate(items=items, page=page.page, size=page.size)
@@ -384,7 +384,7 @@ def put_compute_service(
 
     Only authenticated users can view this function.
     """
-    db_item = compute_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = compute_service_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -415,7 +415,7 @@ def delete_compute_services(
 
     Only authenticated users can view this function.
     """
-    if not compute_service_mng.remove(db_obj=item):
+    if not compute_service_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",
@@ -454,7 +454,7 @@ def get_identity_services(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = identity_service_mng.get_multi(
+    items = identity_service_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     items = paginate(items=items, page=page.page, size=page.size)
@@ -545,7 +545,7 @@ def put_identity_service(
 
     Only authenticated users can view this function.
     """
-    db_item = identity_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = identity_service_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -576,7 +576,7 @@ def delete_identity_services(
 
     Only authenticated users can view this function.
     """
-    if not identity_service_mng.remove(db_obj=item):
+    if not identity_service_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",
@@ -615,7 +615,7 @@ def get_network_services(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = network_service_mng.get_multi(
+    items = network_service_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     items = paginate(items=items, page=page.page, size=page.size)
@@ -706,7 +706,7 @@ def put_network_service(
 
     Only authenticated users can view this function.
     """
-    db_item = network_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = network_service_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -737,7 +737,7 @@ def delete_network_services(
 
     Only authenticated users can view this function.
     """
-    if not network_service_mng.remove(db_obj=item):
+    if not network_service_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",
@@ -776,7 +776,7 @@ def get_object_store_services(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = object_store_service_mng.get_multi(
+    items = object_store_service_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     items = paginate(items=items, page=page.page, size=page.size)
@@ -867,7 +867,7 @@ def put_object_store_service(
 
     Only authenticated users can view this function.
     """
-    db_item = object_store_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = object_store_service_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -898,7 +898,7 @@ def delete_object_store_services(
 
     Only authenticated users can view this function.
     """
-    if not object_store_service_mng.remove(db_obj=item):
+    if not object_store_service_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

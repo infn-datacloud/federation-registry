@@ -11,6 +11,17 @@ SchemaUpdateType = TypeVar("SchemaUpdateType", bound=BaseNodeCreate)
 
 
 class CRUDInterface(ABC, Generic[ModelType, SchemaCreateType, SchemaUpdateType]):
+    """Create, Read, Update and Remove interface.
+
+    This is an abstract class.
+
+    The property 'model' is abstract and must be defined by the user.
+    It returns the associated neomodel class.
+
+    Functions 'create', 'get', 'get_multi', 'remove' and 'update' already have an
+    implementation.
+    """
+
     @property
     @abstractmethod
     def model(self) -> type[ModelType]:
@@ -49,6 +60,7 @@ class CRUDInterface(ABC, Generic[ModelType, SchemaCreateType, SchemaUpdateType])
         -------
             ModelType. The database object.
         """
+        # obj_in = self.schema_create.parse_obj(obj_in)
         obj_in_data = obj_in.dict(exclude_none=True)
         db_obj = self.model.create(obj_in_data)[0]
         return db_obj.save()

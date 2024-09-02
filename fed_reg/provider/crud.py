@@ -1,36 +1,21 @@
 """Module with Create, Read, Update and Delete operations for a Provider."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
-from fed_reg.identity_provider.crud import identity_provider_mng
-from fed_reg.project.crud import project_mng
+from fed_reg.crud2 import CRUDInterface
+from fed_reg.identity_provider.crud import identity_provider_mgr
+from fed_reg.project.crud import project_mgr
 from fed_reg.provider.models import Provider
-from fed_reg.provider.schemas import (
-    ProviderCreate,
-    ProviderRead,
-    ProviderReadPublic,
-    ProviderUpdate,
-)
-from fed_reg.provider.schemas_extended import (
-    ProviderCreateExtended,
-    ProviderReadExtended,
-    ProviderReadExtendedPublic,
-)
-from fed_reg.region.crud import region_mng
+from fed_reg.provider.schemas import ProviderCreate, ProviderUpdate
+from fed_reg.provider.schemas_extended import ProviderCreateExtended
+from fed_reg.region.crud import region_mgr
 
 
-class CRUDProvider(
-    CRUDBase[
-        Provider,
-        ProviderCreate,
-        ProviderUpdate,
-        ProviderRead,
-        ProviderReadPublic,
-        ProviderReadExtended,
-        ProviderReadExtendedPublic,
-    ]
-):
+class CRUDProvider(CRUDInterface[Provider, ProviderCreate, ProviderUpdate]):
     """Flavor Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Provider]:
+        return Provider
 
     def create(self, *, obj_in: ProviderCreateExtended) -> Provider:
         """Create a new Provider.
@@ -40,11 +25,11 @@ class CRUDProvider(
         """
         db_obj = super().create(obj_in=obj_in)
         for item in obj_in.projects:
-            project_mng.create(obj_in=item, provider=db_obj)
+            project_mgr.create(obj_in=item, provider=db_obj)
         for item in obj_in.identity_providers:
-            identity_provider_mng.create(obj_in=item, provider=db_obj)
+            identity_provider_mgr.create(obj_in=item, provider=db_obj)
         for item in obj_in.regions:
-            region_mng.create(obj_in=item, provider=db_obj)
+            region_mgr.create(obj_in=item, provider=db_obj)
         return db_obj
 
     def remove(self, *, db_obj: Provider) -> bool:
@@ -54,12 +39,12 @@ class CRUDProvider(
         point only to this provider. Finally delete the provider.
         """
         for item in db_obj.projects:
-            project_mng.remove(db_obj=item)
+            project_mgr.remove(db_obj=item)
         for item in db_obj.regions:
-            region_mng.remove(db_obj=item)
+            region_mgr.remove(db_obj=item)
         for item in db_obj.identity_providers:
             if len(item.providers) == 1:
-                identity_provider_mng.remove(db_obj=item)
+                identity_provider_mgr.remove(db_obj=item)
         result = super().remove(db_obj=db_obj)
         return result
 
@@ -104,16 +89,16 @@ class CRUDProvider(
         for item in obj_in.projects:
             db_item = db_items.pop(item.uuid, None)
             if not db_item:
-                project_mng.create(obj_in=item, provider=db_obj)
+                project_mgr.create(obj_in=item, provider=db_obj)
                 edit = True
             else:
-                updated_data = project_mng.update(
+                updated_data = project_mgr.update(
                     db_obj=db_item, obj_in=item, force=True
                 )
                 if not edit and updated_data is not None:
                     edit = True
         for db_item in db_items.values():
-            project_mng.remove(db_obj=db_item)
+            project_mgr.remove(db_obj=db_item)
             edit = True
         return edit
 
@@ -130,10 +115,10 @@ class CRUDProvider(
         for item in obj_in.identity_providers:
             db_item = db_items.pop(item.endpoint, None)
             if not db_item:
-                identity_provider_mng.create(obj_in=item, provider=db_obj)
+                identity_provider_mgr.create(obj_in=item, provider=db_obj)
                 edit = True
             else:
-                updated_data = identity_provider_mng.update(
+                updated_data = identity_provider_mgr.update(
                     db_obj=db_item,
                     obj_in=item,
                     projects=db_obj.projects,
@@ -144,7 +129,7 @@ class CRUDProvider(
                     edit = True
         for db_item in db_items.values():
             if len(db_item.providers) <= 1:
-                identity_provider_mng.remove(db_obj=db_item)
+                identity_provider_mgr.remove(db_obj=db_item)
             else:
                 db_obj.identity_providers.disconnect(db_item)
             edit = True
@@ -163,10 +148,10 @@ class CRUDProvider(
         for item in obj_in.regions:
             db_item = db_items.pop(item.name, None)
             if not db_item:
-                region_mng.create(obj_in=item, provider=db_obj)
+                region_mgr.create(obj_in=item, provider=db_obj)
                 edit = True
             else:
-                updated_data = region_mng.update(
+                updated_data = region_mgr.update(
                     db_obj=db_item,
                     obj_in=item,
                     projects=db_obj.projects,
@@ -175,16 +160,9 @@ class CRUDProvider(
                 if not edit and updated_data is not None:
                     edit = True
         for db_item in db_items.values():
-            region_mng.remove(db_obj=db_item)
+            region_mgr.remove(db_obj=db_item)
             edit = True
         return edit
 
 
-provider_mng = CRUDProvider(
-    model=Provider,
-    create_schema=ProviderCreate,
-    read_schema=ProviderRead,
-    read_public_schema=ProviderReadPublic,
-    read_extended_schema=ProviderReadExtended,
-    read_extended_public_schema=ProviderReadExtendedPublic,
-)
+provider_mgr = CRUDProvider()

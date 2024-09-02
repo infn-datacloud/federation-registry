@@ -14,7 +14,7 @@ class CRUDPrivateFlavor(
     CRUDInterface[PrivateFlavor, PrivateFlavorCreateExtended, FlavorUpdate]
 ):
     @property
-    def model(self) -> PrivateFlavor:
+    def model(self) -> type[PrivateFlavor]:
         return PrivateFlavor
 
     def create(
@@ -112,7 +112,7 @@ class CRUDSharedFlavor(
     CRUDInterface[SharedFlavor, SharedFlavorCreateExtended, FlavorUpdate]
 ):
     @property
-    def model(self) -> SharedFlavor:
+    def model(self) -> type[SharedFlavor]:
         return SharedFlavor
 
     def create(
@@ -151,7 +151,7 @@ class CRUDFlavor(
     ]
 ):
     @property
-    def model(self) -> Flavor:
+    def model(self) -> type[Flavor]:
         return Flavor
 
     def create(

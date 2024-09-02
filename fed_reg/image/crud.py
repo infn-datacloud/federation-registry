@@ -1,16 +1,9 @@
 """Module with Create, Read, Update and Delete operations for an Image."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
+from fed_reg.crud2 import CRUDInterface
 from fed_reg.image.models import Image, PrivateImage, SharedImage
-from fed_reg.image.schemas import (
-    ImageRead,
-    ImageReadPublic,
-    ImageUpdate,
-    PrivateImageCreate,
-    SharedImageCreate,
-)
-from fed_reg.image.schemas_extended import ImageReadExtended, ImageReadExtendedPublic
+from fed_reg.image.schemas import ImageUpdate
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
     PrivateImageCreateExtended,
@@ -21,17 +14,13 @@ from fed_reg.service.models import ComputeService
 
 
 class CRUDPrivateImage(
-    CRUDBase[
-        PrivateImage,
-        PrivateImageCreate,
-        ImageUpdate,
-        ImageRead,
-        ImageReadPublic,
-        ImageReadExtended,
-        ImageReadExtendedPublic,
-    ]
+    CRUDInterface[PrivateImage, PrivateImageCreateExtended, ImageUpdate]
 ):
     """Image Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[PrivateImage]:
+        return PrivateImage
 
     def create(
         self,
@@ -123,17 +112,13 @@ class CRUDPrivateImage(
 
 
 class CRUDSharedImage(
-    CRUDBase[
-        SharedImage,
-        SharedImageCreate,
-        ImageUpdate,
-        ImageRead,
-        ImageReadPublic,
-        ImageReadExtended,
-        ImageReadExtendedPublic,
-    ]
+    CRUDInterface[SharedImage, SharedImageCreateExtended, ImageUpdate]
 ):
     """Image Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[SharedImage]:
+        return SharedImage
 
     def create(
         self, *, obj_in: SharedImageCreateExtended, service: ComputeService
@@ -166,37 +151,16 @@ class CRUDSharedImage(
         return db_obj
 
 
-private_image_mng = CRUDPrivateImage(
-    model=PrivateImage,
-    create_schema=PrivateImageCreate,
-    read_schema=ImageRead,
-    read_public_schema=ImageReadPublic,
-    read_extended_schema=ImageReadExtended,
-    read_extended_public_schema=ImageReadExtendedPublic,
-)
-
-shared_image_mng = CRUDSharedImage(
-    model=SharedImage,
-    create_schema=SharedImageCreate,
-    read_schema=ImageRead,
-    read_public_schema=ImageReadPublic,
-    read_extended_schema=ImageReadExtended,
-    read_extended_public_schema=ImageReadExtendedPublic,
-)
-
-
 class CRUDImage(
-    CRUDBase[
-        Image,
-        PrivateImageCreateExtended | SharedImageCreateExtended,
-        ImageUpdate,
-        ImageRead,
-        ImageReadPublic,
-        ImageReadExtended,
-        ImageReadExtendedPublic,
+    CRUDInterface[
+        Image, PrivateImageCreateExtended | SharedImageCreateExtended, ImageUpdate
     ]
 ):
     """Image Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Image]:
+        return Image
 
     def create(
         self,
@@ -214,10 +178,10 @@ class CRUDImage(
         project.
         """
         if isinstance(obj_in, PrivateImageCreateExtended):
-            return private_image_mng.create(
+            return CRUDPrivateImage().create(
                 obj_in=obj_in, service=service, projects=projects
             )
-        return shared_image_mng.create(obj_in=obj_in, service=service)
+        return CRUDSharedImage().create(obj_in=obj_in, service=service)
 
     def update(
         self,
@@ -233,19 +197,14 @@ class CRUDImage(
         update linked projects and apply default values when explicit.
         """
         if isinstance(obj_in, PrivateImageCreateExtended):
-            return private_image_mng.update(
+            return CRUDPrivateImage().update(
                 db_obj=db_obj, obj_in=obj_in, projects=projects, force=force
             )
         elif isinstance(obj_in, SharedImageCreateExtended):
-            return shared_image_mng.update(db_obj=db_obj, obj_in=obj_in, force=force)
+            return CRUDSharedImage().update(db_obj=db_obj, obj_in=obj_in, force=force)
         return super().update(db_obj=db_obj, obj_in=obj_in, force=force)
 
 
-image_mng = CRUDImage(
-    model=Image,
-    create_schema=PrivateImageCreateExtended | SharedImageCreateExtended,
-    read_schema=ImageRead,
-    read_public_schema=ImageReadPublic,
-    read_extended_schema=ImageReadExtended,
-    read_extended_public_schema=ImageReadExtendedPublic,
-)
+private_image_mgr = CRUDPrivateImage()
+shared_image_mgr = CRUDSharedImage()
+image_mgr = CRUDImage()
