@@ -1,5 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a Location."""
-from fed_reg.crud2 import CRUDInterface
+from fed_reg.crud import CRUDInterface
 from fed_reg.location.models import Location
 from fed_reg.location.schemas import LocationCreate, LocationUpdate
 from fed_reg.region.models import Region

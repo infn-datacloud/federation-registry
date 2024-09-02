@@ -1,7 +1,7 @@
 """Module with Create, Read, Update and Delete operations for a Network."""
 from typing import Optional
 
-from fed_reg.crud2 import CRUDInterface
+from fed_reg.crud import CRUDInterface
 from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.network.schemas import (
     NetworkUpdate,

@@ -1,7 +1,7 @@
 """Module with Create, Read, Update and Delete operations for a Services."""
 from typing import Any, Dict, Optional, Tuple
 
-from fed_reg.crud2 import CRUDInterface
+from fed_reg.crud import CRUDInterface
 from fed_reg.flavor.crud import flavor_mgr
 from fed_reg.image.crud import image_mgr
 from fed_reg.network.crud import network_mgr

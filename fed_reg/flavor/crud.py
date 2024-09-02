@@ -1,4 +1,4 @@
-from fed_reg.crud2 import CRUDInterface
+from fed_reg.crud import CRUDInterface
 from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fed_reg.flavor.schemas import FlavorUpdate
 from fed_reg.project.models import Project

@@ -1,7 +1,7 @@
 """Module with Create, Read, Update and Delete operations for an Image."""
 from typing import Optional
 
-from fed_reg.crud2 import CRUDInterface
+from fed_reg.crud import CRUDInterface
 from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.image.schemas import ImageUpdate
 from fed_reg.project.models import Project

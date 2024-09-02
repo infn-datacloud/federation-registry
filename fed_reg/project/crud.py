@@ -1,5 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a Project."""
-from fed_reg.crud2 import CRUDInterface
+from fed_reg.crud import CRUDInterface
 from fed_reg.project.models import Project
 from fed_reg.project.schemas import ProjectCreate, ProjectUpdate
 from fed_reg.provider.models import Provider

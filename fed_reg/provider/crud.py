@@ -1,7 +1,7 @@
 """Module with Create, Read, Update and Delete operations for a Provider."""
 from typing import Optional
 
-from fed_reg.crud2 import CRUDInterface
+from fed_reg.crud import CRUDInterface
 from fed_reg.identity_provider.crud import identity_provider_mgr
 from fed_reg.project.crud import project_mgr
 from fed_reg.provider.models import Provider

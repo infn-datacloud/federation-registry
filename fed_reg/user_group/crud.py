@@ -1,7 +1,7 @@
 """Module with Create, Read, Update and Delete operations for a User Group."""
 from typing import Optional
 
-from fed_reg.crud2 import CRUDInterface
+from fed_reg.crud import CRUDInterface
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import UserGroupCreateExtended

@@ -1,7 +1,7 @@
 """Module with Create, Read, Update and Delete operations for an SLA."""
 from typing import Optional
 
-from fed_reg.crud2 import CRUDInterface
+from fed_reg.crud import CRUDInterface
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import SLACreateExtended
 from fed_reg.sla.models import SLA

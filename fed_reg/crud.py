@@ -1,70 +1,71 @@
-"""Module with common Create, Read, Update and delete operations."""
-from typing import Generic, Literal, Optional, Type, TypeVar
+from abc import ABC, abstractmethod
+from typing import Generic, Literal, TypeVar
 
 from neomodel import StructuredNode
 
-from fed_reg.models import BaseNodeCreate, BaseNodeRead, BaseReadPrivate, BaseReadPublic
+from fed_reg.models import BaseNodeCreate
 
 ModelType = TypeVar("ModelType", bound=StructuredNode)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseNodeCreate)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseNodeCreate)
-ReadSchemaType = TypeVar("ReadSchemaType", bound=BaseReadPrivate)
-ReadPublicSchemaType = TypeVar("ReadPublicSchemaType", bound=BaseReadPublic)
-ReadExtendedSchemaType = TypeVar(
-    "ReadExtendedSchemaType", BaseNodeRead, BaseReadPrivate, None
-)
-ReadExtendedPublicSchemaType = TypeVar(
-    "ReadExtendedPublicSchemaType", BaseNodeRead, BaseReadPublic, None
-)
+SchemaCreateType = TypeVar("SchemaCreateType", bound=BaseNodeCreate)
+SchemaUpdateType = TypeVar("SchemaUpdateType", bound=BaseNodeCreate)
 
 
-class CRUDBase(
-    Generic[
-        ModelType,
-        CreateSchemaType,
-        UpdateSchemaType,
-        ReadSchemaType,
-        ReadPublicSchemaType,
-        ReadExtendedSchemaType,
-        ReadExtendedPublicSchemaType,
-    ]
-):
-    """Class with common Create, Read, Update and delete operations."""
+class CRUDInterface(ABC, Generic[ModelType, SchemaCreateType, SchemaUpdateType]):
+    """Create, Read, Update and Remove interface.
 
-    def __init__(
-        self,
-        *,
-        model: Type[ModelType],
-        create_schema: Type[CreateSchemaType],
-        read_schema: Type[ReadSchemaType],
-        read_public_schema: Type[ReadPublicSchemaType],
-        read_extended_schema: Type[ReadExtendedSchemaType],
-        read_extended_public_schema: Type[ReadExtendedPublicSchemaType],
-    ):
-        """CRUD object with default methods to Create, Read, Update, Delete (CRUD).
+    This is an abstract class.
+
+    The property 'model' is abstract and must be defined by the user.
+    It returns the associated neomodel class.
+
+    Functions 'create', 'get', 'get_multi', 'remove' and 'update' already have an
+    implementation.
+    """
+
+    @property
+    @abstractmethod
+    def model(self) -> type[ModelType]:
+        """Neomodel class."""
+        ...
+
+    def __apply_limit_and_skip(
+        self, *, items: list[ModelType], skip: int = 0, limit: int | None = None
+    ) -> list[ModelType]:
+        """Function to apply the limit and skip attributes on the list of values.
 
         Args:
         ----
-            model (Type[ModelType]): A neomodel model used to read data from DB.
-            create_schema (Type[CreateSchemaType]): A pydantic model to create add items
-                to the DB.
-            read_schema (Type[ReadSchemaType]): A pydantic model to return to users
-                public and restricted data.
-            read_public_schema (Type[ReadPublicSchemaType]): A pydantic model to return
-                to users only public data.
-            read_extended_schema (Type[ReadSchemaExtendedType]): A pydantic model
-                to return to users public and restricted data.
-            read_extended_public_schema (Type[ReadExtendedPublicSchemaType]): A pydantic
-                model to return to users only public data.
-        """
-        self.model = model
-        self.create_schema = create_schema
-        self.read_schema = read_schema
-        self.read_public_schema = read_public_schema
-        self.read_extended_schema = read_extended_schema
-        self.read_extended_public_schema = read_extended_public_schema
+            items (list[ModelType]): list to filter.
+            skip (int): Number of items to skip from the first one received.
+            limit (int | None): Maximum number of items to return.
 
-    def get(self, **kwargs) -> Optional[ModelType]:
+        Returns:
+        -------
+            list[ModelType]. Restricted list
+        """
+        if limit is None:
+            return items[skip:]
+        start = skip
+        end = skip + limit
+        return items[start:end]
+
+    def create(self, *, obj_in: SchemaCreateType) -> ModelType:
+        """Create a new node in the graph.
+
+        Args:
+        ----
+            obj_in (CreateSchemaType): Input data to add to the DB.
+
+        Returns:
+        -------
+            ModelType. The database object.
+        """
+        # obj_in = self.schema_create.parse_obj(obj_in)
+        obj_in_data = obj_in.dict(exclude_none=True)
+        db_obj = self.model.create(obj_in_data)[0]
+        return db_obj.save()
+
+    def get(self, **kwargs) -> ModelType | None:
         """Try to retrieve from DB an object with the given attributes.
 
         Args:
@@ -81,8 +82,8 @@ class CRUDBase(
         self,
         *,
         skip: int = 0,
-        limit: Optional[int] = None,
-        sort: Optional[str] = None,
+        limit: int | None = None,
+        sort: str | None = None,
         **kwargs,
     ) -> list[ModelType]:
         """Try to retrieve from DB a list of objects with the given attributes.
@@ -111,55 +112,6 @@ class CRUDBase(
 
         return self.__apply_limit_and_skip(items=items, skip=skip, limit=limit)
 
-    def create(self, *, obj_in: CreateSchemaType) -> ModelType:
-        """Create a new node in the graph.
-
-        Args:
-        ----
-            obj_in (CreateSchemaType): Input data to add to the DB.
-
-        Returns:
-        -------
-            ModelType. The database object.
-        """
-        obj_in = self.create_schema.parse_obj(obj_in)
-        obj_in_data = obj_in.dict(exclude_none=True)
-        db_obj = self.model.create(obj_in_data)[0]
-        return db_obj.save()
-
-    def update(
-        self,
-        *,
-        db_obj: ModelType,
-        obj_in: UpdateSchemaType,
-        force: bool = False,
-    ) -> Optional[ModelType]:
-        """Update and existing database object.
-
-        Args:
-        ----
-            db_obj (ModelType): DB object to update.
-            obj_in (UpdateSchemaType): Data to use to patch the DB object.
-            force (bool): When this flag is True, if the new data contains unset values
-                (alias default values), they will override the values written in the DB.
-                By default unset values are ignored.
-
-        Returns:
-        -------
-            ModelType | None. The updated DB object or None if there are no changes to
-                apply.
-        """
-        obj_data = db_obj.__dict__
-        update_data = obj_in.dict(exclude_unset=not force)
-
-        if all(obj_data.get(k) == v for k, v in update_data.items()):
-            return None
-
-        for field in obj_data:
-            if field in update_data:
-                setattr(db_obj, field, update_data[field])
-        return db_obj.save()
-
     def remove(self, *, db_obj: ModelType) -> Literal[True]:
         """Delete the target instance from the DB.
 
@@ -173,82 +125,32 @@ class CRUDBase(
         """
         return db_obj.delete()
 
-    def paginate(
-        self, *, items: list[ModelType], page: int, size: Optional[int]
-    ) -> list[ModelType]:
-        """Divide the list in chunks.
+    def update(
+        self, *, db_obj: ModelType, obj_in: SchemaUpdateType, force: bool = False
+    ) -> ModelType | None:
+        """Update and existing database object.
 
         Args:
         ----
-            items (list[ModelType]): list to split.
-            page (int): Target chunk (start from 0).
-            size (int | None): Chunk size.
+            db_obj (ModelType): DB object to update.
+            obj_in (UpdateSchemaType): Data to use to patch the DB object.
+            force (bool): When this flag is True, if the new data contains unset values
+                (alias default values), they will override the values written in the DB.
+                By default unset values are ignored.
 
         Returns:
         -------
-            list[ModelType]. Chunk with index equal to page and length equal to, at
-            most, size.
+            ModelType | None. The updated DB object or None if there are no changes
+                to apply.
         """
-        if size is None:
-            return items
-        start = page * size
-        end = start + size
-        return items[start:end]
+        obj_data = db_obj.__dict__
+        update_data = obj_in.dict(exclude_unset=not force)
 
-    def choose_out_schema(
-        self, *, items: list[ModelType], auth: bool, with_conn: bool, short: bool
-    ) -> (
-        list[ReadPublicSchemaType]
-        | list[ReadSchemaType]
-        | list[ReadExtendedPublicSchemaType]
-        | list[ReadExtendedSchemaType]
-    ):
-        """Choose which read model use to return data to users.
+        if all(obj_data.get(k) == v for k, v in update_data.items()):
+            return None
 
-        Based on authorization, and on the user request to retrieve linked items, choose
-        one of the read schemas.
+        for field in obj_data:
+            if field in update_data:
+                setattr(db_obj, field, update_data[field])
 
-        Args:
-        ----
-            items (list[ModelType]): list of items to cast.
-            auth (bool): Flag for authorization.
-            with_conn (bool): Flag to retrieve linked items.
-            short (bool): Only for authenticated users: show shrunk version (public).
-
-        Returns:
-        -------
-            list[ReadPublicSchemaType] | list[ReadSchemaType] |
-            list[ReadExtendedPublicSchemaType] | list[ReadExtendedSchemaType].
-        """
-        if auth:
-            if short:
-                if with_conn:
-                    return [self.read_extended_public_schema.from_orm(i) for i in items]
-                return [self.read_public_schema.from_orm(i) for i in items]
-            if with_conn:
-                return [self.read_extended_schema.from_orm(i) for i in items]
-            return [self.read_schema.from_orm(i) for i in items]
-        if with_conn:
-            return [self.read_extended_public_schema.from_orm(i) for i in items]
-        return [self.read_public_schema.from_orm(i) for i in items]
-
-    def __apply_limit_and_skip(
-        self, *, items: list[ModelType], skip: int = 0, limit: Optional[int] = None
-    ) -> list[ModelType]:
-        """Function to apply the limit and skip attributes on the list of values.
-
-        Args:
-        ----
-            items (list[ModelType]): list to filter.
-            skip (int): Number of items to skip from the first one received.
-            limit (int | None): Maximum number of items to return.
-
-        Returns:
-        -------
-            list[ModelType]. Restricted list
-        """
-        if limit is None:
-            return items[skip:]
-        start = skip
-        end = skip + limit
-        return items[start:end]
+        return db_obj.save()
