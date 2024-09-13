@@ -4,7 +4,15 @@ import pytest
 from neomodel.exceptions import MultipleNodesReturned
 from pytest_cases import fixture, parametrize_with_cases
 
-from fed_reg.network.crud import CRUDNetwork, CRUDPrivateNetwork, CRUDSharedNetwork
+from fed_reg.crud import CRUDInterface
+from fed_reg.network.crud import (
+    CRUDNetwork,
+    CRUDPrivateNetwork,
+    CRUDSharedNetwork,
+    network_mgr,
+    private_network_mgr,
+    shared_network_mgr,
+)
 from fed_reg.network.models import PrivateNetwork, SharedNetwork
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
@@ -36,6 +44,17 @@ def network_get_dict(key: str, value: Any) -> dict[str, Any]:
         if key.startswith("gpu_"):
             d["gpus"] = 1
     return d
+
+
+def test_inheritance():
+    """Test CRUD classes inheritance."""
+    assert issubclass(CRUDNetwork, CRUDInterface)
+    assert issubclass(CRUDPrivateNetwork, CRUDInterface)
+    assert issubclass(CRUDSharedNetwork, CRUDInterface)
+
+    assert isinstance(network_mgr, CRUDNetwork)
+    assert isinstance(private_network_mgr, CRUDPrivateNetwork)
+    assert isinstance(shared_network_mgr, CRUDSharedNetwork)
 
 
 @parametrize_with_cases("mgr", has_tag=("manager", "shared"))

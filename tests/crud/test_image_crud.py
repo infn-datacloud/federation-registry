@@ -4,7 +4,15 @@ import pytest
 from neomodel.exceptions import MultipleNodesReturned
 from pytest_cases import fixture, parametrize_with_cases
 
-from fed_reg.image.crud import CRUDImage, CRUDPrivateImage, CRUDSharedImage
+from fed_reg.crud import CRUDInterface
+from fed_reg.image.crud import (
+    CRUDImage,
+    CRUDPrivateImage,
+    CRUDSharedImage,
+    image_mgr,
+    private_image_mgr,
+    shared_image_mgr,
+)
 from fed_reg.image.models import PrivateImage, SharedImage
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
@@ -32,6 +40,17 @@ def image_get_dict(key: str, value: Any) -> dict[str, Any]:
     if key:
         d[key] = value
     return d
+
+
+def test_inheritance():
+    """Test CRUD classes inheritance."""
+    assert issubclass(CRUDImage, CRUDInterface)
+    assert issubclass(CRUDPrivateImage, CRUDInterface)
+    assert issubclass(CRUDSharedImage, CRUDInterface)
+
+    assert isinstance(image_mgr, CRUDImage)
+    assert isinstance(private_image_mgr, CRUDPrivateImage)
+    assert isinstance(shared_image_mgr, CRUDSharedImage)
 
 
 @parametrize_with_cases("mgr", has_tag=("manager", "shared"))

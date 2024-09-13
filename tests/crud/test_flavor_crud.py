@@ -4,7 +4,15 @@ import pytest
 from neomodel.exceptions import MultipleNodesReturned
 from pytest_cases import parametrize_with_cases
 
-from fed_reg.flavor.crud import CRUDFlavor, CRUDPrivateFlavor, CRUDSharedFlavor
+from fed_reg.crud import CRUDInterface
+from fed_reg.flavor.crud import (
+    CRUDFlavor,
+    CRUDPrivateFlavor,
+    CRUDSharedFlavor,
+    flavor_mgr,
+    private_flavor_mgr,
+    shared_flavor_mgr,
+)
 from fed_reg.flavor.models import PrivateFlavor, SharedFlavor
 from fed_reg.flavor.schemas import FlavorUpdate
 from fed_reg.project.models import Project
@@ -39,12 +47,28 @@ def flavor_read_dict(key: str, value: Any) -> dict[str, Any]:
     return d
 
 
+def test_inheritance():
+    """Test CRUD classes inheritance."""
+    assert issubclass(CRUDFlavor, CRUDInterface)
+    assert issubclass(CRUDPrivateFlavor, CRUDInterface)
+    assert issubclass(CRUDSharedFlavor, CRUDInterface)
+
+    assert isinstance(flavor_mgr, CRUDFlavor)
+    assert isinstance(private_flavor_mgr, CRUDPrivateFlavor)
+    assert isinstance(shared_flavor_mgr, CRUDSharedFlavor)
+
+
 @parametrize_with_cases("mgr", has_tag=("manager", "shared"))
 def test_create_shared(
     flavor_create_dict: dict[str, Any],
     compute_service_model: ComputeService,
     mgr: CRUDFlavor | CRUDSharedFlavor,
 ) -> None:
+    """Create shared flavor.
+
+    In each case, provide a possible attribute and double check it.
+    Test this method for both CRUDFlavor and CRUDSharedFlavor.
+    """
     flavor_schema = SharedFlavorCreateExtended(**flavor_create_dict)
     item = mgr.create(obj_in=flavor_schema, service=compute_service_model)
     assert isinstance(item, SharedFlavor)
@@ -73,6 +97,12 @@ def test_create_private_single_project(
     project_model: Project,
     mgr: CRUDFlavor | CRUDPrivateFlavor,
 ) -> None:
+    """Create private flavor with a single project.
+
+    In each case, provide a possible attribute and double check it.
+    Assert project is only one.
+    Test this method for both CRUDFlavor and CRUDPrivateFlavor.
+    """
     flavor_create_dict["projects"] = [project_model.uuid]
     flavor_schema = PrivateFlavorCreateExtended(**flavor_create_dict)
     item = mgr.create(
@@ -105,6 +135,11 @@ def test_create_private_multi_projects(
     compute_service_model: ComputeService,
     mgr: CRUDFlavor | CRUDPrivateFlavor,
 ) -> None:
+    """Create private flavor with multiple projects.
+
+    Assert projects are exactly two.
+    Test this method for both CRUDFlavor and CRUDPrivateFlavor.
+    """
     project_models = [
         Project(**project_model_dict()).save(),
         Project(**project_model_dict()).save(),
