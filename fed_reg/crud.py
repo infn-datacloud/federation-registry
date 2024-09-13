@@ -28,6 +28,14 @@ class CRUDInterface(ABC, Generic[ModelType, SchemaCreateType, SchemaUpdateType])
         """Neomodel class."""
         ...
 
+    @property
+    def schema_create(self) -> type[SchemaCreateType] | None:
+        """Pydantic Create schema.
+
+        If not defined the create method is not available.
+        """
+        return None
+
     def __apply_limit_and_skip(
         self, *, items: list[ModelType], skip: int = 0, limit: int | None = None
     ) -> list[ModelType]:
@@ -60,7 +68,12 @@ class CRUDInterface(ABC, Generic[ModelType, SchemaCreateType, SchemaUpdateType])
         -------
             ModelType. The database object.
         """
-        # obj_in = self.schema_create.parse_obj(obj_in)
+        if self.schema_create is None:
+            raise NotImplementedError(
+                "Since schema_create property has not been defined, "
+                "create method can't be used for this class."
+            )
+        obj_in = self.schema_create.parse_obj(obj_in)
         obj_in_data = obj_in.dict(exclude_none=True)
         db_obj = self.model.create(obj_in_data)[0]
         return db_obj.save()
