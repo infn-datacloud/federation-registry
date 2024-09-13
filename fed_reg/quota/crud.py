@@ -42,6 +42,10 @@ class CRUDBlockStorageQuota(
     def model(self) -> type[BlockStorageQuota]:
         return BlockStorageQuota
 
+    @property
+    def schema_create(self) -> type[BlockStorageQuotaCreate]:
+        return BlockStorageQuotaCreate
+
     def create(
         self,
         *,
@@ -90,6 +94,9 @@ class CRUDBlockStorageQuota(
         return db_obj if edit else updated_data
 
 
+block_storage_quota_mgr = CRUDBlockStorageQuota()
+
+
 class CRUDComputeQuota(
     CRUDInterface[ComputeQuota, ComputeQuotaCreate, ComputeQuotaUpdate]
 ):
@@ -98,6 +105,10 @@ class CRUDComputeQuota(
     @property
     def model(self) -> type[ComputeQuota]:
         return ComputeQuota
+
+    @property
+    def schema_create(self) -> type[ComputeQuotaCreate]:
+        return ComputeQuotaCreate
 
     def create(
         self,
@@ -147,6 +158,9 @@ class CRUDComputeQuota(
         return db_obj if edit else updated_data
 
 
+compute_quota_mgr = CRUDComputeQuota()
+
+
 class CRUDNetworkQuota(
     CRUDInterface[NetworkQuota, NetworkQuotaCreate, NetworkQuotaUpdate]
 ):
@@ -155,6 +169,10 @@ class CRUDNetworkQuota(
     @property
     def model(self) -> type[NetworkQuota]:
         return NetworkQuota
+
+    @property
+    def schema_create(self) -> type[NetworkQuotaCreate]:
+        return NetworkQuotaCreate
 
     def create(
         self,
@@ -204,6 +222,9 @@ class CRUDNetworkQuota(
         return db_obj if edit else updated_data
 
 
+network_quota_mgr = CRUDNetworkQuota()
+
+
 class CRUDObjectStoreQuota(
     CRUDInterface[ObjectStoreQuota, ObjectStoreQuotaCreate, ObjectStoreQuotaUpdate]
 ):
@@ -212,6 +233,10 @@ class CRUDObjectStoreQuota(
     @property
     def model(self) -> type[ObjectStoreQuota]:
         return ObjectStoreQuota
+
+    @property
+    def schema_create(self) -> type[ObjectStoreQuotaCreate]:
+        return ObjectStoreQuotaCreate
 
     def create(
         self,
@@ -261,7 +286,4 @@ class CRUDObjectStoreQuota(
         return db_obj if edit else updated_data
 
 
-block_storage_quota_mgr = CRUDBlockStorageQuota()
-compute_quota_mgr = CRUDComputeQuota()
-network_quota_mgr = CRUDNetworkQuota()
 object_store_quota_mgr = CRUDObjectStoreQuota()

@@ -1,6 +1,6 @@
 from fed_reg.crud import CRUDInterface
 from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
-from fed_reg.flavor.schemas import FlavorUpdate
+from fed_reg.flavor.schemas import FlavorUpdate, PrivateFlavorCreate, SharedFlavorCreate
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
     PrivateFlavorCreateExtended,
@@ -11,11 +11,15 @@ from fed_reg.service.models import ComputeService
 
 
 class CRUDPrivateFlavor(
-    CRUDInterface[PrivateFlavor, PrivateFlavorCreateExtended, FlavorUpdate]
+    CRUDInterface[PrivateFlavor, PrivateFlavorCreate, FlavorUpdate]
 ):
     @property
     def model(self) -> type[PrivateFlavor]:
         return PrivateFlavor
+
+    @property
+    def schema_create(self) -> type[PrivateFlavorCreate]:
+        return PrivateFlavorCreate
 
     def create(
         self,
@@ -108,12 +112,19 @@ class CRUDPrivateFlavor(
         return edit
 
 
+private_flavor_mgr = CRUDPrivateFlavor()
+
+
 class CRUDSharedFlavor(
     CRUDInterface[SharedFlavor, SharedFlavorCreateExtended, FlavorUpdate]
 ):
     @property
     def model(self) -> type[SharedFlavor]:
         return SharedFlavor
+
+    @property
+    def schema_create(self) -> type[SharedFlavorCreate]:
+        return SharedFlavorCreate
 
     def create(
         self, *, obj_in: SharedFlavorCreateExtended, service: ComputeService
@@ -145,6 +156,9 @@ class CRUDSharedFlavor(
         return db_obj
 
 
+shared_flavor_mgr = CRUDSharedFlavor()
+
+
 class CRUDFlavor(
     CRUDInterface[
         Flavor, PrivateFlavorCreateExtended | SharedFlavorCreateExtended, FlavorUpdate
@@ -162,10 +176,10 @@ class CRUDFlavor(
         projects: list[Project] | None = None,
     ) -> Flavor:
         if isinstance(obj_in, PrivateFlavorCreateExtended):
-            return CRUDPrivateFlavor().create(
+            return private_flavor_mgr.create(
                 obj_in=obj_in, service=service, projects=projects
             )
-        return CRUDSharedFlavor().create(obj_in=obj_in, service=service)
+        return shared_flavor_mgr.create(obj_in=obj_in, service=service)
 
     def update(
         self,
@@ -181,16 +195,14 @@ class CRUDFlavor(
         update linked projects and apply default values when explicit.
         """
         # TODO: manage when current type differs from new type
-        # (i.e DB is Private, new item is shared)
+        # (i.e DB is Private, new item is Shared)
         if isinstance(obj_in, PrivateFlavorCreateExtended):
-            return CRUDPrivateFlavor().update(
+            return private_flavor_mgr.update(
                 db_obj=db_obj, obj_in=obj_in, projects=projects, force=force
             )
         elif isinstance(obj_in, SharedFlavorCreateExtended):
-            return CRUDSharedFlavor().update(db_obj=db_obj, obj_in=obj_in, force=force)
+            return shared_flavor_mgr.update(db_obj=db_obj, obj_in=obj_in, force=force)
         return super().update(db_obj=db_obj, obj_in=obj_in, force=force)
 
 
-private_flavor_mgr = CRUDPrivateFlavor()
-shared_flavor_mgr = CRUDSharedFlavor()
 flavor_mgr = CRUDFlavor()

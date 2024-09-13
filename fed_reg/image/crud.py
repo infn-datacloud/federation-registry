@@ -3,7 +3,7 @@ from typing import Optional
 
 from fed_reg.crud import CRUDInterface
 from fed_reg.image.models import Image, PrivateImage, SharedImage
-from fed_reg.image.schemas import ImageUpdate
+from fed_reg.image.schemas import ImageUpdate, PrivateImageCreate, SharedImageCreate
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
     PrivateImageCreateExtended,
@@ -21,6 +21,10 @@ class CRUDPrivateImage(
     @property
     def model(self) -> type[PrivateImage]:
         return PrivateImage
+
+    @property
+    def schema_create(self) -> type[PrivateImageCreate]:
+        return PrivateImageCreate
 
     def create(
         self,
@@ -111,6 +115,9 @@ class CRUDPrivateImage(
         return edit
 
 
+private_image_mgr = CRUDPrivateImage()
+
+
 class CRUDSharedImage(
     CRUDInterface[SharedImage, SharedImageCreateExtended, ImageUpdate]
 ):
@@ -119,6 +126,10 @@ class CRUDSharedImage(
     @property
     def model(self) -> type[SharedImage]:
         return SharedImage
+
+    @property
+    def schema_create(self) -> type[SharedImageCreate]:
+        return SharedImageCreate
 
     def create(
         self, *, obj_in: SharedImageCreateExtended, service: ComputeService
@@ -151,6 +162,9 @@ class CRUDSharedImage(
         return db_obj
 
 
+shared_image_mgr = CRUDSharedImage()
+
+
 class CRUDImage(
     CRUDInterface[
         Image, PrivateImageCreateExtended | SharedImageCreateExtended, ImageUpdate
@@ -178,16 +192,16 @@ class CRUDImage(
         project.
         """
         if isinstance(obj_in, PrivateImageCreateExtended):
-            return CRUDPrivateImage().create(
+            return private_image_mgr.create(
                 obj_in=obj_in, service=service, projects=projects
             )
-        return CRUDSharedImage().create(obj_in=obj_in, service=service)
+        return shared_image_mgr.create(obj_in=obj_in, service=service)
 
     def update(
         self,
         *,
         db_obj: Image,
-        obj_in: ImageUpdate | PrivateImageCreateExtended,
+        obj_in: ImageUpdate | PrivateImageCreateExtended | SharedImageCreateExtended,
         projects: Optional[list[Project]] = None,
         force: bool = False,
     ) -> Optional[Image]:
@@ -197,14 +211,12 @@ class CRUDImage(
         update linked projects and apply default values when explicit.
         """
         if isinstance(obj_in, PrivateImageCreateExtended):
-            return CRUDPrivateImage().update(
+            return private_image_mgr.update(
                 db_obj=db_obj, obj_in=obj_in, projects=projects, force=force
             )
         elif isinstance(obj_in, SharedImageCreateExtended):
-            return CRUDSharedImage().update(db_obj=db_obj, obj_in=obj_in, force=force)
+            return shared_image_mgr.update(db_obj=db_obj, obj_in=obj_in, force=force)
         return super().update(db_obj=db_obj, obj_in=obj_in, force=force)
 
 
-private_image_mgr = CRUDPrivateImage()
-shared_image_mgr = CRUDSharedImage()
 image_mgr = CRUDImage()

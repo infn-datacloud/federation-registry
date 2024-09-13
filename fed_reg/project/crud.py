@@ -25,6 +25,10 @@ class CRUDProject(CRUDInterface[Project, ProjectCreate, ProjectUpdate]):
     def model(self) -> type[Project]:
         return Project
 
+    @property
+    def schema_create(self) -> type[ProjectCreate]:
+        return ProjectCreate
+
     def create(self, *, obj_in: ProjectCreate, provider: Provider) -> Project:
         """Create a new Project.
 

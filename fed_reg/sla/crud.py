@@ -16,6 +16,10 @@ class CRUDSLA(CRUDInterface[SLA, SLACreate, SLAUpdate]):
     def model(self) -> type[SLA]:
         return SLA
 
+    @property
+    def schema_create(self) -> type[SLACreate]:
+        return SLACreate
+
     def create(
         self, *, obj_in: SLACreate, project: Project, user_group: UserGroup
     ) -> SLA:

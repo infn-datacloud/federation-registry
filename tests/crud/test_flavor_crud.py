@@ -13,8 +13,8 @@ from fed_reg.flavor.crud import (
     private_flavor_mgr,
     shared_flavor_mgr,
 )
-from fed_reg.flavor.models import PrivateFlavor, SharedFlavor
-from fed_reg.flavor.schemas import FlavorUpdate
+from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
+from fed_reg.flavor.schemas import FlavorUpdate, PrivateFlavorCreate, SharedFlavorCreate
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
     PrivateFlavorCreateExtended,
@@ -56,6 +56,13 @@ def test_inheritance():
     assert isinstance(flavor_mgr, CRUDFlavor)
     assert isinstance(private_flavor_mgr, CRUDPrivateFlavor)
     assert isinstance(shared_flavor_mgr, CRUDSharedFlavor)
+
+    assert flavor_mgr.model == Flavor
+    assert flavor_mgr.schema_create is None
+    assert private_flavor_mgr.model == PrivateFlavor
+    assert private_flavor_mgr.schema_create == PrivateFlavorCreate
+    assert shared_flavor_mgr.model == SharedFlavor
+    assert shared_flavor_mgr.schema_create == SharedFlavorCreate
 
 
 @parametrize_with_cases("mgr", has_tag=("manager", "shared"))

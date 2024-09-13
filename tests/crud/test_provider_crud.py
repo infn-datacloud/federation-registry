@@ -4,6 +4,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.crud import CRUDInterface
 from fed_reg.provider.crud import CRUDProvider, provider_mgr
 from fed_reg.provider.models import Provider
+from fed_reg.provider.schemas import ProviderCreate
 from fed_reg.provider.schemas_extended import ProviderCreateExtended
 
 
@@ -12,6 +13,9 @@ def test_inheritance():
     assert issubclass(CRUDProvider, CRUDInterface)
 
     assert isinstance(provider_mgr, CRUDProvider)
+
+    assert provider_mgr.model == Provider
+    assert provider_mgr.schema_create == ProviderCreate
 
 
 # TODO parametrize with possible extended cases

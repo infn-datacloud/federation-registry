@@ -13,7 +13,8 @@ from fed_reg.image.crud import (
     private_image_mgr,
     shared_image_mgr,
 )
-from fed_reg.image.models import PrivateImage, SharedImage
+from fed_reg.image.models import Image, PrivateImage, SharedImage
+from fed_reg.image.schemas import PrivateImageCreate, SharedImageCreate
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
     PrivateImageCreateExtended,
@@ -51,6 +52,13 @@ def test_inheritance():
     assert isinstance(image_mgr, CRUDImage)
     assert isinstance(private_image_mgr, CRUDPrivateImage)
     assert isinstance(shared_image_mgr, CRUDSharedImage)
+
+    assert image_mgr.model == Image
+    assert image_mgr.schema_create is None
+    assert private_image_mgr.model == PrivateImage
+    assert private_image_mgr.schema_create == PrivateImageCreate
+    assert shared_image_mgr.model == SharedImage
+    assert shared_image_mgr.schema_create == SharedImageCreate
 
 
 @parametrize_with_cases("mgr", has_tag=("manager", "shared"))

@@ -31,6 +31,10 @@ class CRUDRegion(CRUDInterface[Region, RegionCreate, RegionUpdate]):
     def model(self) -> type[Region]:
         return Region
 
+    @property
+    def schema_create(self) -> type[RegionCreate]:
+        return RegionCreate
+
     def create(self, *, obj_in: RegionCreateExtended, provider: Provider) -> Region:
         """Create a new Region.
 

@@ -68,6 +68,10 @@ class CRUDBlockStorageService(
     def model(self) -> type[BlockStorageService]:
         return BlockStorageService
 
+    @property
+    def schema_create(self) -> type[BlockStorageServiceCreate]:
+        return BlockStorageServiceCreate
+
     def create(
         self,
         *,
@@ -222,6 +226,9 @@ class CRUDBlockStorageService(
         return edit
 
 
+block_storage_service_mgr = CRUDBlockStorageService()
+
+
 class CRUDComputeService(
     CRUDInterface[ComputeService, ComputeServiceCreate, ComputeServiceUpdate]
 ):
@@ -230,6 +237,10 @@ class CRUDComputeService(
     @property
     def model(self) -> type[ComputeService]:
         return ComputeService
+
+    @property
+    def schema_create(self) -> type[ComputeServiceCreate]:
+        return ComputeServiceCreate
 
     def create(
         self,
@@ -479,6 +490,9 @@ class CRUDComputeService(
         return edit
 
 
+compute_service_mgr = CRUDComputeService()
+
+
 class CRUDIdentityService(
     CRUDInterface[IdentityService, IdentityServiceCreate, IdentityServiceUpdate]
 ):
@@ -487,6 +501,10 @@ class CRUDIdentityService(
     @property
     def model(self) -> type[IdentityService]:
         return IdentityService
+
+    @property
+    def schema_create(self) -> type[IdentityServiceCreate]:
+        return IdentityServiceCreate
 
     def create(
         self, *, obj_in: IdentityServiceCreate, region: Region
@@ -506,6 +524,9 @@ class CRUDIdentityService(
         return db_obj
 
 
+identity_service_mgr = CRUDIdentityService()
+
+
 class CRUDNetworkService(
     CRUDInterface[NetworkService, NetworkServiceCreate, NetworkServiceUpdate]
 ):
@@ -514,6 +535,10 @@ class CRUDNetworkService(
     @property
     def model(self) -> type[NetworkService]:
         return NetworkService
+
+    @property
+    def schema_create(self) -> type[NetworkServiceCreate]:
+        return NetworkServiceCreate
 
     def create(
         self,
@@ -717,6 +742,9 @@ class CRUDNetworkService(
         return edit
 
 
+network_service_mgr = CRUDNetworkService()
+
+
 class CRUDObjectStoreService(
     CRUDInterface[
         ObjectStoreService, ObjectStoreServiceCreate, ObjectStoreServiceUpdate
@@ -727,6 +755,10 @@ class CRUDObjectStoreService(
     @property
     def model(self) -> type[ObjectStoreService]:
         return ObjectStoreService
+
+    @property
+    def schema_create(self) -> type[ObjectStoreServiceCreate]:
+        return ObjectStoreServiceCreate
 
     def create(
         self,
@@ -882,8 +914,4 @@ class CRUDObjectStoreService(
         return edit
 
 
-compute_service_mgr = CRUDComputeService()
-block_storage_service_mgr = CRUDBlockStorageService()
-identity_service_mgr = CRUDIdentityService()
-network_service_mgr = CRUDNetworkService()
 object_store_service_mgr = CRUDObjectStoreService()

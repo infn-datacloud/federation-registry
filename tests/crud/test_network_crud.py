@@ -13,7 +13,8 @@ from fed_reg.network.crud import (
     private_network_mgr,
     shared_network_mgr,
 )
-from fed_reg.network.models import PrivateNetwork, SharedNetwork
+from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
+from fed_reg.network.schemas import PrivateNetworkCreate, SharedNetworkCreate
 from fed_reg.project.models import Project
 from fed_reg.provider.schemas_extended import (
     PrivateNetworkCreateExtended,
@@ -55,6 +56,13 @@ def test_inheritance():
     assert isinstance(network_mgr, CRUDNetwork)
     assert isinstance(private_network_mgr, CRUDPrivateNetwork)
     assert isinstance(shared_network_mgr, CRUDSharedNetwork)
+
+    assert network_mgr.model == Network
+    assert network_mgr.schema_create is None
+    assert private_network_mgr.model == PrivateNetwork
+    assert private_network_mgr.schema_create == PrivateNetworkCreate
+    assert shared_network_mgr.model == SharedNetwork
+    assert shared_network_mgr.schema_create == SharedNetworkCreate
 
 
 @parametrize_with_cases("mgr", has_tag=("manager", "shared"))

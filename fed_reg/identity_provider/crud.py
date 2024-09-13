@@ -3,7 +3,10 @@ from typing import Optional
 
 from fed_reg.crud import CRUDInterface
 from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.identity_provider.schemas import IdentityProviderUpdate
+from fed_reg.identity_provider.schemas import (
+    IdentityProviderCreate,
+    IdentityProviderUpdate,
+)
 from fed_reg.project.models import Project
 from fed_reg.provider.models import Provider
 from fed_reg.provider.schemas_extended import IdentityProviderCreateExtended
@@ -20,6 +23,10 @@ class CRUDIdentityProvider(
     @property
     def model(self) -> type[IdentityProvider]:
         return IdentityProvider
+
+    @property
+    def schema_create(self) -> type[IdentityProviderCreate]:
+        return IdentityProviderCreate
 
     def create(
         self, *, obj_in: IdentityProviderCreateExtended, provider: Provider

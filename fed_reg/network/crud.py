@@ -25,6 +25,10 @@ class CRUDPrivateNetwork(
     def model(self) -> type[PrivateNetwork]:
         return PrivateNetwork
 
+    @property
+    def schema_create(self) -> type[PrivateNetworkCreate]:
+        return PrivateNetworkCreate
+
     def create(
         self,
         *,
@@ -71,6 +75,9 @@ class CRUDPrivateNetwork(
         return db_obj if edit else updated_data
 
 
+private_network_mgr = CRUDPrivateNetwork()
+
+
 class CRUDSharedNetwork(
     CRUDInterface[SharedNetwork, SharedNetworkCreate, NetworkUpdate]
 ):
@@ -79,6 +86,10 @@ class CRUDSharedNetwork(
     @property
     def model(self) -> type[SharedNetwork]:
         return SharedNetwork
+
+    @property
+    def schema_create(self) -> type[SharedNetworkCreate]:
+        return SharedNetworkCreate
 
     def create(
         self, *, obj_in: SharedNetworkCreateExtended, service: NetworkService
@@ -94,6 +105,9 @@ class CRUDSharedNetwork(
         db_obj = super().create(obj_in=obj_in)
         db_obj.service.connect(service)
         return db_obj
+
+
+shared_network_mgr = CRUDSharedNetwork()
 
 
 class CRUDNetwork(
@@ -121,10 +135,10 @@ class CRUDNetwork(
         Connect the network to the given service and to the optional received project.
         """
         if isinstance(obj_in, PrivateNetworkCreateExtended):
-            return CRUDPrivateNetwork().create(
+            return private_network_mgr.create(
                 obj_in=obj_in, service=service, project=project
             )
-        return CRUDSharedNetwork().create(obj_in=obj_in, service=service)
+        return shared_network_mgr.create(obj_in=obj_in, service=service)
 
     def update(
         self,
@@ -142,14 +156,12 @@ class CRUDNetwork(
         update linked project and apply default values when explicit.
         """
         if isinstance(obj_in, PrivateNetworkCreateExtended):
-            return CRUDPrivateNetwork().update(
+            return private_network_mgr.update(
                 db_obj=db_obj, obj_in=obj_in, project=project, force=force
             )
         elif isinstance(obj_in, SharedNetworkCreateExtended):
-            return CRUDSharedNetwork().update(db_obj=db_obj, obj_in=obj_in, force=force)
+            return shared_network_mgr.update(db_obj=db_obj, obj_in=obj_in, force=force)
         return super().update(db_obj=db_obj, obj_in=obj_in, force=force)
 
 
-private_network_mgr = CRUDPrivateNetwork()
-shared_network_mgr = CRUDSharedNetwork()
 network_mgr = CRUDNetwork()

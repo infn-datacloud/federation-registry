@@ -17,6 +17,10 @@ class CRUDUserGroup(CRUDInterface[UserGroup, UserGroupCreate, UserGroupUpdate]):
     def model(self) -> type[UserGroup]:
         return UserGroup
 
+    @property
+    def schema_create(self) -> type[UserGroupCreate]:
+        return UserGroupCreate
+
     def create(
         self,
         *,

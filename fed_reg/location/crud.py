@@ -12,6 +12,10 @@ class CRUDLocation(CRUDInterface[Location, LocationCreate, LocationUpdate]):
     def model(self) -> type[Location]:
         return Location
 
+    @property
+    def schema_create(self) -> type[LocationCreate]:
+        return LocationCreate
+
     def create(self, *, obj_in: LocationCreate, region: Region) -> Location:
         """Create a new Location.
 

@@ -17,6 +17,10 @@ class CRUDProvider(CRUDInterface[Provider, ProviderCreate, ProviderUpdate]):
     def model(self) -> type[Provider]:
         return Provider
 
+    @property
+    def schema_create(self) -> type[ProviderCreate]:
+        return ProviderCreate
+
     def create(self, *, obj_in: ProviderCreateExtended) -> Provider:
         """Create a new Provider.
 
