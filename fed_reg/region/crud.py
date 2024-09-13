@@ -65,34 +65,6 @@ class CRUDRegion(CRUDInterface[Region, RegionCreate, RegionUpdate]):
             )
         return db_obj
 
-    def remove(self, *, db_obj: Region) -> bool:
-        """Delete an existing region and all its relationships.
-
-        If the corresponding provider has no other regions, abort region deletion in
-        favor of provider deletion.
-
-        At first delete its services. Then, if the location points only to this
-        provider, delete it. Finally delete the region.
-        """
-        for db_serv in db_obj.services:
-            if isinstance(db_serv, BlockStorageService):
-                block_storage_service_mgr.remove(db_obj=db_serv)
-            elif isinstance(db_serv, ComputeService):
-                compute_service_mgr.remove(db_obj=db_serv)
-            elif isinstance(db_serv, IdentityService):
-                identity_service_mgr.remove(db_obj=db_serv)
-            elif isinstance(db_serv, NetworkService):
-                network_service_mgr.remove(db_obj=db_serv)
-            elif isinstance(db_serv, ObjectStoreService):
-                object_store_service_mgr.remove(db_obj=db_serv)
-
-        item = db_obj.location.single()
-        if item and len(item.regions) == 1:
-            location_mgr.remove(db_obj=item)
-
-        result = super().remove(db_obj=db_obj)
-        return result
-
     def update(
         self,
         *,

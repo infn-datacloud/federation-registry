@@ -59,3 +59,16 @@ class Provider(StructuredNode):
         cardinality=ZeroOrMore,
         model=AuthMethod,
     )
+
+    def pre_delete(self):
+        """Delete related identity providers, projects and regions.
+
+        Remove the identity ptovider only if that idp points only to this provider.
+        """
+        for item in self.projects:
+            item.delete()
+        for item in self.regions:
+            item.delete()
+        for item in self.identity_providers:
+            if len(item.providers) == 1:
+                item.delete()

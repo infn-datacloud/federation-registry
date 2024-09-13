@@ -36,22 +36,6 @@ class CRUDProvider(CRUDInterface[Provider, ProviderCreate, ProviderUpdate]):
             region_mgr.create(obj_in=item, provider=db_obj)
         return db_obj
 
-    def remove(self, *, db_obj: Provider) -> bool:
-        """Delete an existing provider and all its relationships.
-
-        At first delete its projects and regions. Then delete the identity providers who
-        point only to this provider. Finally delete the provider.
-        """
-        for item in db_obj.projects:
-            project_mgr.remove(db_obj=item)
-        for item in db_obj.regions:
-            region_mgr.remove(db_obj=item)
-        for item in db_obj.identity_providers:
-            if len(item.providers) == 1:
-                identity_provider_mgr.remove(db_obj=item)
-        result = super().remove(db_obj=db_obj)
-        return result
-
     def update(
         self,
         *,

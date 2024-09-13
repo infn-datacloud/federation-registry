@@ -1,5 +1,10 @@
 import pytest
-from neomodel import CardinalityViolation, RelationshipManager, RequiredProperty
+from neomodel import (
+    CardinalityViolation,
+    DoesNotExist,
+    RelationshipManager,
+    RequiredProperty,
+)
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.auth_method.models import AuthMethod
@@ -137,3 +142,18 @@ def test_multiple_linked_user_groups(identity_provider_model: IdentityProvider) 
     item = UserGroup(**user_group_model_dict()).save()
     identity_provider_model.user_groups.connect(item)
     assert len(identity_provider_model.user_groups.all()) == 2
+
+
+def test_pre_delete_hook(identity_provider_model: IdentityProvider) -> None:
+    """Delete identity provider and all related user groups"""
+    item1 = UserGroup(**user_group_model_dict()).save()
+    identity_provider_model.user_groups.connect(item1)
+    item2 = UserGroup(**user_group_model_dict()).save()
+    identity_provider_model.user_groups.connect(item2)
+
+    assert identity_provider_model.delete()
+    assert identity_provider_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()

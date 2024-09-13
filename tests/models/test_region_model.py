@@ -4,6 +4,7 @@ import pytest
 from neomodel import (
     AttemptedCardinalityViolation,
     CardinalityViolation,
+    DoesNotExist,
     RelationshipManager,
     RequiredProperty,
 )
@@ -208,3 +209,47 @@ def test_multiple_linked_services(
     for service_model in service_models:
         region_model.services.connect(service_model)
     assert len(region_model.services.all()) == len(service_models)
+
+
+@parametrize_with_cases("service_models", has_tag=("service", "multi"))
+def test_pre_delete_hook(
+    service_models: list[BlockStorageService]
+    | list[ComputeService]
+    | list[IdentityService]
+    | list[NetworkService]
+    | list[ObjectStoreService],
+    region_model: Region,
+) -> None:
+    """Delete region and all related services."""
+    for item in service_models:
+        region_model.services.connect(item)
+
+    assert region_model.delete()
+    assert region_model.deleted
+    for item in service_models:
+        with pytest.raises(DoesNotExist):
+            item.refresh()
+
+
+def test_pre_delete_hook_remove_location(
+    region_model: Region, location_model: Location
+) -> None:
+    """Delete region and related location"""
+    region_model.location.connect(location_model)
+
+    assert region_model.delete()
+    assert region_model.deleted
+    with pytest.raises(DoesNotExist):
+        location_model.refresh()
+
+
+def test_pre_delete_hook_dont_remove_location(location_model: Location) -> None:
+    """Location with multiple regions is not deleted when deleting one region."""
+    item1 = Region(**region_model_dict()).save()
+    location_model.regions.connect(item1)
+    item2 = Region(**region_model_dict()).save()
+    location_model.regions.connect(item2)
+
+    assert item1.delete()
+    assert item1.deleted
+    assert location_model.regions.single() == item2

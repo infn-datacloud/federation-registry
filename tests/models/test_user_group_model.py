@@ -4,6 +4,7 @@ import pytest
 from neomodel import (
     AttemptedCardinalityViolation,
     CardinalityViolation,
+    DoesNotExist,
     RelationshipManager,
     RequiredProperty,
 )
@@ -144,3 +145,18 @@ def test_multiple_linked_slas(user_group_model: UserGroup) -> None:
     item = SLA(**sla_model_dict()).save()
     user_group_model.slas.connect(item)
     assert len(user_group_model.slas.all()) == 2
+
+
+def test_pre_delete_hook(user_group_model: UserGroup) -> None:
+    """Delete user group and all related SLAs"""
+    item1 = SLA(**sla_model_dict()).save()
+    user_group_model.slas.connect(item1)
+    item2 = SLA(**sla_model_dict()).save()
+    user_group_model.slas.connect(item2)
+
+    assert user_group_model.delete()
+    assert user_group_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()

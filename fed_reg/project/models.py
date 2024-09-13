@@ -14,6 +14,7 @@ from fed_reg.flavor.models import SharedFlavor
 from fed_reg.image.models import SharedImage
 from fed_reg.network.models import SharedNetwork
 from fed_reg.service.enum import ServiceType
+from fed_reg.sla.models import SLA
 
 
 class Project(StructuredNode):
@@ -126,3 +127,14 @@ class Project(StructuredNode):
             """
         )
         return [SharedNetwork.inflate(row[0]) for row in results]
+
+    def pre_delete(self):
+        """Remove related quotas and SLA.
+
+        Remove the SLA only if that SLA points only to this project.
+        """
+        for item in self.quotas:
+            item.delete()
+        item: SLA = self.sla.single()
+        if item and len(item.projects) == 1:
+            item.delete()

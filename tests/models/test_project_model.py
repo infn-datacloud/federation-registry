@@ -4,6 +4,7 @@ import pytest
 from neomodel import (
     AttemptedCardinalityViolation,
     CardinalityViolation,
+    DoesNotExist,
     RelationshipManager,
     RequiredProperty,
 )
@@ -473,3 +474,44 @@ def test_priv_pub_networks_belong_to_diff_lists(
     project_model.private_networks.connect(private_network_model)
     assert len(project_model.shared_networks()) == 1
     assert len(project_model.private_networks.all()) == 1
+
+
+@parametrize_with_cases("quota_models", has_tag=("quota", "multi"))
+def test_pre_delete_hook(
+    quota_models: list[BlockStorageQuota]
+    | list[ComputeQuota]
+    | list[NetworkQuota]
+    | list[ObjectStoreQuota],
+    project_model: Project,
+) -> None:
+    """Delete project and all related quotas."""
+    for item in quota_models:
+        project_model.quotas.connect(item)
+
+    assert project_model.delete()
+    assert project_model.deleted
+    for item in quota_models:
+        with pytest.raises(DoesNotExist):
+            item.refresh()
+
+
+def test_pre_delete_hook_remove_sla(project_model: Project, sla_model: SLA) -> None:
+    """Delete project and related SLA"""
+    project_model.sla.connect(sla_model)
+
+    assert project_model.delete()
+    assert project_model.deleted
+    with pytest.raises(DoesNotExist):
+        sla_model.refresh()
+
+
+def test_pre_delete_hook_dont_remove_sla(sla_model: SLA) -> None:
+    """SLA with multiple projects is not deleted when deleting one project."""
+    item1 = Project(**project_model_dict()).save()
+    sla_model.projects.connect(item1)
+    item2 = Project(**project_model_dict()).save()
+    sla_model.projects.connect(item2)
+
+    assert item1.delete()
+    assert item1.deleted
+    assert sla_model.projects.single() == item2

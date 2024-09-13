@@ -70,15 +70,6 @@ class CRUDIdentityProvider(
 
         return db_obj
 
-    def remove(self, *, db_obj: IdentityProvider) -> bool:
-        """Delete an existing identity provider and all its relationships.
-
-        At first delete its user groups. Finally delete the identity provider.
-        """
-        for item in db_obj.user_groups:
-            user_group_mgr.remove(db_obj=item)
-        return super().remove(db_obj=db_obj)
-
     def update(
         self,
         *,

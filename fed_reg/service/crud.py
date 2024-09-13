@@ -98,15 +98,6 @@ class CRUDBlockStorageService(
                 )
         return db_obj
 
-    def remove(self, *, db_obj: BlockStorageService) -> bool:
-        """Delete an existing service and all its relationships.
-
-        At first delete its quotas. Finally delete the service.
-        """
-        for item in db_obj.quotas:
-            block_storage_quota_mgr.remove(db_obj=item)
-        return super().remove(db_obj=db_obj)
-
     def update(
         self,
         *,
@@ -274,23 +265,6 @@ class CRUDComputeService(
                     obj_in=item, service=db_obj, project=db_projects[0]
                 )
         return db_obj
-
-    def remove(self, *, db_obj: ComputeService) -> bool:
-        """Delete an existing service and all its relationships.
-
-        At first delete its quotas. Then delete the flavors and images connected only to
-        this service. Finally delete the service.
-        """
-        for item in db_obj.quotas:
-            compute_quota_mgr.remove(db_obj=item)
-        for item in db_obj.flavors:
-            if len(item.services) == 1:
-                flavor_mgr.remove(db_obj=item)
-        for item in db_obj.images:
-            if len(item.services) == 1:
-                image_mgr.remove(db_obj=item)
-        result = super().remove(db_obj=db_obj)
-        return result
 
     def update(
         self,
@@ -572,19 +546,6 @@ class CRUDNetworkService(
                 )
         return db_obj
 
-    def remove(self, *, db_obj: NetworkService) -> bool:
-        """Delete an existing service and all its relationships.
-
-        At first delete its quotas. Then delete the flavors and images connected only to
-        this service. Finally delete the service.
-        """
-        for item in db_obj.quotas:
-            network_quota_mgr.remove(db_obj=item)
-        for item in db_obj.networks:
-            network_mgr.remove(db_obj=item)
-        result = super().remove(db_obj=db_obj)
-        return result
-
     def update(
         self,
         *,
@@ -785,15 +746,6 @@ class CRUDObjectStoreService(
                     obj_in=item, service=db_obj, project=db_projects[0]
                 )
         return db_obj
-
-    def remove(self, *, db_obj: ObjectStoreService) -> bool:
-        """Delete an existing service and all its relationships.
-
-        At first delete its quotas. Finally delete the service.
-        """
-        for item in db_obj.quotas:
-            object_store_quota_mgr.remove(db_obj=item)
-        return super().remove(db_obj=db_obj)
 
     def update(
         self,

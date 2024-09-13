@@ -51,15 +51,6 @@ class CRUDUserGroup(CRUDInterface[UserGroup, UserGroupCreate, UserGroupUpdate]):
             sla_mgr.create(obj_in=obj_in.sla, user_group=db_obj, project=db_project)
         return db_obj
 
-    def remove(self, *, db_obj: UserGroup) -> bool:
-        """Delete an existing user group and all its relationships.
-
-        At first delete its SLAs. Finally delete the user group.
-        """
-        for item in db_obj.slas:
-            sla_mgr.remove(db_obj=item)
-        return super().remove(db_obj=db_obj)
-
     def update(
         self,
         *,

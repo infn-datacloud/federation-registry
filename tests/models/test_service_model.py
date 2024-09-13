@@ -4,6 +4,7 @@ import pytest
 from neomodel import (
     AttemptedCardinalityViolation,
     CardinalityViolation,
+    DoesNotExist,
     RelationshipManager,
     RequiredProperty,
 )
@@ -28,7 +29,12 @@ from fed_reg.service.models import (
     ObjectStoreService,
     Service,
 )
-from tests.models.utils import quota_model_dict, region_model_dict, service_model_dict
+from tests.models.utils import (
+    network_model_dict,
+    quota_model_dict,
+    region_model_dict,
+    service_model_dict,
+)
 
 
 @parametrize_with_cases("service_cls", has_tag=("class", "derived"))
@@ -554,3 +560,136 @@ def test_multiple_linked_object_store_quotas(
     item = ObjectStoreQuota(**quota_model_dict()).save()
     object_store_service_model.quotas.connect(item)
     assert len(object_store_service_model.quotas.all()) == 2
+
+
+def test_block_storage_pre_delete_hook_remove_quotas(
+    block_storage_service_model: BlockStorageService,
+) -> None:
+    """Delete block storage service and all related quotas."""
+    item1 = BlockStorageQuota(**quota_model_dict()).save()
+    block_storage_service_model.quotas.connect(item1)
+    item2 = BlockStorageQuota(**quota_model_dict()).save()
+    block_storage_service_model.quotas.connect(item2)
+
+    assert block_storage_service_model.delete()
+    assert block_storage_service_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()
+
+
+def test_compute_pre_delete_hook_remove_quotas(
+    compute_service_model: ComputeService,
+) -> None:
+    """Delete compute service and all related quotas."""
+    item1 = ComputeQuota(**quota_model_dict()).save()
+    compute_service_model.quotas.connect(item1)
+    item2 = ComputeQuota(**quota_model_dict()).save()
+    compute_service_model.quotas.connect(item2)
+
+    assert compute_service_model.delete()
+    assert compute_service_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()
+
+
+def test_compute_pre_delete_hook_remove_flavor(
+    compute_service_model: ComputeService, flavor_model: Flavor
+) -> None:
+    """Delete project and related SLA"""
+    compute_service_model.flavors.connect(flavor_model)
+
+    assert compute_service_model.delete()
+    assert compute_service_model.deleted
+    with pytest.raises(DoesNotExist):
+        flavor_model.refresh()
+
+
+def test_compute_pre_delete_hook_dont_remove_flavor(flavor_model: Flavor) -> None:
+    """SLA with multiple projects is not deleted when deleting one project."""
+    item1 = ComputeService(**service_model_dict()).save()
+    flavor_model.services.connect(item1)
+    item2 = ComputeService(**service_model_dict()).save()
+    flavor_model.services.connect(item2)
+
+    assert item1.delete()
+    assert item1.deleted
+    assert flavor_model.services.single() == item2
+
+
+def test_compute_pre_delete_hook_remove_image(
+    compute_service_model: ComputeService, image_model: Image
+) -> None:
+    """Delete project and related SLA"""
+    compute_service_model.images.connect(image_model)
+
+    assert compute_service_model.delete()
+    assert compute_service_model.deleted
+    with pytest.raises(DoesNotExist):
+        image_model.refresh()
+
+
+def test_compute_pre_delete_hook_dont_remove_image(image_model: Image) -> None:
+    """SLA with multiple projects is not deleted when deleting one project."""
+    item1 = ComputeService(**service_model_dict()).save()
+    image_model.services.connect(item1)
+    item2 = ComputeService(**service_model_dict()).save()
+    image_model.services.connect(item2)
+
+    assert item1.delete()
+    assert item1.deleted
+    assert image_model.services.single() == item2
+
+
+def test_network_pre_delete_hook_remove_quotas(
+    network_service_model: NetworkService,
+) -> None:
+    """Delete network service and all related quotas."""
+    item1 = NetworkQuota(**quota_model_dict()).save()
+    network_service_model.quotas.connect(item1)
+    item2 = NetworkQuota(**quota_model_dict()).save()
+    network_service_model.quotas.connect(item2)
+
+    assert network_service_model.delete()
+    assert network_service_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()
+
+
+def test_network_pre_delete_hook_remove_networks(
+    network_service_model: NetworkService,
+) -> None:
+    """Delete network service and all related networks."""
+    item1 = Network(**network_model_dict()).save()
+    network_service_model.networks.connect(item1)
+    item2 = Network(**network_model_dict()).save()
+    network_service_model.networks.connect(item2)
+
+    assert network_service_model.delete()
+    assert network_service_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()
+
+
+def test_object_store_pre_delete_hook_remove_quotas(
+    object_store_service_model: ObjectStoreService,
+) -> None:
+    """Delete object store service and all related quotas."""
+    item1 = ObjectStoreQuota(**quota_model_dict()).save()
+    object_store_service_model.quotas.connect(item1)
+    item2 = ObjectStoreQuota(**quota_model_dict()).save()
+    object_store_service_model.quotas.connect(item2)
+
+    assert object_store_service_model.delete()
+    assert object_store_service_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()

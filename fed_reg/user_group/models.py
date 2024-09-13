@@ -43,6 +43,11 @@ class UserGroup(StructuredNode):
         cardinality=One,
     )
 
+    def pre_delete(self):
+        """Remove related SLAs."""
+        for item in self.slas:
+            item.delete()
+
     # TODO Evaluate if they are useful depending on the dashboard communication
     # procedure.
 

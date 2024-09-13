@@ -44,3 +44,8 @@ class IdentityProvider(StructuredNode):
         "BELONG_TO",
         cardinality=ZeroOrMore,
     )
+
+    def pre_delete(self):
+        """Remove related user groups."""
+        for item in self.user_groups:
+            item.delete()

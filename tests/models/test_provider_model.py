@@ -1,5 +1,5 @@
 import pytest
-from neomodel import RelationshipManager, RequiredProperty
+from neomodel import DoesNotExist, RelationshipManager, RequiredProperty
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.auth_method.models import AuthMethod
@@ -171,3 +171,62 @@ def test_multiple_linked_identity_providers(provider_model: Provider) -> None:
     item = IdentityProvider(**identity_provider_model_dict()).save()
     provider_model.identity_providers.connect(item, auth_method_model_dict())
     assert len(provider_model.identity_providers.all()) == 2
+
+
+def test_pre_delete_hook_remove_projects(provider_model: Provider) -> None:
+    """Delete provider and all related projects."""
+    item1 = Project(**project_model_dict()).save()
+    provider_model.projects.connect(item1)
+    item2 = Project(**project_model_dict()).save()
+    provider_model.projects.connect(item2)
+
+    assert provider_model.delete()
+    assert provider_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()
+
+
+def test_pre_delete_hook_remove_regions(provider_model: Provider) -> None:
+    """Delete provider and all related regions."""
+    item1 = Region(**region_model_dict()).save()
+    provider_model.regions.connect(item1)
+    item2 = Region(**region_model_dict()).save()
+    provider_model.regions.connect(item2)
+
+    assert provider_model.delete()
+    assert provider_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()
+
+
+def test_pre_delete_hook_remove_idps(provider_model: Provider) -> None:
+    """Delete provider and all related identity providers."""
+    item1 = IdentityProvider(**identity_provider_model_dict()).save()
+    provider_model.identity_providers.connect(item1, auth_method_model_dict())
+    item2 = IdentityProvider(**identity_provider_model_dict()).save()
+    provider_model.identity_providers.connect(item2, auth_method_model_dict())
+
+    assert provider_model.delete()
+    assert provider_model.deleted
+    with pytest.raises(DoesNotExist):
+        item1.refresh()
+    with pytest.raises(DoesNotExist):
+        item2.refresh()
+
+
+def test_pre_delete_hook_dont_remove_idp(
+    identity_provider_model: IdentityProvider,
+) -> None:
+    """Idp with multiple providers is not deleted when deleting one provider."""
+    item1 = Provider(**provider_model_dict()).save()
+    identity_provider_model.providers.connect(item1, auth_method_model_dict())
+    item2 = Provider(**provider_model_dict()).save()
+    identity_provider_model.providers.connect(item2, auth_method_model_dict())
+
+    assert item1.delete()
+    assert item1.deleted
+    assert identity_provider_model.providers.single() == item2

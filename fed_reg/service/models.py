@@ -58,6 +58,11 @@ class BlockStorageService(Service):
         "fed_reg.quota.models.BlockStorageQuota", "APPLY_TO", cardinality=ZeroOrMore
     )
 
+    def pre_delete(self):
+        """Remove related quotas."""
+        for item in self.quotas:
+            item.delete()
+
 
 class ComputeService(Service):
     """Service managing Compute resources.
@@ -89,6 +94,20 @@ class ComputeService(Service):
     quotas = RelationshipFrom(
         "fed_reg.quota.models.ComputeQuota", "APPLY_TO", cardinality=ZeroOrMore
     )
+
+    def pre_delete(self):
+        """Remove related quotas, flavors and images.
+
+        Remove Flavors and Images only when this service is the only one using them.
+        """
+        for item in self.quotas:
+            item.delete()
+        for item in self.flavors:
+            if len(item.services) == 1:
+                item.delete()
+        for item in self.images:
+            if len(item.services) == 1:
+                item.delete()
 
 
 class IdentityService(Service):
@@ -131,6 +150,13 @@ class NetworkService(Service):
         "fed_reg.quota.models.NetworkQuota", "APPLY_TO", cardinality=ZeroOrMore
     )
 
+    def pre_delete(self):
+        """Remove related quotas and networks."""
+        for item in self.quotas:
+            item.delete()
+        for item in self.networks:
+            item.delete()
+
 
 class ObjectStoreService(Service):
     """Service managing Object Storage resources.
@@ -152,3 +178,8 @@ class ObjectStoreService(Service):
     quotas = RelationshipFrom(
         "fed_reg.quota.models.ObjectStoreQuota", "APPLY_TO", cardinality=ZeroOrMore
     )
+
+    def pre_delete(self):
+        """Remove related quotas."""
+        for item in self.quotas:
+            item.delete()
