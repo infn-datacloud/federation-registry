@@ -29,13 +29,18 @@ class CRUDSLA(CRUDInterface[SLA, SLACreate, SLAUpdate]):
         does not exist, create it. In any case connect the SLA to the given user group
         and project. If the project already has an attached SLA, disconnect it.
         """
-        db_obj = user_group.slas.get_or_none(doc_uuid=obj_in.doc_uuid)
+        db_obj: SLA | None = user_group.slas.get_or_none(doc_uuid=obj_in.doc_uuid)
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
             db_obj.user_group.connect(user_group)
-        old_sla = project.sla.single()
+        else:
+            assert db_obj.start_date == obj_in.start_date, "Different start_dates"
+            assert db_obj.end_date == obj_in.end_date, "Different end_dates"
+        old_sla: SLA | None = project.sla.single()
         if old_sla:
             project.sla.disconnect(old_sla)
+            if len(old_sla.projects) == 0:
+                old_sla.delete()
         db_obj.projects.connect(project)
         return db_obj
 
