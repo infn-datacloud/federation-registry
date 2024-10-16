@@ -22,6 +22,8 @@ from fed_reg.quota.schemas import (
     ObjectStoreQuotaRead,
     ObjectStoreQuotaReadPublic,
 )
+from fed_reg.region.schemas import RegionRead, RegionReadPublic
+from fed_reg.service.constants import DOC_EXT_REG
 from fed_reg.service.schemas import (
     BlockStorageServiceRead,
     BlockStorageServiceReadPublic,
@@ -43,6 +45,10 @@ from fed_reg.user_group.schemas import (
 )
 
 
+class BlockStorageServiceReadExtended(BlockStorageServiceRead):
+    region: RegionRead = Field(description=DOC_EXT_REG)
+
+
 class BlockStorageQuotaReadExtended(BlockStorageQuotaRead):
     """Model to extend the Block Storage Quota data read from the DB.
 
@@ -60,7 +66,11 @@ class BlockStorageQuotaReadExtended(BlockStorageQuotaRead):
         service (BlockStorageServiceReadExtended): Target service. Same type of quota.
     """
 
-    service: BlockStorageServiceRead = Field(description=DOC_EXT_SERV)
+    service: BlockStorageServiceReadExtended = Field(description=DOC_EXT_SERV)
+
+
+class BlockStorageServiceReadExtendedPublic(BlockStorageServiceReadPublic):
+    region: RegionReadPublic = Field(description=DOC_EXT_REG)
 
 
 class BlockStorageQuotaReadExtendedPublic(BlockStorageQuotaReadPublic):
@@ -76,7 +86,11 @@ class BlockStorageQuotaReadExtendedPublic(BlockStorageQuotaReadPublic):
             quota.
     """
 
-    service: BlockStorageServiceReadPublic = Field(description=DOC_EXT_SERV)
+    service: BlockStorageServiceReadExtendedPublic = Field(description=DOC_EXT_SERV)
+
+
+class ComputeServiceReadExtended(ComputeServiceRead):
+    region: RegionRead = Field(description=DOC_EXT_REG)
 
 
 class ComputeQuotaReadExtended(ComputeQuotaRead):
@@ -95,7 +109,11 @@ class ComputeQuotaReadExtended(ComputeQuotaRead):
         service (ComputeServiceReadExtended): Target service. Same type of quota.
     """
 
-    service: ComputeServiceRead = Field(description=DOC_EXT_SERV)
+    service: ComputeServiceReadExtended = Field(description=DOC_EXT_SERV)
+
+
+class ComputeServiceReadExtendedPublic(ComputeServiceReadPublic):
+    region: RegionReadPublic = Field(description=DOC_EXT_REG)
 
 
 class ComputeQuotaReadExtendedPublic(ComputeQuotaReadPublic):
@@ -110,7 +128,11 @@ class ComputeQuotaReadExtendedPublic(ComputeQuotaReadPublic):
         service (ComputeServiceReadExtendedPublic): Target service. Same type of quota.
     """
 
-    service: ComputeServiceReadPublic = Field(description=DOC_EXT_SERV)
+    service: ComputeServiceReadExtendedPublic = Field(description=DOC_EXT_SERV)
+
+
+class NetworkServiceReadExtended(NetworkServiceRead):
+    region: RegionRead = Field(description=DOC_EXT_REG)
 
 
 class NetworkQuotaReadExtended(NetworkQuotaRead):
@@ -134,7 +156,11 @@ class NetworkQuotaReadExtended(NetworkQuotaRead):
         service (NetworkServiceReadExtended): Target service. Same type of quota.
     """
 
-    service: NetworkServiceRead = Field(description=DOC_EXT_SERV)
+    service: NetworkServiceReadExtended = Field(description=DOC_EXT_SERV)
+
+
+class NetworkServiceReadExtendedPublic(NetworkServiceReadPublic):
+    region: RegionReadPublic = Field(description=DOC_EXT_REG)
 
 
 class NetworkQuotaReadExtendedPublic(NetworkQuotaReadPublic):
@@ -149,7 +175,11 @@ class NetworkQuotaReadExtendedPublic(NetworkQuotaReadPublic):
         service (NetworkServiceReadExtendedPublic): Target service. Same type of quota.
     """
 
-    service: NetworkServiceReadPublic = Field(description=DOC_EXT_SERV)
+    service: NetworkServiceReadExtendedPublic = Field(description=DOC_EXT_SERV)
+
+
+class ObjectStoreServiceReadExtended(ObjectStoreServiceRead):
+    region: RegionRead = Field(description=DOC_EXT_REG)
 
 
 class ObjectStoreQuotaReadExtended(ObjectStoreQuotaRead):
@@ -168,7 +198,11 @@ class ObjectStoreQuotaReadExtended(ObjectStoreQuotaRead):
         service (ObjectStoreServiceReadExtended): Target service. Same type of quota.
     """
 
-    service: ObjectStoreServiceRead = Field(description=DOC_EXT_SERV)
+    service: ObjectStoreServiceReadExtended = Field(description=DOC_EXT_SERV)
+
+
+class ObjectStoreServiceReadExtendedPublic(ObjectStoreServiceReadPublic):
+    region: RegionReadPublic = Field(description=DOC_EXT_REG)
 
 
 class ObjectStoreQuotaReadExtendedPublic(ObjectStoreQuotaReadPublic):
@@ -184,7 +218,7 @@ class ObjectStoreQuotaReadExtendedPublic(ObjectStoreQuotaReadPublic):
             quota.
     """
 
-    service: ObjectStoreServiceReadPublic = Field(description=DOC_EXT_SERV)
+    service: ObjectStoreServiceReadExtendedPublic = Field(description=DOC_EXT_SERV)
 
 
 class ProjectReadExtended(ProjectRead):
