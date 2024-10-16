@@ -39,12 +39,12 @@ pipeline {
     stages {
         stage('Run tests on multiple python versions') {
             parallel {
-                stage('Run on tests on python3.10') {
+                stage('Run tests on python3.10') {
                     steps {
                         runTests('3.10')
                     }
                 }
-                stage('Run on tests on python3.11') {
+                stage('Run tests on python3.11') {
                     steps {
                         runTests('3.11')
                     }
