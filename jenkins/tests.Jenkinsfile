@@ -15,10 +15,11 @@ void runTests(String pythonVersion) {
                 sh 'while ! wget http://db:7474; do sleep 1; done' // Wait DB is up and running
             }
             pythonProject.testCode(
-                "${pythonVersion}",
-                "-e NEO4J_TEST_URL=bolt://neo4j:password@db:7687 --link ${c.id}:db",
-                '.coveragerc',
-                "${COVERAGE_DIR}"
+                pythonVersion: "${pythonVersion}",
+                dockerArgs: "-e NEO4J_TEST_URL=bolt://neo4j:password@db:7687 --link ${c.id}:db",
+                coveragercId: '.coveragerc',
+                coverageDir: "${COVERAGE_DIR}",
+                pytestArgs: '--resetdb'
                 )
         }
     }
@@ -56,14 +57,14 @@ pipeline {
         always {
             script {
                 sonar.analysis(
-                    "${SONAR_TOKEN}",
-                    "${SONAR_PROJECT}",
-                    "${SONAR_ORGANIZATION}",
-                    "${SONAR_HOST}",
-                    "${COVERAGE_DIR}",
-                    'fed_reg',
-                    'tests',
-                    '3.10, 3.11'
+                    sonarToken: '${SONAR_TOKEN}',
+                    sonarProject: "${SONAR_PROJECT}",
+                    sonarOrganization: "${SONAR_ORGANIZATION}",
+                    sonarHost: "${SONAR_HOST}",
+                    coverageDir: "${COVERAGE_DIR}",
+                    srcDir: 'fed_reg',
+                    testsDir: 'tests',
+                    pythonVersions: '3.10, 3.11'
                 )
             }
         }

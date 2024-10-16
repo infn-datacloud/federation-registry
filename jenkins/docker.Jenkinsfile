@@ -31,15 +31,15 @@ pipeline {
                     steps {
                         script {
                             dockerRepository.buildAndPushImage(
-                                "${HARBOR_ORGANIZATION}/${PROJECT_NAME}",
-                                "${DOCKERFILE1}",
-                                "${HARBOR_URL}",
-                                "${HARBOR_CREDENTIALS_NAME}",
-                                '${HARBOR_CREDENTIALS_USR}',
-                                '${HARBOR_CREDENTIALS_PSW}',
-                                "${HARBOR_HOST}",
-                                'harbor2',
-                                '3.10'
+                                imageName: "${HARBOR_ORGANIZATION}/${PROJECT_NAME}",
+                                dockerfile: "${DOCKERFILE1}",
+                                registryUrl: "${HARBOR_URL}",
+                                registryCredentialsName: "${HARBOR_CREDENTIALS_NAME}",
+                                registryUser: '${HARBOR_CREDENTIALS_USR}',
+                                registryPassword: '${HARBOR_CREDENTIALS_PSW}',
+                                registryHost: "${HARBOR_HOST}",
+                                registryType: 'harbor2',
+                                pythonVersion: '3.10'
                             )
                         }
                     }
@@ -48,15 +48,15 @@ pipeline {
                     steps {
                         script {
                             dockerRepository.buildAndPushImage(
-                                "${HARBOR_ORGANIZATION}/${PROJECT_NAME}",
-                                "${DOCKERFILE1}",
-                                "${HARBOR_URL}",
-                                "${HARBOR_CREDENTIALS_NAME}",
-                                '${HARBOR_CREDENTIALS_USR}',
-                                '${HARBOR_CREDENTIALS_PSW}',
-                                "${HARBOR_HOST}",
-                                'harbor2',
-                                '3.11'
+                                imageName: "${HARBOR_ORGANIZATION}/${PROJECT_NAME}",
+                                dockerfile: "${DOCKERFILE1}",
+                                registryUrl: "${HARBOR_URL}",
+                                registryCredentialsName: "${HARBOR_CREDENTIALS_NAME}",
+                                registryUser: '${HARBOR_CREDENTIALS_USR}',
+                                registryPassword: '${HARBOR_CREDENTIALS_PSW}',
+                                registryHost: "${HARBOR_HOST}",
+                                registryType: 'harbor2',
+                                pythonVersion: '3.11'
                             )
                         }
                     }
@@ -65,15 +65,15 @@ pipeline {
                     steps {
                         script {
                             dockerRepository.buildAndPushImage(
-                                "${DOCKER_HUB_ORGANIZATION}/${PROJECT_NAME}",
-                                "${DOCKERFILE1}",
-                                "${DOCKER_HUB_URL}",
-                                "${DOCKER_HUB_CREDENTIALS_NAME}",
-                                '${DOCKER_HUB_CREDENTIALS_USR}',
-                                '${DOCKER_HUB_CREDENTIALS_PSW}',
-                                "${DOCKER_HUB_HOST}",
-                                'dockerhub',
-                                '3.10'
+                                imageName: "${DOCKER_HUB_ORGANIZATION}/${PROJECT_NAME}",
+                                dockerfile: "${DOCKERFILE1}",
+                                registryUrl: "${DOCKER_HUB_URL}",
+                                registryCredentialsName: "${DOCKER_HUB_CREDENTIALS_NAME}",
+                                registryUser: '${DOCKER_HUB_CREDENTIALS_USR}',
+                                registryPassword: '${DOCKER_HUB_CREDENTIALS_PSW}',
+                                registryHost: "${DOCKER_HUB_HOST}",
+                                registryType: 'dockerhub',
+                                pythonVersion: '3.10'
                             )
                         }
                     }
@@ -82,15 +82,15 @@ pipeline {
                     steps {
                         script {
                             dockerRepository.buildAndPushImage(
-                                "${DOCKER_HUB_ORGANIZATION}/${PROJECT_NAME}",
-                                "${DOCKERFILE1}",
-                                "${DOCKER_HUB_URL}",
-                                "${DOCKER_HUB_CREDENTIALS_NAME}",
-                                '${DOCKER_HUB_CREDENTIALS_USR}',
-                                '${DOCKER_HUB_CREDENTIALS_PSW}',
-                                "${DOCKER_HUB_HOST}",
-                                'dockerhub',
-                                '3.11'
+                                imageName: "${DOCKER_HUB_ORGANIZATION}/${PROJECT_NAME}",
+                                dockerfile: "${DOCKERFILE1}",
+                                registryUrl: "${DOCKER_HUB_URL}",
+                                registryCredentialsName: "${DOCKER_HUB_CREDENTIALS_NAME}",
+                                registryUser: '${DOCKER_HUB_CREDENTIALS_USR}',
+                                registryPassword: '${DOCKER_HUB_CREDENTIALS_PSW}',
+                                registryHost: "${DOCKER_HUB_HOST}",
+                                registryType: 'dockerhub',
+                                pythonVersion: '3.11'
                             )
                         }
                     }
@@ -99,16 +99,16 @@ pipeline {
                     steps {
                         script {
                             dockerRepository.buildAndPushImage(
-                                "${HARBOR_ORGANIZATION}/${PROJECT_NAME}-k8s",
-                                "${DOCKERFILE2}",
-                                "${HARBOR_URL}",
-                                "${HARBOR_CREDENTIALS_NAME}",
-                                '${HARBOR_CREDENTIALS_USR}',
-                                '${HARBOR_CREDENTIALS_PSW}',
-                                "${HARBOR_HOST}",
-                                'harbor2',
-                                '3.10',
-                                ['k8s']
+                                imageName: "${HARBOR_ORGANIZATION}/${PROJECT_NAME}-k8s",
+                                dockerfile: "${DOCKERFILE2}",
+                                registryUrl: "${HARBOR_URL}",
+                                registryCredentialsName: "${HARBOR_CREDENTIALS_NAME}",
+                                registryUser: '${HARBOR_CREDENTIALS_USR}',
+                                registryPassword: '${HARBOR_CREDENTIALS_PSW}',
+                                registryHost: "${HARBOR_HOST}",
+                                registryType: 'harbor2',
+                                pythonVersion: '3.10',
+                                customTags: ['k8s']
                             )
                         }
                     }
@@ -117,16 +117,16 @@ pipeline {
                     steps {
                         script {
                             dockerRepository.buildAndPushImage(
-                                "${HARBOR_ORGANIZATION}/${PROJECT_NAME}-k8s",
-                                "${DOCKERFILE2}",
-                                "${HARBOR_URL}",
-                                "${HARBOR_CREDENTIALS_NAME}",
-                                '${HARBOR_CREDENTIALS_USR}',
-                                '${HARBOR_CREDENTIALS_PSW}',
-                                "${HARBOR_HOST}",
-                                'harbor2',
-                                '3.11',
-                                ['k8s']
+                                imageName: "${HARBOR_ORGANIZATION}/${PROJECT_NAME}-k8s",
+                                dockerfile: "${DOCKERFILE2}",
+                                registryUrl: "${HARBOR_URL}",
+                                registryCredentialsName: "${HARBOR_CREDENTIALS_NAME}",
+                                registryUser: '${HARBOR_CREDENTIALS_USR}',
+                                registryPassword: '${HARBOR_CREDENTIALS_PSW}',
+                                registryHost: "${HARBOR_HOST}",
+                                registryType: 'harbor2',
+                                pythonVersion: '3.11',
+                                customTags: ['k8s']
                             )
                         }
                     }
@@ -135,16 +135,16 @@ pipeline {
                     steps {
                         script {
                             dockerRepository.buildAndPushImage(
-                                "${DOCKER_HUB_ORGANIZATION}/${PROJECT_NAME}-k8s",
-                                "${DOCKERFILE2}",
-                                "${DOCKER_HUB_URL}",
-                                "${DOCKER_HUB_CREDENTIALS_NAME}",
-                                '${DOCKER_HUB_CREDENTIALS_USR}',
-                                '${DOCKER_HUB_CREDENTIALS_PSW}',
-                                "${DOCKER_HUB_HOST}",
-                                'dockerhub',
-                                '3.10',
-                                ['k8s']
+                                imageName: "${DOCKER_HUB_ORGANIZATION}/${PROJECT_NAME}-k8s",
+                                dockerfile: "${DOCKERFILE2}",
+                                registryUrl: "${DOCKER_HUB_URL}",
+                                registryCredentialsName: "${DOCKER_HUB_CREDENTIALS_NAME}",
+                                registryUser: '${DOCKER_HUB_CREDENTIALS_USR}',
+                                registryPassword: '${DOCKER_HUB_CREDENTIALS_PSW}',
+                                registryHost: "${DOCKER_HUB_HOST}",
+                                registryType: 'dockerhub',
+                                pythonVersion: '3.10',
+                                customTags: ['k8s']
                             )
                         }
                     }
@@ -153,16 +153,16 @@ pipeline {
                     steps {
                         script {
                             dockerRepository.buildAndPushImage(
-                                "${DOCKER_HUB_ORGANIZATION}/${PROJECT_NAME}-k8s",
-                                "${DOCKERFILE2}",
-                                "${DOCKER_HUB_URL}",
-                                "${DOCKER_HUB_CREDENTIALS_NAME}",
-                                '${DOCKER_HUB_CREDENTIALS_USR}',
-                                '${DOCKER_HUB_CREDENTIALS_PSW}',
-                                "${DOCKER_HUB_HOST}",
-                                'dockerhub',
-                                '3.11',
-                                ['k8s']
+                                imageName: "${DOCKER_HUB_ORGANIZATION}/${PROJECT_NAME}-k8s",
+                                dockerfile: "${DOCKERFILE2}",
+                                registryUrl: "${DOCKER_HUB_URL}",
+                                registryCredentialsName: "${DOCKER_HUB_CREDENTIALS_NAME}",
+                                registryUser: '${DOCKER_HUB_CREDENTIALS_USR}',
+                                registryPassword: '${DOCKER_HUB_CREDENTIALS_PSW}',
+                                registryHost: "${DOCKER_HUB_HOST}",
+                                registryType: 'dockerhub',
+                                pythonVersion: '3.11',
+                                customTags: ['k8s']
                             )
                         }
                     }
