@@ -3,12 +3,22 @@
 
 from pydantic import BaseModel, Field
 
+from fed_reg.flavor.schemas import FlavorRead, FlavorReadPublic
 from fed_reg.identity_provider.schemas import (
     IdentityProviderRead,
     IdentityProviderReadPublic,
 )
+from fed_reg.image.schemas import ImageRead, ImageReadPublic
 from fed_reg.models import BaseNodeRead, BaseReadPrivateExtended, BaseReadPublicExtended
-from fed_reg.project.constants import DOC_EXT_PROV, DOC_EXT_QUOTA
+from fed_reg.network.schemas import NetworkRead, NetworkReadPublic
+from fed_reg.project.constants import (
+    DOC_EXT_FLAV,
+    DOC_EXT_IMAG,
+    DOC_EXT_NETW,
+    DOC_EXT_PROV,
+    DOC_EXT_QUOTA,
+)
+from fed_reg.project.models import Project
 from fed_reg.project.schemas import ProjectRead, ProjectReadPublic
 from fed_reg.provider.schemas import ProviderRead, ProviderReadPublic
 from fed_reg.quota.constants import DOC_EXT_SERV
@@ -240,6 +250,20 @@ class ProjectReadExtended(ProjectRead):
         | NetworkQuotaReadExtended
         | ObjectStoreQuotaReadExtended
     ] = Field(description=DOC_EXT_QUOTA)
+    flavors: list[FlavorRead] = Field(description=DOC_EXT_FLAV)
+    images: list[ImageRead] = Field(description=DOC_EXT_IMAG)
+    networks: list[NetworkRead] = Field(description=DOC_EXT_NETW)
+
+    @classmethod
+    def from_orm(cls, obj: Project) -> "ProjectReadExtended":
+        """Method to merge public and private flavors, images and networks.
+
+        `obj` is the orm model instance.
+        """
+        obj.flavors = obj.public_flavors() + obj.private_flavors.all()
+        obj.images = obj.public_images() + obj.private_images.all()
+        obj.networks = obj.public_networks() + obj.private_networks.all()
+        return super().from_orm(obj)
 
 
 class ProjectReadExtendedPublic(ProjectReadPublic):
@@ -261,6 +285,20 @@ class ProjectReadExtendedPublic(ProjectReadPublic):
         | NetworkQuotaReadExtendedPublic
         | ObjectStoreQuotaReadExtendedPublic
     ] = Field(description=DOC_EXT_QUOTA)
+    flavors: list[FlavorReadPublic] = Field(description=DOC_EXT_FLAV)
+    images: list[ImageReadPublic] = Field(description=DOC_EXT_IMAG)
+    networks: list[NetworkReadPublic] = Field(description=DOC_EXT_NETW)
+
+    @classmethod
+    def from_orm(cls, obj: Project) -> "ProjectReadExtended":
+        """Method to merge public and private flavors, images and networks.
+
+        `obj` is the orm model instance.
+        """
+        obj.flavors = obj.public_flavors() + obj.private_flavors.all()
+        obj.images = obj.public_images() + obj.private_images.all()
+        obj.networks = obj.public_networks() + obj.private_networks.all()
+        return super().from_orm(obj)
 
 
 class SLAReadExtended(SLARead):
