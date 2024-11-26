@@ -7,7 +7,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.project.models import Project
 from fed_reg.service.models import ComputeService
-from tests.utils import random_lower_string
+from tests.models.utils import project_model_dict, service_model_dict
 
 
 @parametrize_with_cases("image_cls", has_tag=("class", "derived"))
@@ -53,17 +53,19 @@ def test_image_valid_attr(
 
 
 @parametrize_with_cases("image_cls", has_tag="class")
-@parametrize_with_cases("data", has_tag=("dict", "invalid"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
 def test_image_missing_mandatory_attr(
     image_cls: type[Image] | type[PrivateImage] | type[SharedImage],
     data: dict[str, Any],
+    attr: str,
 ) -> None:
     """Test Image required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     Execute this test on Image, PrivateImage and SharedImage.
     """
-    with pytest.raises(RequiredProperty):
+    err_msg = f"property '{attr}' on objects of class {image_cls.__name__}"
+    with pytest.raises(RequiredProperty, match=err_msg):
         image_cls(**data).save()
 
 
@@ -155,13 +157,9 @@ def test_multiple_linked_services(
     Connect a multiple ComputeService to an Image.
     Execute this test on Image, PrivateImage and SharedImage.
     """
-    item = ComputeService(
-        endpoint=random_lower_string(), name=random_lower_string()
-    ).save()
+    item = ComputeService(**service_model_dict()).save()
     image_model.services.connect(item)
-    item = ComputeService(
-        endpoint=random_lower_string(), name=random_lower_string()
-    ).save()
+    item = ComputeService(**service_model_dict()).save()
     image_model.services.connect(item)
     assert len(image_model.services.all()) == 2
 
@@ -171,8 +169,8 @@ def test_multiple_linked_projects(private_image_model: PrivateImage) -> None:
 
     Connect a multiple Project to a PrivateImage.
     """
-    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
+    item = Project(**project_model_dict()).save()
     private_image_model.projects.connect(item)
-    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
+    item = Project(**project_model_dict()).save()
     private_image_model.projects.connect(item)
     assert len(private_image_model.projects.all()) == 2

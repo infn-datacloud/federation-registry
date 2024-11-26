@@ -7,6 +7,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fed_reg.project.models import Project
 from fed_reg.service.models import ComputeService
+from tests.conftest import project_model
 from tests.utils import random_lower_string
 
 
@@ -56,16 +57,18 @@ def test_flavor_valid_attr(
 
 
 @parametrize_with_cases("flavor_cls", has_tag="class")
-@parametrize_with_cases("data", has_tag=("dict", "invalid"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
 def test_flavor_missing_mandatory_attr(
     flavor_cls: type[Flavor] | type[PrivateFlavor] | type[SharedFlavor],
     data: dict[str, Any],
+    attr: str,
 ) -> None:
     """Creating a model without required values raises a RequiredProperty error.
 
     Execute this test on Flavor, PrivateFlavor and SharedFlavor.
     """
-    with pytest.raises(RequiredProperty):
+    err_msg = f"property '{attr}' on objects of class {flavor_cls.__name__}"
+    with pytest.raises(RequiredProperty, match=err_msg):
         flavor_cls(**data).save()
 
 
@@ -173,8 +176,8 @@ def test_multiple_linked_projects(private_flavor_model: PrivateFlavor) -> None:
 
     Connect a multiple Project to a PrivateFlavor.
     """
-    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
+    item = Project(**project_model()).save()
     private_flavor_model.projects.connect(item)
-    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
+    item = Project(**project_model()).save()
     private_flavor_model.projects.connect(item)
     assert len(private_flavor_model.projects.all()) == 2

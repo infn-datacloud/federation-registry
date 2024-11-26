@@ -6,7 +6,7 @@ from pytest_cases import parametrize_with_cases
 
 from fed_reg.location.models import Location
 from fed_reg.region.models import Region
-from tests.utils import random_lower_string
+from tests.models.utils import region_model_dict
 
 
 @parametrize_with_cases("data", has_tag=("dict", "valid"))
@@ -26,13 +26,14 @@ def test_location_valid_attr(data: dict[str, Any]) -> None:
     assert saved.uid == item.uid
 
 
-@parametrize_with_cases("data", has_tag=("dict", "invalid"))
-def test_location_missing_mandatory_attr(data: dict[str, Any]) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
+def test_location_missing_mandatory_attr(data: dict[str, Any], attr: str) -> None:
     """Test Location required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     """
-    with pytest.raises(RequiredProperty):
+    err_msg = f"property '{attr}' on objects of class {Location.__name__}"
+    with pytest.raises(RequiredProperty, match=err_msg):
         Location(**data).save()
 
 
@@ -78,8 +79,8 @@ def test_multiple_linked_regions(location_model: Location) -> None:
 
     Connect a multiple Region to a Location.
     """
-    item = Region(name=random_lower_string()).save()
+    item = Region(**region_model_dict()).save()
     location_model.regions.connect(item)
-    item = Region(name=random_lower_string()).save()
+    item = Region(**region_model_dict()).save()
     location_model.regions.connect(item)
     assert len(location_model.regions.all()) == 2

@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from neomodel import DoesNotExist, RelationshipManager, RequiredProperty
 from pytest_cases import parametrize_with_cases
@@ -17,36 +19,33 @@ from tests.models.utils import (
 )
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_provider_attr(attr: str) -> None:
-    """Test attribute values (default and set)."""
-    d = provider_model_dict(attr)
-    item = Provider(**d)
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_provider_valid_attr(data: dict[str, Any]) -> None:
+    """Test Provider mandatory and optional attributes."""
+    item = Provider(**data)
     assert isinstance(item, Provider)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.type == d.get("type")
-    assert item.status is d.get("status", ProviderStatus.ACTIVE.value)
-    assert item.is_public is d.get("is_public", False)
-    assert item.support_emails == d.get("support_emails", [])
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
+    assert item.type == data.get("type")
+    assert item.status is data.get("status", ProviderStatus.ACTIVE.value)
+    assert item.is_public is data.get("is_public", False)
+    assert item.support_emails == data.get("support_emails", [])
 
     saved = item.save()
     assert saved.element_id_property
     assert saved.uid == item.uid
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
-def test_provider_missing_mandatory_attr(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
+def test_provider_missing_mandatory_attr(data: dict[str, Any], attr: str) -> None:
     """Test Provider required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     """
     err_msg = f"property '{attr}' on objects of class {Provider.__name__}"
-    d = provider_model_dict()
-    d.pop(attr)
     with pytest.raises(RequiredProperty, match=err_msg):
-        Provider(**d).save()
+        Provider(**data).save()
 
 
 def test_rel_def(provider_model: Provider) -> None:
@@ -79,7 +78,7 @@ def test_rel_def(provider_model: Provider) -> None:
 
 
 def test_optional_rel(provider_model: Provider) -> None:
-    """Test Model optional relationships."""
+    """Test Provider optional relationships."""
     assert len(provider_model.identity_providers.all()) == 0
     assert provider_model.identity_providers.single() is None
     assert len(provider_model.projects.all()) == 0
@@ -221,7 +220,7 @@ def test_pre_delete_hook_remove_idps(provider_model: Provider) -> None:
 def test_pre_delete_hook_dont_remove_idp(
     identity_provider_model: IdentityProvider,
 ) -> None:
-    """Idp with multiple providers is not deleted when deleting one provider."""
+    """IDP with multiple providers is not deleted when deleting one provider."""
     item1 = Provider(**provider_model_dict()).save()
     identity_provider_model.providers.connect(item1, auth_method_model_dict())
     item2 = Provider(**provider_model_dict()).save()

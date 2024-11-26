@@ -13,7 +13,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.project.models import Project
 from fed_reg.service.models import NetworkService
-from tests.utils import random_lower_string
+from tests.models.utils import project_model_dict, service_model_dict
 
 
 @parametrize_with_cases("network_cls", has_tag=("class", "derived"))
@@ -58,17 +58,19 @@ def test_network_valid_attr(
 
 
 @parametrize_with_cases("network_cls", has_tag="class")
-@parametrize_with_cases("data", has_tag=("dict", "invalid"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
 def test_network_missing_mandatory_attr(
     network_cls: type[Network] | type[PrivateNetwork] | type[SharedNetwork],
     data: dict[str, Any],
+    attr: str,
 ) -> None:
     """Test Network required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     Execute this test on Network, PrivateNetwork and SharedNetwork.
     """
-    with pytest.raises(RequiredProperty):
+    err_msg = f"property '{attr}' on objects of class {network_cls.__name__}"
+    with pytest.raises(RequiredProperty, match=err_msg):
         network_cls(**data).save()
 
 
@@ -145,13 +147,9 @@ def test_multiple_linked_services_error(
     AttemptCardinalityViolation error.
     Execute this test on Network, PrivateNetwork and SharedNetwork.
     """
-    item = NetworkService(
-        endpoint=random_lower_string(), name=random_lower_string()
-    ).save()
+    item = NetworkService(**service_model_dict()).save()
     network_model.service.connect(item)
-    item = NetworkService(
-        endpoint=random_lower_string(), name=random_lower_string()
-    ).save()
+    item = NetworkService(**service_model_dict()).save()
     with pytest.raises(AttemptedCardinalityViolation):
         network_model.service.connect(item)
 
@@ -183,9 +181,9 @@ def test_multiple_linked_projects(private_network_model: PrivateNetwork) -> None
     Trying to connect multiple Project to a PrivateNetwork raises an
     AttemptCardinalityViolation error.
     """
-    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
+    item = Project(**project_model_dict()).save()
     private_network_model.project.connect(item)
-    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
+    item = Project(**project_model_dict()).save()
     with pytest.raises(AttemptedCardinalityViolation):
         private_network_model.project.connect(item)
 

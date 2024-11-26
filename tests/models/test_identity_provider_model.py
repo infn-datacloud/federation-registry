@@ -13,8 +13,11 @@ from fed_reg.auth_method.models import AuthMethod
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.provider.models import Provider
 from fed_reg.user_group.models import UserGroup
-from tests.models.utils import auth_method_model_dict
-from tests.utils import random_lower_string
+from tests.models.utils import (
+    auth_method_model_dict,
+    provider_model_dict,
+    user_group_model_dict,
+)
 
 
 @parametrize_with_cases("data", has_tag=("dict", "valid"))
@@ -32,13 +35,16 @@ def test_identity_provider_valid_attr(data: dict[str, Any]) -> None:
     assert saved.uid == item.uid
 
 
-@parametrize_with_cases("data", has_tag=("dict", "invalid"))
-def test_identity_provider_missing_mandatory_attr(data: dict[str, Any]) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
+def test_identity_provider_missing_mandatory_attr(
+    data: dict[str, Any], attr: str
+) -> None:
     """Test IdentityProvider required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     """
-    with pytest.raises(RequiredProperty):
+    err_msg = f"property '{attr}' on objects of class {IdentityProvider.__name__}"
+    with pytest.raises(RequiredProperty, match=err_msg):
         IdentityProvider(**data).save()
 
 
@@ -97,9 +103,9 @@ def test_multiple_linked_providers(identity_provider_model: IdentityProvider) ->
 
     Connect a multiple Provider to an IdentityProvider.
     """
-    item = Provider(name=random_lower_string(), type=random_lower_string()).save()
+    item = Provider(**provider_model_dict()).save()
     identity_provider_model.providers.connect(item, auth_method_model_dict())
-    item = Provider(name=random_lower_string(), type=random_lower_string()).save()
+    item = Provider(**provider_model_dict()).save()
     identity_provider_model.providers.connect(item, auth_method_model_dict())
     assert len(identity_provider_model.providers.all()) == 2
 
@@ -131,18 +137,18 @@ def test_multiple_linked_user_groups(identity_provider_model: IdentityProvider) 
 
     Connect a multiple UserGroup to an IdentityProvider.
     """
-    item = UserGroup(name=random_lower_string()).save()
+    item = UserGroup(**user_group_model_dict()).save()
     identity_provider_model.user_groups.connect(item)
-    item = UserGroup(name=random_lower_string()).save()
+    item = UserGroup(**user_group_model_dict()).save()
     identity_provider_model.user_groups.connect(item)
     assert len(identity_provider_model.user_groups.all()) == 2
 
 
 def test_pre_delete_hook(identity_provider_model: IdentityProvider) -> None:
     """Delete identity provider and all related user groups."""
-    item1 = UserGroup(name=random_lower_string()).save()
+    item1 = UserGroup(**user_group_model_dict()).save()
     identity_provider_model.user_groups.connect(item1)
-    item2 = UserGroup(name=random_lower_string()).save()
+    item2 = UserGroup(**user_group_model_dict()).save()
     identity_provider_model.user_groups.connect(item2)
 
     assert identity_provider_model.delete()

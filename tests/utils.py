@@ -116,7 +116,7 @@ def random_date_after(start_date: date):
     return date.fromtimestamp(randrange(timestamp * 2, timestamp * 3))
 
 
-# Schema specifics
+# Schema specifics # TODO Move to schemas.utils?
 
 
 def random_country() -> str:

@@ -30,7 +30,97 @@ def auth_method_schema_dict() -> dict[str, Any]:
     return {"idp_name": random_lower_string(), "protocol": random_lower_string()}
 
 
+def flavor_schema_dict(read: bool = False) -> dict[str, Any]:
+    """Return a dict with the flavor pydantic mandatory attributes.
+
+    If 'read' is true add the 'uid' attribute.
+    """
+    data = {"name": random_lower_string(), "uuid": uuid4()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def identity_provider_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {"endpoint": random_url(), "group_claim": random_lower_string()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def image_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {"name": random_lower_string(), "uuid": uuid4()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def location_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {"site": random_lower_string(), "country": random_country()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def network_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {"name": random_lower_string(), "uuid": uuid4()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def project_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {"name": random_lower_string(), "uuid": uuid4()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def provider_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {"name": random_lower_string(), "type": random_provider_type()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def quota_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def region_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {"name": random_lower_string()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def service_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {"endpoint": random_lower_string(), "name": random_lower_string()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def sla_schema_dict(read: bool = False) -> dict[str, Any]:
+    start_date, end_date = random_start_end_dates()
+    data = {"doc_uuid": uuid4(), "start_date": start_date, "end_date": end_date}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
+def user_group_schema_dict(read: bool = False) -> dict[str, Any]:
+    data = {"name": random_lower_string()}
+    if read:
+        data["uid"] = uuid4()
+    return data
+
+
 def flavor_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
+    """Return a valid dict for flavor."""
     for k in args:
         if k in (
             "description",
@@ -70,15 +160,6 @@ def flavor_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]
     return data
 
 
-def flavor_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"name": random_lower_string(), "uuid": uuid4()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return flavor_valid_dict(d, *args)
-    return flavor_invalid_dict(d, *args)
-
-
 def identity_provider_valid_dict(
     data: dict[str, Any], *args, **kwargs
 ) -> dict[str, Any]:
@@ -103,15 +184,6 @@ def identity_provider_invalid_dict(
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data
-
-
-def identity_provider_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"endpoint": random_url(), "group_claim": random_lower_string()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return identity_provider_valid_dict(d, *args)
-    return identity_provider_invalid_dict(d, *args)
 
 
 def image_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
@@ -151,15 +223,6 @@ def image_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     return data
 
 
-def image_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"name": random_lower_string(), "uuid": uuid4()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return image_valid_dict(d, *args)
-    return image_invalid_dict(d, *args)
-
-
 def location_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in ("description", "site"):
@@ -190,15 +253,6 @@ def location_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, An
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data
-
-
-def location_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"site": random_lower_string(), "country": random_country()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return location_valid_dict(d, *args)
-    return location_invalid_dict(d, *args)
 
 
 def network_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
@@ -233,15 +287,6 @@ def network_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any
     return data
 
 
-def network_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"name": random_lower_string(), "uuid": uuid4()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return network_valid_dict(d, *args)
-    return network_invalid_dict(d, *args)
-
-
 def project_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in ("description", "name"):
@@ -260,15 +305,6 @@ def project_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data
-
-
-def project_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"name": random_lower_string(), "uuid": uuid4()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return project_valid_dict(d, *args)
-    return project_invalid_dict(d, *args)
 
 
 def provider_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
@@ -303,15 +339,6 @@ def provider_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, An
     return data
 
 
-def provider_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"name": random_lower_string(), "type": random_provider_type()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return provider_valid_dict(d, *args)
-    return provider_invalid_dict(d, *args)
-
-
 def quota_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in ("description",):
@@ -344,15 +371,6 @@ def quota_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     return data
 
 
-def quota_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return quota_valid_dict(d, *args)
-    return quota_invalid_dict(d, *args)
-
-
 def region_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in ("description", "name"):
@@ -371,15 +389,6 @@ def region_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]
     return data
 
 
-def region_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"name": random_lower_string()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return region_valid_dict(d, *args)
-    return region_invalid_dict(d, *args)
-
-
 def service_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in ("description", "name"):
@@ -393,15 +402,6 @@ def service_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
 
 def service_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     return data
-
-
-def service_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"endpoint": random_lower_string(), "name": random_lower_string()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return service_valid_dict(d, *args)
-    return service_invalid_dict(d, *args)
 
 
 def block_storage_service_schema_dict(*args, **kwargs) -> dict[str, Any]:
@@ -460,16 +460,6 @@ def sla_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     return data
 
 
-def sla_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    start_date, end_date = random_start_end_dates()
-    d = {"doc_uuid": uuid4(), "start_date": start_date, "end_date": end_date}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return sla_valid_dict(d, *args)
-    return sla_invalid_dict(d, *args)
-
-
 def user_group_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in ("description", "name"):
@@ -486,12 +476,3 @@ def user_group_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, 
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data
-
-
-def user_group_schema_dict(*args, **kwargs) -> dict[str, Any]:
-    d = {"name": random_lower_string()}
-    if kwargs.get("read", False):
-        d["uid"] = uuid4()
-    if kwargs.get("valid", True):
-        return user_group_valid_dict(d, *args)
-    return user_group_invalid_dict(d, *args)
