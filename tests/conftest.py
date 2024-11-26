@@ -58,16 +58,11 @@ from tests.models.utils import (
     # auth_method_dict,
     # block_storage_service_schema_dict,
     # compute_service_schema_dict,
-    # flavor_model_dict,
     flavor_schema_dict,
-    # identity_provider_model_dict,
     identity_provider_schema_dict,
     # identity_service_schema_dict,
-    # image_model_dict,
     image_schema_dict,
-    location_model_dict,
     location_schema_dict,
-    network_model_dict,
     network_schema_dict,
     # network_service_schema_dict,
     # object_store_service_schema_dict,
@@ -210,26 +205,22 @@ def shared_image_model() -> SharedImage:
 
 @pytest.fixture
 def location_model() -> Location:
-    d = location_model_dict()
-    return Location(**d).save()
+    return Location(site=random_lower_string(), country=random_lower_string()).save()
 
 
 @pytest.fixture
 def network_model() -> Network:
-    d = network_model_dict()
-    return Network(**d).save()
+    return Network(name=random_lower_string(), uuid=uuid4().hex).save()
 
 
 @pytest.fixture
 def private_network_model() -> PrivateNetwork:
-    d = network_model_dict()
-    return PrivateNetwork(**d).save()
+    return PrivateNetwork(name=random_lower_string(), uuid=uuid4().hex).save()
 
 
 @pytest.fixture
 def shared_network_model() -> SharedNetwork:
-    d = network_model_dict()
-    return SharedNetwork(**d).save()
+    return SharedNetwork(name=random_lower_string(), uuid=uuid4().hex).save()
 
 
 @pytest.fixture

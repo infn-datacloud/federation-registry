@@ -130,19 +130,18 @@ def test_single_linked_service(
     assert service.uid == compute_service_model.uid
 
 
-@parametrize_with_cases("image_model", has_tag=("model", "private"))
 def test_single_linked_project(
-    image_model: PrivateImage, project_model: Project
+    private_image_model: PrivateImage, project_model: Project
 ) -> None:
     """Verify `projects` relationship works correctly.
 
     Connect a single Project to a PrivateImage.
     """
-    r = image_model.projects.connect(project_model)
+    r = private_image_model.projects.connect(project_model)
     assert r is True
 
-    assert len(image_model.projects.all()) == 1
-    project = image_model.projects.single()
+    assert len(private_image_model.projects.all()) == 1
+    project = private_image_model.projects.single()
     assert isinstance(project, Project)
     assert project.uid == project_model.uid
 
@@ -163,14 +162,13 @@ def test_multiple_linked_services(
     assert len(image_model.services.all()) == 2
 
 
-@parametrize_with_cases("image_model", has_tag=("model", "private"))
-def test_multiple_linked_projects(image_model: PrivateImage) -> None:
+def test_multiple_linked_projects(private_image_model: PrivateImage) -> None:
     """Verify `services` relationship works correctly.
 
     Connect a multiple Project to a PrivateImage.
     """
     item = Project(**project_model_dict()).save()
-    image_model.projects.connect(item)
+    private_image_model.projects.connect(item)
     item = Project(**project_model_dict()).save()
-    image_model.projects.connect(item)
-    assert len(image_model.projects.all()) == 2
+    private_image_model.projects.connect(item)
+    assert len(private_image_model.projects.all()) == 2

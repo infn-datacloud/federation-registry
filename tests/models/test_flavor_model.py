@@ -132,19 +132,18 @@ def test_single_linked_service(
     assert service.uid == compute_service_model.uid
 
 
-@parametrize_with_cases("flavor_model", has_tag=("model", "private"))
 def test_single_linked_project(
-    flavor_model: PrivateFlavor, project_model: Project
+    private_flavor_model: PrivateFlavor, project_model: Project
 ) -> None:
     """Verify `projects` relationship works correctly.
 
     Connect a single Project to a PrivateFlavor.
     """
-    r = flavor_model.projects.connect(project_model)
+    r = private_flavor_model.projects.connect(project_model)
     assert r is True
 
-    assert len(flavor_model.projects.all()) == 1
-    project = flavor_model.projects.single()
+    assert len(private_flavor_model.projects.all()) == 1
+    project = private_flavor_model.projects.single()
     assert isinstance(project, Project)
     assert project.uid == project_model.uid
 
@@ -165,14 +164,13 @@ def test_multiple_linked_services(
     assert len(flavor_model.services.all()) == 2
 
 
-@parametrize_with_cases("flavor_model", has_tag=("model", "private"))
-def test_multiple_linked_projects(flavor_model: PrivateFlavor) -> None:
+def test_multiple_linked_projects(private_flavor_model: PrivateFlavor) -> None:
     """Verify `projects` relationship works correctly.
 
     Connect a multiple Project to a PrivateFlavor.
     """
     item = Project(**project_model_dict()).save()
-    flavor_model.projects.connect(item)
+    private_flavor_model.projects.connect(item)
     item = Project(**project_model_dict()).save()
-    flavor_model.projects.connect(item)
-    assert len(flavor_model.projects.all()) == 2
+    private_flavor_model.projects.connect(item)
+    assert len(private_flavor_model.projects.all()) == 2

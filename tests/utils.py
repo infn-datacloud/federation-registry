@@ -17,9 +17,19 @@ MOCK_READ_EMAIL = "user@test.it"
 MOCK_WRITE_EMAIL = "admin@test.it"
 
 
+def random_bool() -> bool:
+    """Return a random bool."""
+    return getrandbits(1)
+
+
 def random_lower_string() -> str:
     """Return a generic random string."""
     return "".join(choices(string.ascii_lowercase, k=32))
+
+
+def random_url() -> AnyHttpUrl:
+    """Return a random URL."""
+    return "http://" + random_lower_string() + ".com"
 
 
 def random_email() -> str:
@@ -27,9 +37,9 @@ def random_email() -> str:
     return f"{random_lower_string()}@{random_lower_string()}.com"
 
 
-def random_int() -> str:
+def random_int(start: int = -100, end: int = 100) -> str:
     """Return a generic integer."""
-    return randrange(-100, 100)
+    return randrange(start, end)
 
 
 def random_non_negative_int() -> int:
@@ -48,31 +58,9 @@ def random_positive_int() -> int:
     return randrange(1, 100)
 
 
-def random_bool() -> bool:
-    """Return a random bool."""
-    return getrandbits(1)
-
-
-def random_datetime() -> datetime:
-    """Return a random date and time."""
-    d = randint(1, int(time.time()))
-    return datetime.fromtimestamp(d, tz=timezone.utc)
-
-
-def random_date() -> date:
-    """Return a random date."""
-    d = randint(1, int(time.time()))
-    return date.fromtimestamp(d)
-
-
-def random_url() -> AnyHttpUrl:
-    """Return a random URL."""
-    return "http://" + random_lower_string() + ".com"
-
-
-def random_float(start: int, end: int) -> float:
+def random_float(start: int = -100, end: int = 100) -> float:
     """Return a random float between start and end (included)."""
-    return randint(start, end - 1) + random()
+    return float(random_int(start, end))
 
 
 def random_positive_float() -> float:
@@ -89,6 +77,46 @@ def random_non_negative_float() -> float:
     0 included.
     """
     return float(random_non_negative_int())
+
+
+def random_datetime() -> datetime:
+    """Return a random date and time."""
+    d = randint(1, int(time.time()))
+    return datetime.fromtimestamp(d, tz=timezone.utc)
+
+
+def random_date() -> date:
+    """Return a random date."""
+    d = randint(1, int(time.time()))
+    return date.fromtimestamp(d)
+
+
+def random_start_end_dates() -> tuple[date, date]:
+    """Return a random couples of valid start and end dates (in order)."""
+    d1 = random_date()
+    d2 = random_date()
+    while d1 == d2:
+        d2 = random_date()
+    if d1 < d2:
+        start_date = d1
+        end_date = d2
+    else:
+        start_date = d2
+        end_date = d1
+    return start_date, end_date
+
+
+def random_date_before(end_date: date):
+    timestamp = int(time.mktime(end_date.timetuple()))
+    return date.fromtimestamp(randrange(0, timestamp))
+
+
+def random_date_after(start_date: date):
+    timestamp = int(time.mktime(start_date.timetuple()))
+    return date.fromtimestamp(randrange(timestamp * 2, timestamp * 3))
+
+
+# Schema specifics
 
 
 def random_country() -> str:
@@ -114,37 +142,12 @@ def random_provider_status() -> ProviderStatus:
     return choice([i for i in ProviderStatus])
 
 
-def random_start_end_dates() -> tuple[date, date]:
-    """Return a random couples of valid start and end dates (in order)."""
-    d1 = random_date()
-    d2 = random_date()
-    while d1 == d2:
-        d2 = random_date()
-    if d1 < d2:
-        start_date = d1
-        end_date = d2
-    else:
-        start_date = d2
-        end_date = d1
-    return start_date, end_date
-
-
 def random_service_name(enum_cls: Enum) -> Any:
     return choice([i for i in enum_cls])
 
 
 def random_image_os_type() -> ImageOS:
     return choice([i for i in ImageOS])
-
-
-def random_date_before(end_date: date):
-    timestamp = int(time.mktime(end_date.timetuple()))
-    return date.fromtimestamp(randrange(0, timestamp))
-
-
-def random_date_after(start_date: date):
-    timestamp = int(time.mktime(start_date.timetuple()))
-    return date.fromtimestamp(randrange(timestamp * 2, timestamp * 3))
 
 
 def detect_public_extended_details(read_class: Type[BaseNodeRead]) -> tuple[bool, bool]:

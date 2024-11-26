@@ -4,11 +4,7 @@ from uuid import uuid4
 from pytest_cases import case
 
 from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
-from tests.utils import (
-    random_lower_string,
-    random_non_negative_int,
-    random_positive_int,
-)
+from tests.utils import random_int, random_lower_string
 
 
 class CaseFlavorDict:
@@ -29,7 +25,7 @@ class CaseFlavorDict:
         return {
             "name": random_lower_string(),
             "uuid": uuid4().hex,
-            "disk": random_positive_int(),
+            "disk": random_int(),
         }
 
     @case(tags=("dict", "valid"))
@@ -37,7 +33,7 @@ class CaseFlavorDict:
         return {
             "name": random_lower_string(),
             "uuid": uuid4().hex,
-            "ram": random_positive_int(),
+            "ram": random_int(),
         }
 
     @case(tags=("dict", "valid"))
@@ -45,7 +41,7 @@ class CaseFlavorDict:
         return {
             "name": random_lower_string(),
             "uuid": uuid4().hex,
-            "vcpus": random_positive_int(),
+            "vcpus": random_int(),
         }
 
     @case(tags=("dict", "valid"))
@@ -53,7 +49,7 @@ class CaseFlavorDict:
         return {
             "name": random_lower_string(),
             "uuid": uuid4().hex,
-            "swap": random_positive_int(),
+            "swap": random_int(),
         }
 
     @case(tags=("dict", "valid"))
@@ -61,7 +57,7 @@ class CaseFlavorDict:
         return {
             "name": random_lower_string(),
             "uuid": uuid4().hex,
-            "ephemeral": random_positive_int(),
+            "ephemeral": random_int(),
         }
 
     @case(tags=("dict", "valid"))
@@ -69,7 +65,7 @@ class CaseFlavorDict:
         return {
             "name": random_lower_string(),
             "uuid": uuid4().hex,
-            "gpus": random_positive_int(),
+            "gpus": random_int(),
         }
 
     @case(tags=("dict", "valid"))
@@ -77,7 +73,6 @@ class CaseFlavorDict:
         return {
             "name": random_lower_string(),
             "uuid": uuid4().hex,
-            "gpus": random_non_negative_int(),
             "gpu_model": random_lower_string(),
         }
 
@@ -86,7 +81,6 @@ class CaseFlavorDict:
         return {
             "name": random_lower_string(),
             "uuid": uuid4().hex,
-            "gpus": random_non_negative_int(),
             "gpu_vendor": random_lower_string(),
         }
 
