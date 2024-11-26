@@ -7,7 +7,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fed_reg.project.models import Project
 from fed_reg.service.models import ComputeService
-from tests.models.utils import project_model_dict, service_model_dict
+from tests.utils import random_lower_string
 
 
 @parametrize_with_cases("flavor_cls", has_tag=("class", "derived"))
@@ -157,9 +157,13 @@ def test_multiple_linked_services(
     Connect multiple ComputeService to a Flavor.
     Execute this test on Flavor, PrivateFlavor and SharedFlavor.
     """
-    item = ComputeService(**service_model_dict()).save()
+    item = ComputeService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
     flavor_model.services.connect(item)
-    item = ComputeService(**service_model_dict()).save()
+    item = ComputeService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
     flavor_model.services.connect(item)
     assert len(flavor_model.services.all()) == 2
 
@@ -169,8 +173,8 @@ def test_multiple_linked_projects(private_flavor_model: PrivateFlavor) -> None:
 
     Connect a multiple Project to a PrivateFlavor.
     """
-    item = Project(**project_model_dict()).save()
+    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
     private_flavor_model.projects.connect(item)
-    item = Project(**project_model_dict()).save()
+    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
     private_flavor_model.projects.connect(item)
     assert len(private_flavor_model.projects.all()) == 2

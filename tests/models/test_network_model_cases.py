@@ -8,11 +8,11 @@ from tests.utils import random_int, random_lower_string
 
 
 class CaseNetworkDict:
-    @case(tags=("attr", "valid", "mandatory"))
+    @case(tags=("dict", "valid", "mandatory"))
     def case_mandatory(self) -> dict[str, Any]:
         return {"name": random_lower_string(), "uuid": uuid4().hex}
 
-    @case(tags=("attr", "valid"))
+    @case(tags=("dict", "valid"))
     def case_description(self) -> dict[str, Any]:
         return {
             "name": random_lower_string(),
@@ -20,7 +20,7 @@ class CaseNetworkDict:
             "description": random_lower_string(),
         }
 
-    @case(tags=("attr", "valid"))
+    @case(tags=("dict", "valid"))
     def case_is_router_external(self) -> dict[str, Any]:
         return {
             "name": random_lower_string(),
@@ -28,7 +28,7 @@ class CaseNetworkDict:
             "is_router_external": True,
         }
 
-    @case(tags=("attr", "valid"))
+    @case(tags=("dict", "valid"))
     def case_is_default(self) -> dict[str, Any]:
         return {
             "name": random_lower_string(),
@@ -36,7 +36,7 @@ class CaseNetworkDict:
             "is_default": True,
         }
 
-    @case(tags=("attr", "valid"))
+    @case(tags=("dict", "valid"))
     def case_mtu(self) -> dict[str, Any]:
         return {
             "name": random_lower_string(),
@@ -44,7 +44,7 @@ class CaseNetworkDict:
             "mtu": random_int(),
         }
 
-    @case(tags=("attr", "valid"))
+    @case(tags=("dict", "valid"))
     def case_proxy_host(self) -> dict[str, Any]:
         return {
             "name": random_lower_string(),
@@ -52,7 +52,7 @@ class CaseNetworkDict:
             "proxy_host": random_lower_string(),
         }
 
-    @case(tags=("attr", "valid"))
+    @case(tags=("dict", "valid"))
     def case_proxy_user(self) -> dict[str, Any]:
         return {
             "name": random_lower_string(),
@@ -60,7 +60,7 @@ class CaseNetworkDict:
             "proxy_user": random_lower_string(),
         }
 
-    @case(tags=("attr", "valid"))
+    @case(tags=("dict", "valid"))
     def case_tags(self) -> dict[str, Any]:
         return {
             "name": random_lower_string(),
@@ -68,11 +68,11 @@ class CaseNetworkDict:
             "tags": [random_lower_string()],
         }
 
-    @case(tags=("attr", "invalid"))
+    @case(tags=("dict", "invalid"))
     def case_missing_name(self) -> dict[str, Any]:
         return {"uuid": uuid4().hex}
 
-    @case(tags=("attr", "invalid"))
+    @case(tags=("dict", "invalid"))
     def case_missing_uuid(self) -> dict[str, Any]:
         return {"name": random_lower_string()}
 

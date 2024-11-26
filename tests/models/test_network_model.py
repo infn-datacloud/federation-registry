@@ -13,7 +13,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.project.models import Project
 from fed_reg.service.models import NetworkService
-from tests.models.utils import project_model_dict, service_model_dict
+from tests.utils import random_lower_string
 
 
 @parametrize_with_cases("network_cls", has_tag=("class", "derived"))
@@ -145,9 +145,13 @@ def test_multiple_linked_services_error(
     AttemptCardinalityViolation error.
     Execute this test on Network, PrivateNetwork and SharedNetwork.
     """
-    item = NetworkService(**service_model_dict()).save()
+    item = NetworkService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
     network_model.service.connect(item)
-    item = NetworkService(**service_model_dict()).save()
+    item = NetworkService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
     with pytest.raises(AttemptedCardinalityViolation):
         network_model.service.connect(item)
 
@@ -179,9 +183,9 @@ def test_multiple_linked_projects(private_network_model: PrivateNetwork) -> None
     Trying to connect multiple Project to a PrivateNetwork raises an
     AttemptCardinalityViolation error.
     """
-    item = Project(**project_model_dict()).save()
+    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
     private_network_model.project.connect(item)
-    item = Project(**project_model_dict()).save()
+    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
     with pytest.raises(AttemptedCardinalityViolation):
         private_network_model.project.connect(item)
 

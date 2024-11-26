@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -24,43 +25,32 @@ from fed_reg.quota.models import (
 )
 from fed_reg.service.models import ComputeService, NetworkService
 from fed_reg.sla.models import SLA
-from tests.models.utils import (
-    flavor_model_dict,
-    image_model_dict,
-    network_model_dict,
-    project_model_dict,
-    provider_model_dict,
-    sla_model_dict,
-)
+from tests.utils import random_lower_string, random_start_end_dates
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_project_attr(attr: str) -> None:
-    """Test attribute values (default and set)."""
-    d = project_model_dict(attr)
-    item = Project(**d)
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_project_valid_attr(data: dict[str, Any]) -> None:
+    """Test Project mandatory and optional attributes."""
+    item = Project(**data)
     assert isinstance(item, Project)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid")
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
+    assert item.uuid == data.get("uuid")
 
     saved = item.save()
     assert saved.element_id_property
     assert saved.uid == item.uid
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
-def test_project_missing_mandatory_attr(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "invalid"))
+def test_project_missing_mandatory_attr(data: dict[str, Any]) -> None:
     """Test Project required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     """
-    err_msg = f"property '{attr}' on objects of class {Project.__name__}"
-    d = flavor_model_dict()
-    d.pop(attr)
-    with pytest.raises(RequiredProperty, match=err_msg):
-        Project(**d).save()
+    with pytest.raises(RequiredProperty):
+        Project(**data).save()
 
 
 def test_rel_def(project_model: Project) -> None:
@@ -115,7 +105,7 @@ def test_rel_def(project_model: Project) -> None:
 
 
 def test_required_rel(project_model: Project) -> None:
-    """Test Model required relationships.
+    """Test Project required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.
@@ -148,9 +138,9 @@ def test_multiple_linked_provider(project_model: Project) -> None:
     Trying to connect multiple Provider to a Project raises an
     AttemptCardinalityViolation error.
     """
-    item = Provider(**provider_model_dict()).save()
+    item = Provider(name=random_lower_string(), type=random_lower_string()).save()
     project_model.provider.connect(item)
-    item = Provider(**provider_model_dict()).save()
+    item = Provider(name=random_lower_string(), type=random_lower_string()).save()
     with pytest.raises(AttemptedCardinalityViolation):
         project_model.provider.connect(item)
 
@@ -161,7 +151,7 @@ def test_multiple_linked_provider(project_model: Project) -> None:
 
 
 def test_optional_rel(project_model: Project) -> None:
-    """Test Model optional relationships."""
+    """Test Project optional relationships."""
     assert len(project_model.sla.all()) == 0
     assert project_model.sla.single() is None
     assert len(project_model.quotas.all()) == 0
@@ -191,12 +181,17 @@ def test_single_linked_sla(project_model: Project, sla_model: SLA) -> None:
 def test_multiple_linked_sla(project_model: Project) -> None:
     """Verify `sla` relationship works correctly.
 
-    Trying to connect multiple SLA to a Project raises an
-    AttemptCardinalityViolation error.
+    Trying to connect multiple SLA to a Project raises an AttemptCardinalityViolation
+    error.
     """
-    item = SLA(**sla_model_dict()).save()
+    start_date, end_date = random_start_end_dates()
+    item = SLA(
+        doc_uuid=random_lower_string(), start_date=start_date, end_date=end_date
+    ).save()
     project_model.sla.connect(item)
-    item = SLA(**sla_model_dict()).save()
+    item = SLA(
+        doc_uuid=random_lower_string(), start_date=start_date, end_date=end_date
+    ).save()
     with pytest.raises(AttemptedCardinalityViolation):
         project_model.sla.connect(item)
 
@@ -267,9 +262,9 @@ def test_multiple_linked_private_flavors(project_model: Project) -> None:
 
     Connect multiple PrivateFlavor to a Project.
     """
-    item = PrivateFlavor(**flavor_model_dict()).save()
+    item = PrivateFlavor(name=random_lower_string(), uuid=random_lower_string()).save()
     project_model.private_flavors.connect(item)
-    item = PrivateFlavor(**flavor_model_dict()).save()
+    item = PrivateFlavor(name=random_lower_string(), uuid=random_lower_string()).save()
     project_model.private_flavors.connect(item)
     assert len(project_model.private_flavors.all()) == 2
 
@@ -296,9 +291,9 @@ def test_multiple_linked_private_images(project_model: Project) -> None:
 
     Connect multiple PrivateImage to a Project.
     """
-    item = PrivateImage(**image_model_dict()).save()
+    item = PrivateImage(name=random_lower_string(), uuid=random_lower_string()).save()
     project_model.private_images.connect(item)
-    item = PrivateImage(**image_model_dict()).save()
+    item = PrivateImage(name=random_lower_string(), uuid=random_lower_string()).save()
     project_model.private_images.connect(item)
     assert len(project_model.private_images.all()) == 2
 
@@ -325,9 +320,9 @@ def test_multiple_linked_private_networks(project_model: Project) -> None:
 
     Connect multiple PrivateNetwork to a Project.
     """
-    item = PrivateNetwork(**network_model_dict()).save()
+    item = PrivateNetwork(name=random_lower_string(), uuid=random_lower_string()).save()
     project_model.private_networks.connect(item)
-    item = PrivateNetwork(**network_model_dict()).save()
+    item = PrivateNetwork(name=random_lower_string(), uuid=random_lower_string()).save()
     project_model.private_networks.connect(item)
     assert len(project_model.private_networks.all()) == 2
 
@@ -353,7 +348,9 @@ def test_linked_shared_flavors(
     assert isinstance(flavor, SharedFlavor)
     assert flavor.uid == shared_flavor_model.uid
 
-    flavor_model = SharedFlavor(**flavor_model_dict()).save()
+    flavor_model = SharedFlavor(
+        name=random_lower_string(), uuid=random_lower_string()
+    ).save()
     compute_service_model.flavors.connect(flavor_model)
     shared_flavors = project_model.shared_flavors()
     assert len(shared_flavors) == 2
@@ -380,13 +377,15 @@ def test_linked_shared_images(
     assert isinstance(image, SharedImage)
     assert image.uid == shared_image_model.uid
 
-    image_model = SharedImage(**image_model_dict()).save()
+    image_model = SharedImage(
+        name=random_lower_string(), uuid=random_lower_string()
+    ).save()
     compute_service_model.images.connect(image_model)
     shared_images = project_model.shared_images()
     assert len(shared_images) == 2
 
 
-def test_linked_public_networks(
+def test_linked_shared_networks(
     project_model: Project,
     network_quota_model: NetworkQuota,
     network_service_model: NetworkService,
@@ -407,7 +406,9 @@ def test_linked_public_networks(
     assert isinstance(network, SharedNetwork)
     assert network.uid == shared_network_model.uid
 
-    network_model = SharedNetwork(**network_model_dict()).save()
+    network_model = SharedNetwork(
+        name=random_lower_string(), uuid=random_lower_string()
+    ).save()
     network_service_model.networks.connect(network_model)
     shared_networks = project_model.shared_networks()
     assert len(shared_networks) == 2
@@ -507,9 +508,9 @@ def test_pre_delete_hook_remove_sla(project_model: Project, sla_model: SLA) -> N
 
 def test_pre_delete_hook_dont_remove_sla(sla_model: SLA) -> None:
     """SLA with multiple projects is not deleted when deleting one project."""
-    item1 = Project(**project_model_dict()).save()
+    item1 = Project(name=random_lower_string(), uuid=random_lower_string()).save()
     sla_model.projects.connect(item1)
-    item2 = Project(**project_model_dict()).save()
+    item2 = Project(name=random_lower_string(), uuid=random_lower_string()).save()
     sla_model.projects.connect(item2)
 
     assert item1.delete()

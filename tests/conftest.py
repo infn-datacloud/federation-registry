@@ -66,20 +66,18 @@ from tests.models.utils import (
     network_schema_dict,
     # network_service_schema_dict,
     # object_store_service_schema_dict,
-    project_model_dict,
     project_schema_dict,
-    provider_model_dict,
     provider_schema_dict,
-    quota_model_dict,
-    region_model_dict,
     region_schema_dict,
-    service_model_dict,
-    sla_model_dict,
     sla_schema_dict,
-    user_group_model_dict,
     user_group_schema_dict,
 )
-from tests.utils import MOCK_READ_EMAIL, MOCK_WRITE_EMAIL, random_lower_string
+from tests.utils import (
+    MOCK_READ_EMAIL,
+    MOCK_WRITE_EMAIL,
+    random_lower_string,
+    random_start_end_dates,
+)
 
 
 def pytest_addoption(parser):
@@ -168,17 +166,17 @@ def cleanup() -> Generator[None, Any, None]:
 
 @pytest.fixture
 def flavor_model() -> Flavor:
-    return Flavor(name=random_lower_string(), uuid=uuid4().hex).save()
+    return Flavor(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
 def private_flavor_model() -> PrivateFlavor:
-    return PrivateFlavor(name=random_lower_string(), uuid=uuid4().hex).save()
+    return PrivateFlavor(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
 def shared_flavor_model() -> SharedFlavor:
-    return SharedFlavor(name=random_lower_string(), uuid=uuid4().hex).save()
+    return SharedFlavor(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
@@ -190,17 +188,17 @@ def identity_provider_model() -> IdentityProvider:
 
 @pytest.fixture
 def image_model() -> Image:
-    return Image(name=random_lower_string(), uuid=uuid4().hex).save()
+    return Image(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
 def private_image_model() -> PrivateImage:
-    return PrivateImage(name=random_lower_string(), uuid=uuid4().hex).save()
+    return PrivateImage(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
 def shared_image_model() -> SharedImage:
-    return SharedImage(name=random_lower_string(), uuid=uuid4().hex).save()
+    return SharedImage(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
@@ -210,113 +208,110 @@ def location_model() -> Location:
 
 @pytest.fixture
 def network_model() -> Network:
-    return Network(name=random_lower_string(), uuid=uuid4().hex).save()
+    return Network(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
 def private_network_model() -> PrivateNetwork:
-    return PrivateNetwork(name=random_lower_string(), uuid=uuid4().hex).save()
+    return PrivateNetwork(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
 def shared_network_model() -> SharedNetwork:
-    return SharedNetwork(name=random_lower_string(), uuid=uuid4().hex).save()
+    return SharedNetwork(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
 def project_model() -> Project:
-    d = project_model_dict()
-    return Project(**d).save()
+    return Project(name=random_lower_string(), uuid=random_lower_string()).save()
 
 
 @pytest.fixture
 def provider_model() -> Provider:
-    d = provider_model_dict()
-    return Provider(**d).save()
+    return Provider(name=random_lower_string(), type=random_lower_string()).save()
 
 
 @pytest.fixture
 def quota_model() -> Quota:
-    d = quota_model_dict()
-    return Quota(**d).save()
+    return Quota().save()
 
 
 @pytest.fixture
 def block_storage_quota_model() -> BlockStorageQuota:
-    d = quota_model_dict()
-    return BlockStorageQuota(**d).save()
+    return BlockStorageQuota().save()
 
 
 @pytest.fixture
 def compute_quota_model() -> ComputeQuota:
-    d = quota_model_dict()
-    return ComputeQuota(**d).save()
+    return ComputeQuota().save()
 
 
 @pytest.fixture
 def network_quota_model() -> NetworkQuota:
-    d = quota_model_dict()
-    return NetworkQuota(**d).save()
+    return NetworkQuota().save()
 
 
 @pytest.fixture
 def object_store_quota_model() -> ObjectStoreQuota:
-    d = quota_model_dict()
-    return ObjectStoreQuota(**d).save()
+    return ObjectStoreQuota().save()
 
 
 @pytest.fixture
 def region_model() -> Region:
-    d = region_model_dict()
-    return Region(**d).save()
+    return Region(name=random_lower_string()).save()
 
 
 @pytest.fixture
 def service_model() -> Service:
-    d = service_model_dict()
-    return Service(**d).save()
+    return Service(endpoint=random_lower_string(), name=random_lower_string()).save()
 
 
 @pytest.fixture
 def block_storage_service_model() -> BlockStorageService:
-    d = service_model_dict()
-    return BlockStorageService(**d).save()
+    return BlockStorageService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
 
 
 @pytest.fixture
 def compute_service_model() -> ComputeService:
-    d = service_model_dict()
-    return ComputeService(**d).save()
+    return ComputeService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
 
 
 @pytest.fixture
 def identity_service_model() -> IdentityService:
-    d = service_model_dict()
-    return IdentityService(**d).save()
+    return IdentityService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
 
 
 @pytest.fixture
 def network_service_model() -> NetworkService:
-    d = service_model_dict()
-    return NetworkService(**d).save()
+    return NetworkService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
 
 
 @pytest.fixture
 def object_store_service_model() -> ObjectStoreService:
-    d = service_model_dict()
-    return ObjectStoreService(**d).save()
+    return ObjectStoreService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
 
 
 @pytest.fixture
 def sla_model() -> SLA:
-    d = sla_model_dict()
-    return SLA(**d).save()
+    start_date, end_date = random_start_end_dates()
+    return SLA(
+        doc_uuid=random_lower_string(), start_date=start_date, end_date=end_date
+    ).save()
 
 
 @pytest.fixture
 def user_group_model() -> UserGroup:
-    d = user_group_model_dict()
-    return UserGroup(**d).save()
+    return UserGroup(name=random_lower_string()).save()
 
 
 @pytest.fixture

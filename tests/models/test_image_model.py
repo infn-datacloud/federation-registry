@@ -7,7 +7,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.project.models import Project
 from fed_reg.service.models import ComputeService
-from tests.models.utils import project_model_dict, service_model_dict
+from tests.utils import random_lower_string
 
 
 @parametrize_with_cases("image_cls", has_tag=("class", "derived"))
@@ -155,9 +155,13 @@ def test_multiple_linked_services(
     Connect a multiple ComputeService to an Image.
     Execute this test on Image, PrivateImage and SharedImage.
     """
-    item = ComputeService(**service_model_dict()).save()
+    item = ComputeService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
     image_model.services.connect(item)
-    item = ComputeService(**service_model_dict()).save()
+    item = ComputeService(
+        endpoint=random_lower_string(), name=random_lower_string()
+    ).save()
     image_model.services.connect(item)
     assert len(image_model.services.all()) == 2
 
@@ -167,8 +171,8 @@ def test_multiple_linked_projects(private_image_model: PrivateImage) -> None:
 
     Connect a multiple Project to a PrivateImage.
     """
-    item = Project(**project_model_dict()).save()
+    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
     private_image_model.projects.connect(item)
-    item = Project(**project_model_dict()).save()
+    item = Project(name=random_lower_string(), uuid=random_lower_string()).save()
     private_image_model.projects.connect(item)
     assert len(private_image_model.projects.all()) == 2

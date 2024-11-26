@@ -1,4 +1,6 @@
-from pytest_cases import case, parametrize
+from uuid import uuid4
+
+from pytest_cases import case
 
 from fed_reg.quota.models import (
     BlockStorageQuota,
@@ -6,19 +8,29 @@ from fed_reg.quota.models import (
     NetworkQuota,
     ObjectStoreQuota,
 )
-from tests.models.utils import quota_model_dict
+from tests.utils import random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("attr", "mandatory"))
-    @parametrize(value=("name", "uuid"))
-    def case_mandatory(self, value: str) -> str:
-        return value
+class CaseProjectModelDict:
+    @case(tags=("dict", "valid", "mandatory"))
+    def case_mandatory(self) -> str:
+        return {"name": random_lower_string(), "uuid": uuid4().hex}
 
-    @case(tags=("attr", "optional"))
-    @parametrize(value=("description",))
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid"))
+    def case_description(self) -> str:
+        return {
+            "name": random_lower_string(),
+            "uuid": uuid4().hex,
+            "description": random_lower_string(),
+        }
+
+    @case(tags=("dict", "invalid"))
+    def case_missing_name(self) -> str:
+        return {"uuid": uuid4().hex}
+
+    @case(tags=("dict", "invalid"))
+    def case_missing_uuid(self) -> str:
+        return {"name": random_lower_string()}
 
 
 class CaseQuota:
@@ -44,28 +56,16 @@ class CaseQuota:
 
     @case(tags=("quota", "multi"))
     def case_block_storage_quotas(self) -> list[BlockStorageQuota]:
-        return [
-            BlockStorageQuota(**quota_model_dict()).save(),
-            BlockStorageQuota(**quota_model_dict()).save(),
-        ]
+        return [BlockStorageQuota().save(), BlockStorageQuota().save()]
 
     @case(tags=("quota", "multi"))
     def case_compute_quotas(self) -> list[ComputeQuota]:
-        return [
-            ComputeQuota(**quota_model_dict()).save(),
-            ComputeQuota(**quota_model_dict()).save(),
-        ]
+        return [ComputeQuota().save(), ComputeQuota().save()]
 
     @case(tags=("quota", "multi"))
     def case_network_quotas(self) -> list[NetworkQuota]:
-        return [
-            NetworkQuota(**quota_model_dict()).save(),
-            NetworkQuota(**quota_model_dict()).save(),
-        ]
+        return [NetworkQuota().save(), NetworkQuota().save()]
 
     @case(tags=("quota", "multi"))
     def case_object_store_quotas(self) -> list[ObjectStoreQuota]:
-        return [
-            ObjectStoreQuota(**quota_model_dict()).save(),
-            ObjectStoreQuota(**quota_model_dict()).save(),
-        ]
+        return [ObjectStoreQuota().save(), ObjectStoreQuota().save()]

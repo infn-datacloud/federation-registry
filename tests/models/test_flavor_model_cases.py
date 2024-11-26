@@ -8,7 +8,7 @@ from tests.utils import random_int, random_lower_string
 
 
 class CaseFlavorDict:
-    @case(tags=("dict", "mandatory", "valid"))
+    @case(tags=("dict", "valid", "mandatory"))
     def case_mandatory(self) -> dict[str, Any]:
         return {"name": random_lower_string(), "uuid": uuid4().hex}
 

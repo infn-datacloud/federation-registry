@@ -6,7 +6,7 @@ from pytest_cases import parametrize_with_cases
 
 from fed_reg.location.models import Location
 from fed_reg.region.models import Region
-from tests.models.utils import region_model_dict
+from tests.utils import random_lower_string
 
 
 @parametrize_with_cases("data", has_tag=("dict", "valid"))
@@ -78,8 +78,8 @@ def test_multiple_linked_regions(location_model: Location) -> None:
 
     Connect a multiple Region to a Location.
     """
-    item = Region(**region_model_dict()).save()
+    item = Region(name=random_lower_string()).save()
     location_model.regions.connect(item)
-    item = Region(**region_model_dict()).save()
+    item = Region(name=random_lower_string()).save()
     location_model.regions.connect(item)
     assert len(location_model.regions.all()) == 2

@@ -13,11 +13,8 @@ from fed_reg.auth_method.models import AuthMethod
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.provider.models import Provider
 from fed_reg.user_group.models import UserGroup
-from tests.models.utils import (
-    auth_method_model_dict,
-    provider_model_dict,
-    user_group_model_dict,
-)
+from tests.models.utils import auth_method_model_dict
+from tests.utils import random_lower_string
 
 
 @parametrize_with_cases("data", has_tag=("dict", "valid"))
@@ -100,9 +97,9 @@ def test_multiple_linked_providers(identity_provider_model: IdentityProvider) ->
 
     Connect a multiple Provider to an IdentityProvider.
     """
-    item = Provider(**provider_model_dict()).save()
+    item = Provider(name=random_lower_string(), type=random_lower_string()).save()
     identity_provider_model.providers.connect(item, auth_method_model_dict())
-    item = Provider(**provider_model_dict()).save()
+    item = Provider(name=random_lower_string(), type=random_lower_string()).save()
     identity_provider_model.providers.connect(item, auth_method_model_dict())
     assert len(identity_provider_model.providers.all()) == 2
 
@@ -134,18 +131,18 @@ def test_multiple_linked_user_groups(identity_provider_model: IdentityProvider) 
 
     Connect a multiple UserGroup to an IdentityProvider.
     """
-    item = UserGroup(**user_group_model_dict()).save()
+    item = UserGroup(name=random_lower_string()).save()
     identity_provider_model.user_groups.connect(item)
-    item = UserGroup(**user_group_model_dict()).save()
+    item = UserGroup(name=random_lower_string()).save()
     identity_provider_model.user_groups.connect(item)
     assert len(identity_provider_model.user_groups.all()) == 2
 
 
 def test_pre_delete_hook(identity_provider_model: IdentityProvider) -> None:
     """Delete identity provider and all related user groups."""
-    item1 = UserGroup(**user_group_model_dict()).save()
+    item1 = UserGroup(name=random_lower_string()).save()
     identity_provider_model.user_groups.connect(item1)
-    item2 = UserGroup(**user_group_model_dict()).save()
+    item2 = UserGroup(name=random_lower_string()).save()
     identity_provider_model.user_groups.connect(item2)
 
     assert identity_provider_model.delete()
