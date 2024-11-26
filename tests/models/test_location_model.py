@@ -1,41 +1,39 @@
+from typing import Any
+
 import pytest
 from neomodel import CardinalityViolation, RelationshipManager, RequiredProperty
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.location.models import Location
 from fed_reg.region.models import Region
-from tests.models.utils import location_model_dict, region_model_dict
+from tests.models.utils import region_model_dict
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_location_attr(attr: str) -> None:
-    """Test attribute values (default and set)."""
-    d = location_model_dict(attr)
-    item = Location(**d)
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_location_valid_attr(data: dict[str, Any]) -> None:
+    """Test Location mandatory and optional attributes."""
+    item = Location(**data)
     assert isinstance(item, Location)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.site == d.get("site")
-    assert item.country == d.get("country")
-    assert item.latitude is d.get("latitude", None)
-    assert item.longitude is d.get("longitude", None)
+    assert item.description == data.get("description", "")
+    assert item.site == data.get("site")
+    assert item.country == data.get("country")
+    assert item.latitude is data.get("latitude", None)
+    assert item.longitude is data.get("longitude", None)
 
     saved = item.save()
     assert saved.element_id_property
     assert saved.uid == item.uid
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
-def test_location_missing_mandatory_attr(attr: str) -> None:
-    """Test IdentityProvider required attributes.
+@parametrize_with_cases("data", has_tag=("dict", "invalid"))
+def test_location_missing_mandatory_attr(data: dict[str, Any]) -> None:
+    """Test Location required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     """
-    err_msg = f"property '{attr}' on objects of class {Location.__name__}"
-    d = location_model_dict()
-    d.pop(attr)
-    with pytest.raises(RequiredProperty, match=err_msg):
-        Location(**d).save()
+    with pytest.raises(RequiredProperty):
+        Location(**data).save()
 
 
 def test_rel_def(location_model: Location) -> None:
@@ -50,7 +48,7 @@ def test_rel_def(location_model: Location) -> None:
 
 
 def test_required_rel(location_model: Location) -> None:
-    """Test Model required relationships.
+    """Test Location required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.
