@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -12,11 +13,7 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.project.models import Project
 from fed_reg.service.models import NetworkService
-from tests.models.utils import (
-    network_model_dict,
-    project_model_dict,
-    service_model_dict,
-)
+from tests.models.utils import project_model_dict, service_model_dict
 
 
 @parametrize_with_cases("network_cls", has_tag=("class", "derived"))
@@ -28,27 +25,32 @@ def test_network_inheritance(
 
 
 @parametrize_with_cases("network_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag="attr")
-def test_network_attr(
-    network_cls: type[Network] | type[PrivateNetwork] | type[SharedNetwork], attr: str
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_network_valid_attr(
+    network_cls: type[Network] | type[PrivateNetwork] | type[SharedNetwork],
+    data: dict[str, Any],
 ) -> None:
-    """Test attribute values (default and set).
+    """Test Network mandatory and optional attributes.
 
     Execute this test on Network, PrivateNetwork and SharedNetwork.
     """
-    d = network_model_dict(attr)
-    item = network_cls(**d)
+    item = network_cls(**data)
     assert isinstance(item, network_cls)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid")
-    assert item.is_router_external is d.get("is_router_external", False)
-    assert item.is_default is d.get("is_default", False)
-    assert item.mtu is d.get("mtu", None)
-    assert item.proxy_host is d.get("proxy_host", None)
-    assert item.proxy_user is d.get("proxy_user", None)
-    assert item.tags == d.get("tags", [])
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
+    assert item.uuid == data.get("uuid")
+    assert item.is_router_external is data.get("is_router_external", False)
+    assert item.is_default is data.get("is_default", False)
+    assert item.mtu is data.get("mtu", None)
+    assert item.proxy_host is data.get("proxy_host", None)
+    assert item.proxy_user is data.get("proxy_user", None)
+    assert item.tags == data.get("tags", [])
+
+    if network_cls == SharedNetwork:
+        assert item.is_shared
+    if network_cls == PrivateNetwork:
+        assert not item.is_shared
 
     saved = item.save()
     assert saved.element_id_property
@@ -56,20 +58,18 @@ def test_network_attr(
 
 
 @parametrize_with_cases("network_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
+@parametrize_with_cases("data", has_tag=("dict", "invalid"))
 def test_network_missing_mandatory_attr(
-    network_cls: type[Network] | type[PrivateNetwork] | type[SharedNetwork], attr: str
+    network_cls: type[Network] | type[PrivateNetwork] | type[SharedNetwork],
+    data: dict[str, Any],
 ) -> None:
     """Test Network required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     Execute this test on Network, PrivateNetwork and SharedNetwork.
     """
-    err_msg = f"property '{attr}' on objects of class {network_cls.__name__}"
-    d = network_model_dict()
-    d.pop(attr)
-    with pytest.raises(RequiredProperty, match=err_msg):
-        network_cls(**d).save()
+    with pytest.raises(RequiredProperty):
+        network_cls(**data).save()
 
 
 @parametrize_with_cases("network_model", has_tag="model")
@@ -86,10 +86,19 @@ def test_rel_def(network_model: Network | PrivateNetwork | SharedNetwork) -> Non
     assert network_model.service.definition
     assert network_model.service.definition["node_class"] == NetworkService
 
+    if isinstance(network_model, PrivateNetwork):
+        assert isinstance(network_model.project, RelationshipManager)
+        assert network_model.project.name
+        assert network_model.project.source
+        assert isinstance(network_model.project.source, PrivateNetwork)
+        assert network_model.project.source.uid == network_model.uid
+        assert network_model.project.definition
+        assert network_model.project.definition["node_class"] == Project
+
 
 @parametrize_with_cases("network_model", has_tag="model")
 def test_required_rel(network_model: Network | PrivateNetwork | SharedNetwork) -> None:
-    """Test Model required relationships.
+    """Test Network required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.
@@ -99,6 +108,12 @@ def test_required_rel(network_model: Network | PrivateNetwork | SharedNetwork) -
         network_model.service.all()
     with pytest.raises(CardinalityViolation):
         network_model.service.single()
+
+    if isinstance(network_model, PrivateNetwork):
+        with pytest.raises(CardinalityViolation):
+            network_model.project.all()
+        with pytest.raises(CardinalityViolation):
+            network_model.project.single()
 
 
 @parametrize_with_cases("network_model", has_tag="model")
@@ -140,43 +155,6 @@ def test_multiple_linked_services_error(
         network_model.service.connect(item)
         with pytest.raises(CardinalityViolation):
             network_model.service.all()
-
-
-def test_shared_network_default_attr() -> None:
-    """Test SharedNetwork specific attribute values."""
-    d = network_model_dict()
-    item = SharedNetwork(**d)
-    assert item.is_shared is True
-
-
-def test_private_network_default_attr() -> None:
-    """Test SharedNetwork specific attribute values and relationships definition."""
-    d = network_model_dict()
-    item = PrivateNetwork(**d)
-    assert item.is_shared is False
-
-
-def test_private_network_rel_def(private_network_model: PrivateNetwork) -> None:
-    """Test relationships definition."""
-    assert isinstance(private_network_model.project, RelationshipManager)
-    assert private_network_model.project.name
-    assert private_network_model.project.source
-    assert isinstance(private_network_model.project.source, PrivateNetwork)
-    assert private_network_model.project.source.uid == private_network_model.uid
-    assert private_network_model.project.definition
-    assert private_network_model.project.definition["node_class"] == Project
-
-
-def test_private_network_required_rel(private_network_model: PrivateNetwork) -> None:
-    """Test Model required relationships.
-
-    A model without required relationships can exist but when querying those values, it
-    raises a CardinalityViolation error.
-    """
-    with pytest.raises(CardinalityViolation):
-        private_network_model.project.all()
-    with pytest.raises(CardinalityViolation):
-        private_network_model.project.single()
 
 
 def test_single_linked_project(
