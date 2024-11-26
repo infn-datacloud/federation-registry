@@ -21,14 +21,10 @@ from fed_reg.project.schemas import ProjectCreate
 from fed_reg.provider.models import Provider
 from fed_reg.provider.schemas_extended import (
     BlockStorageQuotaCreateExtended,
-    BlockStorageServiceCreateExtended,
     ComputeQuotaCreateExtended,
-    ComputeServiceCreateExtended,
     IdentityProviderCreateExtended,
     NetworkQuotaCreateExtended,
-    NetworkServiceCreateExtended,
     ObjectStoreQuotaCreateExtended,
-    ObjectStoreServiceCreateExtended,
     PrivateFlavorCreateExtended,
     PrivateImageCreateExtended,
     PrivateNetworkCreateExtended,
@@ -56,26 +52,25 @@ from fed_reg.service.models import (
     ObjectStoreService,
     Service,
 )
-from fed_reg.service.schemas import IdentityServiceCreate
 from fed_reg.sla.models import SLA
 from fed_reg.user_group.models import UserGroup
-from tests.create_dict import (
-    auth_method_dict,
-    block_storage_service_schema_dict,
-    compute_service_schema_dict,
-    flavor_model_dict,
+from tests.models.utils import (
+    # auth_method_dict,
+    # block_storage_service_schema_dict,
+    # compute_service_schema_dict,
+    # flavor_model_dict,
     flavor_schema_dict,
-    identity_provider_model_dict,
+    # identity_provider_model_dict,
     identity_provider_schema_dict,
-    identity_service_schema_dict,
-    image_model_dict,
+    # identity_service_schema_dict,
+    # image_model_dict,
     image_schema_dict,
     location_model_dict,
     location_schema_dict,
     network_model_dict,
     network_schema_dict,
-    network_service_schema_dict,
-    object_store_service_schema_dict,
+    # network_service_schema_dict,
+    # object_store_service_schema_dict,
     project_model_dict,
     project_schema_dict,
     provider_model_dict,
@@ -89,7 +84,7 @@ from tests.create_dict import (
     user_group_model_dict,
     user_group_schema_dict,
 )
-from tests.utils import MOCK_READ_EMAIL, MOCK_WRITE_EMAIL
+from tests.utils import MOCK_READ_EMAIL, MOCK_WRITE_EMAIL, random_lower_string
 
 
 def pytest_addoption(parser):
@@ -178,44 +173,39 @@ def cleanup() -> Generator[None, Any, None]:
 
 @pytest.fixture
 def flavor_model() -> Flavor:
-    d = flavor_model_dict()
-    return Flavor(**d).save()
+    return Flavor(name=random_lower_string(), uuid=uuid4().hex).save()
 
 
 @pytest.fixture
 def private_flavor_model() -> PrivateFlavor:
-    d = flavor_model_dict()
-    return PrivateFlavor(**d).save()
+    return PrivateFlavor(name=random_lower_string(), uuid=uuid4().hex).save()
 
 
 @pytest.fixture
 def shared_flavor_model() -> SharedFlavor:
-    d = flavor_model_dict()
-    return SharedFlavor(**d).save()
+    return SharedFlavor(name=random_lower_string(), uuid=uuid4().hex).save()
 
 
 @pytest.fixture
 def identity_provider_model() -> IdentityProvider:
-    d = identity_provider_model_dict()
-    return IdentityProvider(**d).save()
+    return IdentityProvider(
+        endpoint=random_lower_string(), group_claim=random_lower_string()
+    ).save()
 
 
 @pytest.fixture
 def image_model() -> Image:
-    d = image_model_dict()
-    return Image(**d).save()
+    return Image(name=random_lower_string(), uuid=uuid4().hex).save()
 
 
 @pytest.fixture
 def private_image_model() -> PrivateImage:
-    d = image_model_dict()
-    return PrivateImage(**d).save()
+    return PrivateImage(name=random_lower_string(), uuid=uuid4().hex).save()
 
 
 @pytest.fixture
 def shared_image_model() -> SharedImage:
-    d = image_model_dict()
-    return SharedImage(**d).save()
+    return SharedImage(name=random_lower_string(), uuid=uuid4().hex).save()
 
 
 @pytest.fixture
@@ -348,9 +338,9 @@ def project_create_schema() -> ProjectCreate:
     return ProjectCreate(**project_schema_dict())
 
 
-@pytest.fixture
-def identity_service_create_schema() -> IdentityServiceCreate:
-    return IdentityServiceCreate(**identity_service_schema_dict())
+# @pytest.fixture
+# def identity_service_create_schema() -> IdentityServiceCreate:
+#     return IdentityServiceCreate(**identity_service_schema_dict())
 
 
 @pytest.fixture
@@ -369,7 +359,7 @@ def identity_provider_create_ext_schema(
 ) -> IdentityProviderCreateExtended:
     return IdentityProviderCreateExtended(
         **identity_provider_schema_dict(),
-        relationship=auth_method_dict(),
+        # relationship=auth_method_dict(),
         user_groups=[user_group_create_ext_schema],
     )
 
@@ -424,24 +414,24 @@ def region_create_ext_schema() -> RegionCreateExtended:
     return RegionCreateExtended(**region_schema_dict())
 
 
-@pytest.fixture
-def block_storage_service_create_ext_schema() -> BlockStorageServiceCreateExtended:
-    return BlockStorageServiceCreateExtended(**block_storage_service_schema_dict())
+# @pytest.fixture
+# def block_storage_service_create_ext_schema() -> BlockStorageServiceCreateExtended:
+#     return BlockStorageServiceCreateExtended(**block_storage_service_schema_dict())
 
 
-@pytest.fixture
-def compute_service_create_ext_schema() -> ComputeServiceCreateExtended:
-    return ComputeServiceCreateExtended(**compute_service_schema_dict())
+# @pytest.fixture
+# def compute_service_create_ext_schema() -> ComputeServiceCreateExtended:
+#     return ComputeServiceCreateExtended(**compute_service_schema_dict())
 
 
-@pytest.fixture
-def network_service_create_ext_schema() -> NetworkServiceCreateExtended:
-    return NetworkServiceCreateExtended(**network_service_schema_dict())
+# @pytest.fixture
+# def network_service_create_ext_schema() -> NetworkServiceCreateExtended:
+#     return NetworkServiceCreateExtended(**network_service_schema_dict())
 
 
-@pytest.fixture
-def object_store_service_create_ext_schema() -> ObjectStoreServiceCreateExtended:
-    return ObjectStoreServiceCreateExtended(**object_store_service_schema_dict())
+# @pytest.fixture
+# def object_store_service_create_ext_schema() -> ObjectStoreServiceCreateExtended:
+#     return ObjectStoreServiceCreateExtended(**object_store_service_schema_dict())
 
 
 @pytest.fixture

@@ -93,7 +93,7 @@ def test_rel_def(image_model: Image | PrivateImage | SharedImage) -> None:
 
 @parametrize_with_cases("image_model", has_tag="model")
 def test_required_rel(image_model: Image | PrivateImage | SharedImage) -> None:
-    """Test Model required relationships.
+    """Test Image required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.

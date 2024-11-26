@@ -1,13 +1,25 @@
-from pytest_cases import case, parametrize
+from pytest_cases import case
+
+from tests.utils import random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("attr", "mandatory"))
-    @parametrize(value=("endpoint", "group_claim"))
-    def case_mandatory(self, value: str) -> str:
-        return value
+class CaseIdentityProviderDict:
+    @case(tags=("dict", "valid", "mandatory"))
+    def case_mandatory(self) -> str:
+        return {"endpoint": random_lower_string(), "group_claim": random_lower_string()}
 
-    @case(tags=("attr", "optional"))
-    @parametrize(value=("description",))
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid"))
+    def case_optional(self) -> str:
+        return {
+            "endpoint": random_lower_string(),
+            "group_claim": random_lower_string(),
+            "description": random_lower_string(),
+        }
+
+    @case(tags=("dict", "invalid"))
+    def case_missing_endpoint(self) -> str:
+        return {"group_claim": random_lower_string()}
+
+    @case(tags=("dict", "invalid"))
+    def case_missing_group_claim(self) -> str:
+        return {"endpoint": random_lower_string()}

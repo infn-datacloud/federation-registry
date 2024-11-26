@@ -95,7 +95,7 @@ def test_rel_def(flavor_model: Flavor | PrivateFlavor | SharedFlavor) -> None:
 
 @parametrize_with_cases("flavor_model", has_tag="model")
 def test_required_rel(flavor_model: Flavor | PrivateFlavor | SharedFlavor) -> None:
-    """Test Model required relationships.
+    """Test Flavor required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.

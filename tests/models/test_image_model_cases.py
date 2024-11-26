@@ -105,13 +105,15 @@ class CaseImageModelClass:
 
 class CaseImageModel:
     @case(tags="model")
-    def case_image_model(self) -> Image:
-        return Image(name=random_lower_string(), uuid=uuid4().hex).save()
+    def case_image_model(self, image_model: Image) -> Image:
+        return image_model
 
     @case(tags=("model", "private"))
-    def case_private_image_model(self) -> PrivateImage:
-        return PrivateImage(name=random_lower_string(), uuid=uuid4().hex).save()
+    def case_private_image_model(
+        self, private_image_model: PrivateImage
+    ) -> PrivateImage:
+        return private_image_model
 
     @case(tags=("model", "shared"))
-    def case_shared_image_model(self) -> SharedImage:
-        return SharedImage(name=random_lower_string(), uuid=uuid4().hex).save()
+    def case_shared_image_model(self, shared_image_model: SharedImage) -> SharedImage:
+        return shared_image_model

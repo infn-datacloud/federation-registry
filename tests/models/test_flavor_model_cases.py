@@ -119,13 +119,17 @@ class CaseFlavorModelClass:
 
 class CaseFlavorModel:
     @case(tags="model")
-    def case_flavor_model(self) -> Flavor:
-        return Flavor(name=random_lower_string(), uuid=uuid4().hex).save()
+    def case_flavor_model(self, flavor_model: Flavor) -> Flavor:
+        return flavor_model
 
     @case(tags=("model", "private"))
-    def case_private_flavor_model(self) -> PrivateFlavor:
-        return PrivateFlavor(name=random_lower_string(), uuid=uuid4().hex).save()
+    def case_private_flavor_model(
+        self, private_flavor_model: PrivateFlavor
+    ) -> PrivateFlavor:
+        return private_flavor_model
 
     @case(tags=("model", "shared"))
-    def case_shared_flavor_model(self) -> SharedFlavor:
-        return SharedFlavor(name=random_lower_string(), uuid=uuid4().hex).save()
+    def case_shared_flavor_model(
+        self, shared_flavor_model: SharedFlavor
+    ) -> SharedFlavor:
+        return shared_flavor_model

@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from neomodel import (
     CardinalityViolation,
@@ -13,39 +15,34 @@ from fed_reg.provider.models import Provider
 from fed_reg.user_group.models import UserGroup
 from tests.models.utils import (
     auth_method_model_dict,
-    identity_provider_model_dict,
     provider_model_dict,
     user_group_model_dict,
 )
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_identity_provider_attr(attr: str) -> None:
-    """Test attribute values (default and set)."""
-    d = identity_provider_model_dict(attr)
-    item = IdentityProvider(**d)
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_identity_provider_valid_attr(data: dict[str, Any]) -> None:
+    """Test IdentityProvider mandatory and optional attributes."""
+    item = IdentityProvider(**data)
     assert isinstance(item, IdentityProvider)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.endpoint == d.get("endpoint")
-    assert item.group_claim == d.get("group_claim")
+    assert item.description == data.get("description", "")
+    assert item.endpoint == data.get("endpoint")
+    assert item.group_claim == data.get("group_claim")
 
     saved = item.save()
     assert saved.element_id_property
     assert saved.uid == item.uid
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
-def test_identity_provider_missing_mandatory_attr(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "invalid"))
+def test_identity_provider_missing_mandatory_attr(data: dict[str, Any]) -> None:
     """Test IdentityProvider required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     """
-    err_msg = f"property '{attr}' on objects of class {IdentityProvider.__name__}"
-    d = identity_provider_model_dict()
-    d.pop(attr)
-    with pytest.raises(RequiredProperty, match=err_msg):
-        IdentityProvider(**d).save()
+    with pytest.raises(RequiredProperty):
+        IdentityProvider(**data).save()
 
 
 def test_rel_def(identity_provider_model: IdentityProvider) -> None:
@@ -68,7 +65,7 @@ def test_rel_def(identity_provider_model: IdentityProvider) -> None:
 
 
 def test_required_rel(identity_provider_model: IdentityProvider) -> None:
-    """Test Model required relationships.
+    """Test identityProvider required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.
@@ -101,7 +98,7 @@ def test_single_linked_provider(
 def test_multiple_linked_providers(identity_provider_model: IdentityProvider) -> None:
     """Verify `providers` relationship works correctly.
 
-    Connect a multiple Provider to a IdentityProvider.
+    Connect a multiple Provider to an IdentityProvider.
     """
     item = Provider(**provider_model_dict()).save()
     identity_provider_model.providers.connect(item, auth_method_model_dict())
@@ -111,7 +108,7 @@ def test_multiple_linked_providers(identity_provider_model: IdentityProvider) ->
 
 
 def test_optional_rel(identity_provider_model: IdentityProvider) -> None:
-    """Test Model optional relationships."""
+    """Test identityProvider optional relationships."""
     assert len(identity_provider_model.user_groups.all()) == 0
     assert identity_provider_model.user_groups.single() is None
 
@@ -145,7 +142,7 @@ def test_multiple_linked_user_groups(identity_provider_model: IdentityProvider) 
 
 
 def test_pre_delete_hook(identity_provider_model: IdentityProvider) -> None:
-    """Delete identity provider and all related user groups"""
+    """Delete identity provider and all related user groups."""
     item1 = UserGroup(**user_group_model_dict()).save()
     identity_provider_model.user_groups.connect(item1)
     item2 = UserGroup(**user_group_model_dict()).save()
