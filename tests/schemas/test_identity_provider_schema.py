@@ -1,3 +1,6 @@
+from typing import Any
+from uuid import uuid4
+
 import pytest
 from pytest_cases import parametrize_with_cases
 
@@ -17,8 +20,6 @@ from fed_reg.models import (
     BaseReadPrivate,
     BaseReadPublic,
 )
-from tests.models.utils import identity_provider_model_dict
-from tests.schemas.utils import identity_provider_schema_dict
 
 
 def test_classes_inheritance() -> None:
@@ -44,73 +45,66 @@ def test_classes_inheritance() -> None:
     assert issubclass(IdentityProviderCreate, BaseNodeCreate)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_base_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_base_public(data: dict[str, Any]) -> None:
     """Test IdentityProviderBasePublic class' attribute values."""
-    d = identity_provider_schema_dict(attr)
-    item = IdentityProviderBasePublic(**d)
-    assert item.description == d.get("description", "")
-    assert item.endpoint == d.get("endpoint")
+    item = IdentityProviderBasePublic(**data)
+    assert item.description == data.get("description", "")
+    assert item.endpoint == data.get("endpoint")
 
 
 @parametrize_with_cases("identity_provider_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base"))
 def test_base(
     identity_provider_cls: type[IdentityProviderBase] | type[IdentityProviderCreate],
-    attr: str,
+    data: dict[str, Any],
 ) -> None:
     """Test class' attribute values.
 
     Execute this test on IdentityProviderBase, PrivateIdentityProviderCreate
     and SharedIdentityProviderCreate.
     """
-    d = identity_provider_schema_dict(attr)
-    item = identity_provider_cls(**d)
-    assert item.description == d.get("description", "")
-    assert item.endpoint == d.get("endpoint")
-    assert item.group_claim == d.get("group_claim")
+    item = identity_provider_cls(**data)
+    assert item.description == data.get("description", "")
+    assert item.endpoint == data.get("endpoint")
+    assert item.group_claim == data.get("group_claim")
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "update"))
-def test_update(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "update"))
+def test_update(data: dict[str, Any]) -> None:
     """Test IdentityProviderUpdate class' attribute values."""
-    d = identity_provider_schema_dict(attr)
-    item = IdentityProviderUpdate(**d)
-    assert item.description == d.get("description", "")
-    assert item.endpoint == d.get("endpoint")
-    assert item.group_claim == d.get("group_claim")
+    item = IdentityProviderUpdate(**data)
+    assert item.description == data.get("description", "")
+    assert item.endpoint == data.get("endpoint")
+    assert item.group_claim == data.get("group_claim")
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_read_public(data: dict[str, Any]) -> None:
     """Test IdentityProviderReadPublic class' attribute values."""
-    d = identity_provider_schema_dict(attr, read=True)
-    item = IdentityProviderReadPublic(**d)
+    uid = uuid4()
+    item = IdentityProviderReadPublic(**data, uid=uid)
     assert item.schema_type == "public"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.endpoint == d.get("endpoint")
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.endpoint == data.get("endpoint")
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_read(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base"))
+def test_read(data: dict[str, Any]) -> None:
     """Test IdentityProviderRead class' attribute values."""
-    d = identity_provider_schema_dict(attr, read=True)
-    item = IdentityProviderRead(**d)
+    uid = uuid4()
+    item = IdentityProviderRead(**data, uid=uid)
     assert item.schema_type == "private"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.endpoint == d.get("endpoint")
-    assert item.group_claim == d.get("group_claim")
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.endpoint == data.get("endpoint")
+    assert item.group_claim == data.get("group_claim")
 
 
-@parametrize_with_cases("identity_provider_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public_from_orm(
-    identity_provider_cls: type[IdentityProvider], attr: str
-) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_public_from_orm(model: IdentityProvider) -> None:
     """Use the from_orm function of IdentityProviderReadPublic to read data from ORM."""
-    model = identity_provider_cls(**identity_provider_model_dict(attr)).save()
     item = IdentityProviderReadPublic.from_orm(model)
     assert item.schema_type == "public"
     assert item.uid == model.uid
@@ -118,13 +112,9 @@ def test_read_public_from_orm(
     assert item.endpoint == model.endpoint
 
 
-@parametrize_with_cases("identity_provider_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
-def test_read_from_orm(
-    identity_provider_cls: type[IdentityProvider], attr: str
-) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_from_orm(model: IdentityProvider) -> None:
     """Use the from_orm function of IdentityProviderRead to read data from an ORM."""
-    model = identity_provider_cls(**identity_provider_model_dict(attr)).save()
     item = IdentityProviderRead.from_orm(model)
     assert item.schema_type == "private"
     assert item.uid == model.uid
@@ -133,48 +123,48 @@ def test_read_from_orm(
     assert item.group_claim == model.group_claim
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_base_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base_public"))
+def test_invalid_base_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for IdentityProviderBasePublic."""
-    with pytest.raises(ValueError):
-        IdentityProviderBasePublic(**identity_provider_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for IdentityProviderBasePublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        IdentityProviderBasePublic(**data)
 
 
 @parametrize_with_cases("identity_provider_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base"))
 def test_invalid_base(
     identity_provider_cls: type[IdentityProviderBase] | type[IdentityProviderCreate],
+    data: dict[str, Any],
     attr: str,
 ) -> None:
-    """Test invalid attributes for base and create.
-
-    Apply to IdentityProviderBase, PrivateIdentityProviderCreate and
-    SharedIdentityProviderCreate.
-    """
-    with pytest.raises(ValueError):
-        identity_provider_cls(**identity_provider_schema_dict(attr, valid=False))
+    """Test invalid attributes for base and create."""
+    err_msg = rf"1 validation error for {identity_provider_cls.__name__}\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        identity_provider_cls(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "update"))
-def test_invalid_update(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "update"))
+def test_invalid_update(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for IdentityProviderUpdate."""
-    with pytest.raises(ValueError):
-        IdentityProviderUpdate(**identity_provider_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for IdentityProviderUpdate\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        IdentityProviderUpdate(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_read_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read_public"))
+def test_invalid_read_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for IdentityProviderReadPublic."""
-    with pytest.raises(ValueError):
-        IdentityProviderReadPublic(
-            **identity_provider_schema_dict(attr, valid=False, read=True)
-        )
+    uid = uuid4()
+    err_msg = rf"1 validation error for IdentityProviderReadPublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        IdentityProviderReadPublic(**data, uid=uid)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
-def test_invalid_read(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read"))
+def test_invalid_read(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for IdentityProviderRead."""
-    with pytest.raises(ValueError):
-        IdentityProviderRead(
-            **identity_provider_schema_dict(attr, valid=False, read=True)
-        )
+    uid = uuid4()
+    err_msg = rf"1 validation error for IdentityProviderRead\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        IdentityProviderRead(**data, uid=uid)

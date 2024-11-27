@@ -84,32 +84,6 @@ def user_group_schema_dict() -> dict[str, Any]:
     return {"name": random_lower_string()}
 
 
-def identity_provider_valid_dict(
-    data: dict[str, Any], *args, **kwargs
-) -> dict[str, Any]:
-    for k in args:
-        if k in ("description", "group_claim"):
-            data[k] = random_lower_string()
-        elif k in ("endpoint",):
-            data[k] = random_url()
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def identity_provider_invalid_dict(
-    data: dict[str, Any], *args, **kwargs
-) -> dict[str, Any]:
-    for k in args:
-        if k in ("endpoint", "group_claim", "uid"):
-            data.pop(k)
-        elif k in ("not_an_endpoint",):
-            data["country"] = random_lower_string()
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
 def location_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in ("description", "site"):
