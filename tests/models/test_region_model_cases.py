@@ -1,4 +1,6 @@
-from pytest_cases import case, parametrize
+from typing import Any, Literal
+
+from pytest_cases import case
 
 from fed_reg.service.models import (
     BlockStorageService,
@@ -7,19 +9,24 @@ from fed_reg.service.models import (
     NetworkService,
     ObjectStoreService,
 )
-from tests.models.utils import service_model_dict
+from tests.models.utils import region_model_dict, service_model_dict
+from tests.utils import random_lower_string
 
 
 class CaseAttr:
-    @case(tags=("attr", "mandatory"))
-    @parametrize(value=("name",))
-    def case_mandatory(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "mandatory"))
+    def case_mandatory(self) -> dict[str, Any]:
+        return region_model_dict()
 
-    @case(tags=("attr", "optional"))
-    @parametrize(value=("description",))
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid"))
+    def case_description(self) -> dict[str, Any]:
+        return {**region_model_dict(), "description": random_lower_string()}
+
+    @case(tags=("dict", "invalid"))
+    def case_missing_name(self) -> tuple[dict[str, Any], Literal["name"]]:
+        d = region_model_dict()
+        d.pop("name")
+        return d, "name"
 
 
 class CaseService:

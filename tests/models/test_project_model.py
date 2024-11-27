@@ -33,7 +33,6 @@ from tests.models.utils import (
     provider_model_dict,
     sla_model_dict,
 )
-from tests.utils import random_start_end_dates
 
 
 @parametrize_with_cases("data", has_tag=("dict", "valid"))
@@ -193,7 +192,6 @@ def test_multiple_linked_sla(project_model: Project) -> None:
     Trying to connect multiple SLA to a Project raises an AttemptCardinalityViolation
     error.
     """
-    start_date, end_date = random_start_end_dates()
     item = SLA(**sla_model_dict()).save()
     project_model.sla.connect(item)
     item = SLA(**sla_model_dict()).save()

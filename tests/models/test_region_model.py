@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -28,32 +29,29 @@ from tests.models.utils import (
 )
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_region_attr(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_region_attr(data: dict[str, Any]) -> None:
     """Test attribute values (default and set)."""
-    d = region_model_dict(attr)
-    item = Region(**d)
+    item = Region(**data)
     assert isinstance(item, Region)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
     saved = item.save()
     assert saved.element_id_property
     assert saved.uid == item.uid
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
-def test_region_missing_mandatory_attr(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
+def test_region_missing_mandatory_attr(data: dict[str, Any], attr: str) -> None:
     """Test Region required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     """
     err_msg = f"property '{attr}' on objects of class {Region.__name__}"
-    d = region_model_dict()
-    d.pop(attr)
     with pytest.raises(RequiredProperty, match=err_msg):
-        Region(**d).save()
+        Region(**data).save()
 
 
 def test_rel_def(region_model: Region) -> None:
@@ -84,7 +82,7 @@ def test_rel_def(region_model: Region) -> None:
 
 
 def test_required_rel(region_model: Region) -> None:
-    """Test Model required relationships.
+    """Test Region required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.
@@ -128,7 +126,7 @@ def test_multiple_linked_provider(region_model: Region) -> None:
 
 
 def test_optional_rel(region_model: Region) -> None:
-    """Test Model optional relationships."""
+    """Test Region optional relationships."""
     assert len(region_model.location.all()) == 0
     assert region_model.location.single() is None
     assert len(region_model.services.all()) == 0
