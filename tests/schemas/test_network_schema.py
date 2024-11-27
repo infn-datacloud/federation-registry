@@ -1,3 +1,6 @@
+from typing import Any
+from uuid import uuid4
+
 import pytest
 from pydantic import ValidationError
 from pytest_cases import parametrize_with_cases
@@ -19,7 +22,6 @@ from fed_reg.network.schemas import (
     PrivateNetworkCreate,
     SharedNetworkCreate,
 )
-from tests.models.utils import network_model_dict
 from tests.schemas.utils import network_schema_dict
 
 
@@ -49,110 +51,96 @@ def test_classes_inheritance():
     assert issubclass(SharedNetworkCreate, BaseNodeCreate)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_base_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_base_public(data: dict[str, Any]) -> None:
     """Test NetworkBasePublic class' attribute values."""
-    d = network_schema_dict(attr)
-    item = NetworkBasePublic(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid").hex
+    item = NetworkBasePublic(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
+    assert item.uuid == data.get("uuid").hex
 
 
 @parametrize_with_cases("network_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base"))
 def test_base(
     network_cls: type[NetworkBase]
     | type[PrivateNetworkCreate]
     | type[SharedNetworkCreate],
-    attr: str,
+    data: dict[str, Any],
 ) -> None:
     """Test class' attribute values.
 
     Execute this test on NetworkBase, PrivateNetworkCreate and SharedNetworkCreate.
     """
-    d = network_schema_dict(attr)
-    item = network_cls(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid").hex
-    assert item.is_router_external == d.get("is_router_external", False)
-    assert item.is_default == d.get("is_default", False)
-    assert item.mtu == d.get("mtu", None)
-    assert item.proxy_host == d.get("proxy_host", None)
-    assert item.proxy_user == d.get("proxy_user", None)
-    assert item.tags == d.get("tags", [])
+    item = network_cls(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
+    assert item.uuid == data.get("uuid").hex
+    assert item.is_router_external == data.get("is_router_external", False)
+    assert item.is_default == data.get("is_default", False)
+    assert item.mtu == data.get("mtu", None)
+    assert item.proxy_host == data.get("proxy_host", None)
+    assert item.proxy_user == data.get("proxy_user", None)
+    assert item.tags == data.get("tags", [])
+
+    if isinstance(item, PrivateNetworkCreate):
+        assert not item.is_shared
+    if isinstance(item, SharedNetworkCreate):
+        assert item.is_shared
 
 
-def test_create_private() -> None:
-    """Test PrivateNetworkCreate class' attribute values."""
-    item = PrivateNetworkCreate(**network_schema_dict())
-    assert item.is_shared is False
-
-
-def test_create_shared() -> None:
-    """Test SharedNetworkCreate class' attribute values."""
-    item = SharedNetworkCreate(**network_schema_dict())
-    assert item.is_shared is True
-
-
-@parametrize_with_cases("attr", has_tag=("attr", "update"))
-def test_update(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "update"))
+def test_update(data: dict[str, Any]) -> None:
     """Test NetworkUpdate class' attribute values."""
-    d = network_schema_dict(attr)
-    item = NetworkUpdate(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name", None)
-    assert item.uuid == (d.get("uuid").hex if d.get("uuid", None) else None)
-    assert item.is_router_external == d.get("is_router_external", False)
-    assert item.is_default == d.get("is_default", False)
-    assert item.mtu == d.get("mtu", None)
-    assert item.proxy_host == d.get("proxy_host", None)
-    assert item.proxy_user == d.get("proxy_user", None)
-    assert item.tags == d.get("tags", [])
+    item = NetworkUpdate(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name", None)
+    assert item.uuid == (data.get("uuid").hex if data.get("uuid", None) else None)
+    assert item.is_router_external == data.get("is_router_external", False)
+    assert item.is_default == data.get("is_default", False)
+    assert item.mtu == data.get("mtu", None)
+    assert item.proxy_host == data.get("proxy_host", None)
+    assert item.proxy_user == data.get("proxy_user", None)
+    assert item.tags == data.get("tags", [])
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_read_public(data: dict[str, Any]) -> None:
     """Test NetworkReadPublic class' attribute values."""
-    d = network_schema_dict(attr, read=True)
-    item = NetworkReadPublic(**d)
+    uid = uuid4()
+    item = NetworkReadPublic(**data, uid=uid)
     assert item.schema_type == "public"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid").hex
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
+    assert item.uuid == data.get("uuid").hex
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_read(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_read(data: dict[str, Any]) -> None:
     """Test NetworkRead class' attribute values.
 
     Consider also cases where we need to set the is_shared attribute (usually populated
     by the correct model).
     """
-    d = network_schema_dict(attr, read=True)
-    item = NetworkRead(**d)
+    uid = uuid4()
+    item = NetworkRead(**data, uid=uid)
     assert item.schema_type == "private"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name", None)
-    assert item.uuid == (d.get("uuid").hex if d.get("uuid") else None)
-    assert item.is_router_external == d.get("is_router_external", False)
-    assert item.is_default == d.get("is_default", False)
-    assert item.mtu == d.get("mtu", None)
-    assert item.proxy_host == d.get("proxy_host", None)
-    assert item.proxy_user == d.get("proxy_user", None)
-    assert item.tags == d.get("tags", [])
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name", None)
+    assert item.uuid == (data.get("uuid").hex if data.get("uuid") else None)
+    assert item.is_router_external == data.get("is_router_external", False)
+    assert item.is_default == data.get("is_default", False)
+    assert item.mtu == data.get("mtu", None)
+    assert item.proxy_host == data.get("proxy_host", None)
+    assert item.proxy_user == data.get("proxy_user", None)
+    assert item.tags == data.get("tags", [])
 
 
-@parametrize_with_cases("network_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public_from_orm(
-    network_cls: type[Network] | type[PrivateNetwork] | type[SharedNetwork], attr: str
-) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_public_from_orm(model: Network | PrivateNetwork | SharedNetwork) -> None:
     """Use the from_orm function of NetworkReadPublic to read data from an ORM."""
-    model = network_cls(**network_model_dict(attr)).save()
     item = NetworkReadPublic.from_orm(model)
     assert item.schema_type == "public"
     assert item.uid == model.uid
@@ -161,13 +149,9 @@ def test_read_public_from_orm(
     assert item.uuid == model.uuid
 
 
-@parametrize_with_cases("network_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
-def test_read_from_orm(
-    network_cls: type[Network] | type[PrivateNetwork] | type[SharedNetwork], attr: str
-) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_from_orm(model: Network | PrivateNetwork | SharedNetwork) -> None:
     """Use the from_orm function of NetworkRead to read data from an ORM."""
-    model = network_cls(**network_model_dict(attr)).save()
     item = NetworkRead.from_orm(model)
     assert item.schema_type == "private"
     assert item.uid == model.uid
@@ -186,53 +170,63 @@ def test_read_from_orm(
         assert item.is_shared is None
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_base_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base_public"))
+def test_invalid_base_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for NetworkBasePublic."""
-    with pytest.raises(ValueError):
-        NetworkBasePublic(**network_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for NetworkBasePublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        NetworkBasePublic(**data)
 
 
 @parametrize_with_cases("network_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base"))
 def test_invalid_base(
     network_cls: type[NetworkBase]
     | type[PrivateNetworkCreate]
     | type[SharedNetworkCreate],
+    data: dict[str, Any],
     attr: str,
 ) -> None:
     """Test invalid attributes for base and create.
 
     Apply to NetworkBase, PrivateNetworkCreate and SharedNetworkCreate.
     """
-    with pytest.raises(ValueError):
-        network_cls(**network_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for {network_cls.__name__}\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        network_cls(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "update"))
-def test_invalid_update(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "update"))
+def test_invalid_update(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for NetworkUpdate."""
-    with pytest.raises(ValueError):
-        NetworkUpdate(**network_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for NetworkUpdate\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        NetworkUpdate(**data)
 
 
 def test_invalid_create_visibility() -> None:
     """Test invalid attributes for PrivateNetworkCreate and SharedNetworkCreate."""
-    with pytest.raises(ValidationError):
+    err_msg = r"1 validation error for PrivateNetworkCreate\sis_shared"
+    with pytest.raises(ValidationError, match=err_msg):
         PrivateNetworkCreate(**network_schema_dict(), is_shared=True)
-    with pytest.raises(ValidationError):
+    err_msg = r"1 validation error for SharedNetworkCreate\sis_shared"
+    with pytest.raises(ValidationError, match=err_msg):
         SharedNetworkCreate(**network_schema_dict(), is_shared=False)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_read_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read_public"))
+def test_invalid_read_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for NetworkReadPublic."""
-    with pytest.raises(ValueError):
-        NetworkReadPublic(**network_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for NetworkReadPublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        NetworkReadPublic(**data, uid=uid)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
-def test_invalid_read(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read"))
+def test_invalid_read(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for NetworkRead."""
-    with pytest.raises(ValueError):
-        NetworkRead(**network_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for NetworkRead\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        NetworkRead(**data, uid=uid)

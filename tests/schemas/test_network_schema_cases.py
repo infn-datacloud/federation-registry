@@ -1,4 +1,6 @@
-from pytest_cases import case, parametrize
+from typing import Any, Literal
+
+from pytest_cases import case, parametrize_with_cases
 
 from fed_reg.network.models import Network, PrivateNetwork, SharedNetwork
 from fed_reg.network.schemas import (
@@ -6,57 +8,69 @@ from fed_reg.network.schemas import (
     PrivateNetworkCreate,
     SharedNetworkCreate,
 )
+from tests.schemas.utils import network_schema_dict
+from tests.utils import random_lower_string, random_positive_int
 
 
-class CaseAttr:
-    @case(tags=("attr", "mandatory", "base_public", "base", "update"))
-    @parametrize(value=("name", "uuid"))
-    def case_mandatory(self, value: str) -> str:
-        return value
+class CaseNetworkSchema:
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_mandatory(self) -> dict[str, Any]:
+        return network_schema_dict()
 
-    @case(tags=("attr", "optional", "base_public", "base", "update"))
-    @parametrize(value=("description",))
-    def case_description(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_description(self) -> dict[str, Any]:
+        return {**network_schema_dict(), "description": random_lower_string()}
 
-    @case(tags=("attr", "optional", "base", "update"))
-    @parametrize(
-        value=(
-            "is_router_external",
-            "is_default",
-            "mtu",
-            "proxy_host",
-            "proxy_user",
-            "tags",
-        )
-    )
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_is_router_external(self) -> dict[str, Any]:
+        return {**network_schema_dict(), "is_router_external": True}
 
-    @case(tags=("attr", "read"))
-    @parametrize(value=("is_shared", "is_private"))
-    def case_visibility(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_is_default(self) -> dict[str, Any]:
+        return {**network_schema_dict(), "is_default": True}
 
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_mtu(self) -> dict[str, Any]:
+        return {**network_schema_dict(), "mtu": random_positive_int()}
 
-class CaseInvalidAttr:
-    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
-    @parametrize(value=("name", "uuid"))
-    def case_missing_mandatory(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_proxy_host(self) -> dict[str, Any]:
+        return {**network_schema_dict(), "proxy_host": random_lower_string()}
 
-    @case(tags=("invalid_attr", "read_public", "read"))
-    @parametrize(value=("uid",))
-    def case_missing_uid(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_proxy_user(self) -> dict[str, Any]:
+        return {**network_schema_dict(), "proxy_user": random_lower_string()}
 
-    @case(tags=("invalid_attr", "base", "update", "read"))
-    @parametrize(value=("mtu",))
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_tags(self) -> dict[str, Any]:
+        return {**network_schema_dict(), "tags": [random_lower_string()]}
 
+    @case(tags=("dict", "valid"))
+    def case_is_shared(self) -> dict[str, Any]:
+        return {**network_schema_dict(), "is_shared": True}
 
-class CaseClass:
+    @case(tags=("dict", "valid"))
+    def case_is_private(self) -> dict[str, Any]:
+        return {**network_schema_dict(), "is_shared": False}
+
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_name(self) -> tuple[dict[str, Any], Literal["name"]]:
+        d = network_schema_dict()
+        d.pop("name")
+        return d, "name"
+
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_uuid(self) -> tuple[dict[str, Any], Literal["uuid"]]:
+        d = network_schema_dict()
+        d.pop("uuid")
+        return d, "uuid"
+
+    @case(tags=("dict", "invalid", "base", "update"))
+    def case_invalid_mtu(self) -> tuple[dict[str, Any], Literal["mtu"]]:
+        d = network_schema_dict()
+        d["mtu"] = -1
+        return d, "mtu"
+
     @case(tags="class")
     def case_base_class(self) -> type[NetworkBase]:
         return NetworkBase
@@ -70,15 +84,24 @@ class CaseClass:
         return SharedNetworkCreate
 
 
-class CaseModel:
+class CaseNetworkModel:
     @case(tags="model")
-    def case_private_network(self) -> type[PrivateNetwork]:
-        return PrivateNetwork
+    @parametrize_with_cases(
+        "data", cases=CaseNetworkSchema, has_tag=("dict", "valid", "base")
+    )
+    def case_network_model(self, data: dict[str, Any]) -> Network:
+        return Network(**NetworkBase(**data).dict()).save()
 
     @case(tags="model")
-    def case_shared_network(self) -> type[SharedNetwork]:
-        return SharedNetwork
+    @parametrize_with_cases(
+        "data", cases=CaseNetworkSchema, has_tag=("dict", "valid", "base")
+    )
+    def case_private_network_class(self, data: dict[str, Any]) -> PrivateNetwork:
+        return PrivateNetwork(**PrivateNetworkCreate(**data).dict()).save()
 
     @case(tags="model")
-    def case_network(self) -> type[Network]:
-        return Network
+    @parametrize_with_cases(
+        "data", cases=CaseNetworkSchema, has_tag=("dict", "valid", "base")
+    )
+    def case_shared_network_class(self, data: dict[str, Any]) -> SharedNetwork:
+        return SharedNetwork(**SharedNetworkCreate(**data).dict()).save()

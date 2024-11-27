@@ -22,7 +22,6 @@ from tests.utils import (
     random_float,
     random_lower_string,
     random_non_negative_int,
-    random_positive_int,
     random_start_end_dates,
     random_url,
 )
@@ -111,15 +110,6 @@ def identity_provider_invalid_dict(
     return data
 
 
-def image_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("name", "uuid", "uid"):
-            data.pop(k)
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
 def location_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in ("description", "site"):
@@ -147,38 +137,6 @@ def location_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, An
             data["longitude"] = -181
         elif k in ("over_max_longitude",):
             data["longitude"] = 181
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def network_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("description", "name", "proxy_host", "proxy_user"):
-            data[k] = random_lower_string()
-        elif k in ("uuid",):
-            data[k] = uuid4()
-        elif k in ("mtu",):
-            data[k] = random_positive_int()
-        elif k in ("is_router_external", "is_default"):
-            data[k] = True
-        elif k in ("tags",):
-            data[k] = [random_lower_string()]
-        elif k in ("is_shared",):
-            data["is_shared"] = True
-        elif k in ("is_private",):
-            data["is_shared"] = False
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def network_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("name", "uuid", "uid"):
-            data.pop(k)
-        elif k in ("mtu",):
-            data["mtu"] = -1
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data
