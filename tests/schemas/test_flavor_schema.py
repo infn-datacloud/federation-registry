@@ -1,3 +1,6 @@
+from typing import Any
+from uuid import uuid4
+
 import pytest
 from pydantic import ValidationError
 from pytest_cases import parametrize_with_cases
@@ -19,7 +22,6 @@ from fed_reg.models import (
     BaseReadPrivate,
     BaseReadPublic,
 )
-from tests.models.utils import flavor_model_dict
 from tests.schemas.utils import flavor_schema_dict
 
 
@@ -49,121 +51,109 @@ def test_classes_inheritance() -> None:
     assert issubclass(SharedFlavorCreate, BaseNodeCreate)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_base_public(attr: str) -> None:
-    """Test FlavorBasePublic class' attribute values."""
-    d = flavor_schema_dict(attr)
-    item = FlavorBasePublic(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid").hex
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_base_public(data: dict[str, Any]) -> None:
+    """Test FlavorBasePublic class' mandatory and optional attributes."""
+    item = FlavorBasePublic(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
+    assert item.uuid == data.get("uuid").hex
 
 
 @parametrize_with_cases("flavor_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base"))
 def test_base(
     flavor_cls: type[FlavorBase] | type[PrivateFlavorCreate] | type[SharedFlavorCreate],
-    attr: str,
+    data: dict[str, Any],
 ) -> None:
-    """Test class' attribute values.
+    """Test Flavor class' mandatory and optional attributes.
 
     Execute this test on FlavorBase, PrivateFlavorCreate and SharedFlavorCreate.
     """
-    d = flavor_schema_dict(attr)
-    item = flavor_cls(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid").hex
-    assert item.disk == d.get("disk", 0)
-    assert item.ram == d.get("ram", 0)
-    assert item.vcpus == d.get("vcpus", 0)
-    assert item.swap == d.get("swap", 0)
-    assert item.ephemeral == d.get("ephemeral", 0)
-    assert item.gpus == d.get("gpus", 0)
-    assert item.infiniband == d.get("infiniband", False)
-    assert item.gpu_model == d.get("gpu_model", None)
-    assert item.gpu_vendor == d.get("gpu_vendor", None)
-    assert item.local_storage == d.get("local_storage", None)
+    item = flavor_cls(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
+    assert item.uuid == data.get("uuid").hex
+    assert item.disk == data.get("disk", 0)
+    assert item.ram == data.get("ram", 0)
+    assert item.vcpus == data.get("vcpus", 0)
+    assert item.swap == data.get("swap", 0)
+    assert item.ephemeral == data.get("ephemeral", 0)
+    assert item.gpus == data.get("gpus", 0)
+    assert item.infiniband == data.get("infiniband", False)
+    assert item.gpu_model == data.get("gpu_model", None)
+    assert item.gpu_vendor == data.get("gpu_vendor", None)
+    assert item.local_storage == data.get("local_storage", None)
+
+    if isinstance(item, PrivateFlavorCreate):
+        assert not item.is_shared
+    if isinstance(item, SharedFlavorCreate):
+        assert item.is_shared
 
 
-def test_create_private() -> None:
-    """Test PrivateFlavorCreate class' attribute values."""
-    item = PrivateFlavorCreate(**flavor_schema_dict())
-    assert item.is_shared is False
-
-
-def test_create_shared() -> None:
-    """Test SharedFlavorCreate class' attribute values."""
-    item = SharedFlavorCreate(**flavor_schema_dict())
-    assert item.is_shared is True
-
-
-@parametrize_with_cases("attr", has_tag=("attr", "update"))
-def test_update(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "update"))
+def test_update(data: dict[str, Any]) -> None:
     """Test FlavorUpdate class' attribute values."""
-    d = flavor_schema_dict(attr)
-    item = FlavorUpdate(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name", None)
-    assert item.uuid == (d.get("uuid").hex if d.get("uuid", None) else None)
-    assert item.disk == d.get("disk", 0)
-    assert item.ram == d.get("ram", 0)
-    assert item.vcpus == d.get("vcpus", 0)
-    assert item.swap == d.get("swap", 0)
-    assert item.ephemeral == d.get("ephemeral", 0)
-    assert item.gpus == d.get("gpus", 0)
-    assert item.infiniband == d.get("infiniband", False)
-    assert item.gpu_model == d.get("gpu_model", None)
-    assert item.gpu_vendor == d.get("gpu_vendor", None)
-    assert item.local_storage == d.get("local_storage", None)
+    item = FlavorUpdate(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name", None)
+    assert item.uuid == (data.get("uuid").hex if data.get("uuid", None) else None)
+    assert item.disk == data.get("disk", 0)
+    assert item.ram == data.get("ram", 0)
+    assert item.vcpus == data.get("vcpus", 0)
+    assert item.swap == data.get("swap", 0)
+    assert item.ephemeral == data.get("ephemeral", 0)
+    assert item.gpus == data.get("gpus", 0)
+    assert item.infiniband == data.get("infiniband", False)
+    assert item.gpu_model == data.get("gpu_model", None)
+    assert item.gpu_vendor == data.get("gpu_vendor", None)
+    assert item.local_storage == data.get("local_storage", None)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_read_public(data: dict[str, Any]) -> None:
     """Test FlavorReadPublic class' attribute values."""
-    d = flavor_schema_dict(attr, read=True)
-    item = FlavorReadPublic(**d)
+    uid = uuid4()
+    item = FlavorReadPublic(**data, uid=uid)
     assert item.schema_type == "public"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
-    assert item.uuid == d.get("uuid").hex
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
+    assert item.uuid == data.get("uuid").hex
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_read(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_read(data: dict[str, Any]) -> None:
     """Test FlavorRead class' attribute values.
 
     Consider also cases where we need to set the is_shared attribute (usually populated
     by the correct model).
     """
-    d = flavor_schema_dict(attr, read=True)
-    item = FlavorRead(**d)
+    uid = uuid4()
+    item = FlavorRead(**data, uid=uid)
     assert item.schema_type == "private"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name", None)
-    assert item.uuid == (d.get("uuid").hex if d.get("uuid") else None)
-    assert item.disk == d.get("disk", 0)
-    assert item.ram == d.get("ram", 0)
-    assert item.vcpus == d.get("vcpus", 0)
-    assert item.swap == d.get("swap", 0)
-    assert item.ephemeral == d.get("ephemeral", 0)
-    assert item.gpus == d.get("gpus", 0)
-    assert item.infiniband == d.get("infiniband", False)
-    assert item.gpu_model == d.get("gpu_model", None)
-    assert item.gpu_vendor == d.get("gpu_vendor", None)
-    assert item.local_storage == d.get("local_storage", None)
-    assert item.is_shared == d.get("is_shared", None)
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name", None)
+    assert item.uuid == (data.get("uuid").hex if data.get("uuid") else None)
+    assert item.disk == data.get("disk", 0)
+    assert item.ram == data.get("ram", 0)
+    assert item.vcpus == data.get("vcpus", 0)
+    assert item.swap == data.get("swap", 0)
+    assert item.ephemeral == data.get("ephemeral", 0)
+    assert item.gpus == data.get("gpus", 0)
+    assert item.infiniband == data.get("infiniband", False)
+    assert item.gpu_model == data.get("gpu_model", None)
+    assert item.gpu_vendor == data.get("gpu_vendor", None)
+    assert item.local_storage == data.get("local_storage", None)
+    assert item.is_shared == data.get("is_shared", None)
 
 
-@parametrize_with_cases("flavor_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
+@parametrize_with_cases("model", has_tag="model")
 def test_read_public_from_orm(
-    flavor_cls: type[Flavor] | type[PrivateFlavor] | type[SharedFlavor], attr: str
+    model: Flavor | PrivateFlavor | SharedFlavor,
 ) -> None:
     """Use the from_orm function of FlavorReadPublic to read data from an ORM."""
-    model = flavor_cls(**flavor_model_dict(attr)).save()
     item = FlavorReadPublic.from_orm(model)
     assert item.schema_type == "public"
     assert item.uid == model.uid
@@ -172,13 +162,11 @@ def test_read_public_from_orm(
     assert item.uuid == model.uuid
 
 
-@parametrize_with_cases("flavor_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
+@parametrize_with_cases("model", has_tag="model")
 def test_read_from_orm(
-    flavor_cls: type[Flavor] | type[PrivateFlavor] | type[SharedFlavor], attr: str
+    model: Flavor | PrivateFlavor | SharedFlavor,
 ) -> None:
     """Use the from_orm function of FlavorRead to read data from an ORM."""
-    model = flavor_cls(**flavor_model_dict(attr)).save()
     item = FlavorRead.from_orm(model)
     assert item.schema_type == "private"
     assert item.uid == model.uid
@@ -201,51 +189,67 @@ def test_read_from_orm(
         assert item.is_shared is None
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_base_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base_public"))
+def test_invalid_base_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for FlavorBasePublic."""
-    with pytest.raises(ValueError):
-        FlavorBasePublic(**flavor_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for FlavorBasePublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        FlavorBasePublic(**data)
 
 
 @parametrize_with_cases("flavor_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base"))
 def test_invalid_base(
     flavor_cls: type[FlavorBase] | type[PrivateFlavorCreate] | type[SharedFlavorCreate],
+    data: dict[str, Any],
     attr: str,
 ) -> None:
     """Test invalid attributes for base and create.
 
     Apply to FlavorBase, PrivateFlavorCreate and SharedFlavorCreate.
     """
-    with pytest.raises(ValueError):
-        flavor_cls(**flavor_schema_dict(attr, valid=False))
+    if attr in ("gpu_model", "gpu_vendor"):
+        attr = "__root__"
+    err_msg = rf"1 validation error for {flavor_cls.__name__}\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        flavor_cls(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "update"))
-def test_invalid_update(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "update"))
+def test_invalid_update(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for FlavorUpdate."""
-    with pytest.raises(ValueError):
-        FlavorUpdate(**flavor_schema_dict(attr, valid=False))
+    if attr in ("gpu_model", "gpu_vendor"):
+        attr = "__root__"
+    err_msg = rf"1 validation error for FlavorUpdate\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        FlavorUpdate(**data)
 
 
 def test_invalid_create_visibility() -> None:
     """Test invalid attributes for PrivateFlavorCreate and SharedFlavorCreate."""
-    with pytest.raises(ValidationError):
+    err_msg = r"1 validation error for PrivateFlavorCreate\sis_shared"
+    with pytest.raises(ValidationError, match=err_msg):
         PrivateFlavorCreate(**flavor_schema_dict(), is_shared=True)
-    with pytest.raises(ValidationError):
+    err_msg = r"1 validation error for SharedFlavorCreate\sis_shared"
+    with pytest.raises(ValidationError, match=err_msg):
         SharedFlavorCreate(**flavor_schema_dict(), is_shared=False)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "read_public"))
-def test_invalid_read_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read_public"))
+def test_invalid_read_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for FlavorReadPublic."""
-    with pytest.raises(ValueError):
-        FlavorReadPublic(**flavor_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for FlavorReadPublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        FlavorReadPublic(**data, uid=uid)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "read"))
-def test_invalid_read(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read"))
+def test_invalid_read(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for FlavorRead."""
-    with pytest.raises(ValueError):
-        FlavorRead(**flavor_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    if attr in ("gpu_model", "gpu_vendor"):
+        attr = "__root__"
+    err_msg = rf"1 validation error for FlavorRead\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        FlavorRead(**data, uid=uid)

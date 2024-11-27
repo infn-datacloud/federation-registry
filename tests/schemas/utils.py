@@ -119,47 +119,6 @@ def user_group_schema_dict(read: bool = False) -> dict[str, Any]:
     return data
 
 
-def flavor_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    """Return a valid dict for flavor."""
-    for k in args:
-        if k in (
-            "description",
-            "name",
-            "gpu_model",
-            "gpu_vendor",
-            "local_storage",
-        ):
-            data[k] = random_lower_string()
-            if k.startswith("gpu_"):
-                data["gpus"] = 1
-        elif k in ("uuid",):
-            data[k] = uuid4()
-        elif k in ("disk", "ram", "vcpus", "swap", "ephemeral", "gpus"):
-            data[k] = random_positive_int()
-        elif k in ("infiniband",):
-            data[k] = True
-        elif k in ("is_shared",):
-            data["is_shared"] = True
-        elif k in ("is_private",):
-            data["is_shared"] = False
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def flavor_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("name", "uuid", "uid"):
-            data.pop(k)
-        elif k in ("disk", "ram", "vcpus", "swap", "ephemeral", "gpus"):
-            data[k] = -1
-        elif k in ("gpu_model", "gpu_vendor"):
-            data[k] = random_lower_string()
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
 def identity_provider_valid_dict(
     data: dict[str, Any], *args, **kwargs
 ) -> dict[str, Any]:
