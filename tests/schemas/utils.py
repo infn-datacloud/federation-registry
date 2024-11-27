@@ -277,27 +277,6 @@ def sla_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     return data
 
 
-def user_group_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("description", "name"):
-            data[k] = random_lower_string()
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def user_group_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("name", "uid"):
-            data.pop(k)
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-# Schema specifics # TODO Move to schemas.utils?
-
-
 def random_country() -> str:
     """Return random country."""
     return choice([i.name for i in countries])

@@ -1,3 +1,6 @@
+from typing import Any
+from uuid import uuid4
+
 import pytest
 from pytest_cases import parametrize_with_cases
 
@@ -17,8 +20,6 @@ from fed_reg.user_group.schemas import (
     UserGroupReadPublic,
     UserGroupUpdate,
 )
-from tests.models.utils import user_group_model_dict
-from tests.schemas.utils import user_group_schema_dict
 
 
 def test_classes_inheritance() -> None:
@@ -44,68 +45,63 @@ def test_classes_inheritance() -> None:
     assert issubclass(UserGroupCreate, BaseNodeCreate)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_base_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_base_public(data: dict[str, Any]) -> None:
     """Test UserGroupBasePublic class' attribute values."""
-    d = user_group_schema_dict(attr)
-    item = UserGroupBasePublic(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    item = UserGroupBasePublic(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
 
 @parametrize_with_cases("user_group_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base"))
 def test_base(
     user_group_cls: type[UserGroupBase] | type[UserGroupCreate],
-    attr: str,
+    data: dict[str, Any],
 ) -> None:
     """Test class' attribute values.
 
     Execute this test on UserGroupBase, PrivateUserGroupCreate
     and SharedUserGroupCreate.
     """
-    d = user_group_schema_dict(attr)
-    item = user_group_cls(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    item = user_group_cls(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "update"))
-def test_update(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "update"))
+def test_update(data: dict[str, Any]) -> None:
     """Test UserGroupUpdate class' attribute values."""
-    d = user_group_schema_dict(attr)
-    item = UserGroupUpdate(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name", None)
+    item = UserGroupUpdate(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name", None)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_read_public(data: dict[str, Any]) -> None:
     """Test UserGroupReadPublic class' attribute values."""
-    d = user_group_schema_dict(attr, read=True)
-    item = UserGroupReadPublic(**d)
+    uid = uuid4()
+    item = UserGroupReadPublic(**data, uid=uid)
     assert item.schema_type == "public"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_read(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_read(data: dict[str, Any]) -> None:
     """Test UserGroupRead class' attribute values."""
-    d = user_group_schema_dict(attr, read=True)
-    item = UserGroupRead(**d)
+    uid = uuid4()
+    item = UserGroupRead(**data, uid=uid)
     assert item.schema_type == "private"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
 
-@parametrize_with_cases("user_group_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public_from_orm(user_group_cls: type[UserGroup], attr: str) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_public_from_orm(model: UserGroup) -> None:
     """Use the from_orm function of UserGroupReadPublic to read data from ORM."""
-    model = user_group_cls(**user_group_model_dict(attr)).save()
     item = UserGroupReadPublic.from_orm(model)
     assert item.schema_type == "public"
     assert item.uid == model.uid
@@ -113,11 +109,9 @@ def test_read_public_from_orm(user_group_cls: type[UserGroup], attr: str) -> Non
     assert item.name == model.name
 
 
-@parametrize_with_cases("user_group_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
-def test_read_from_orm(user_group_cls: type[UserGroup], attr: str) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_from_orm(model: UserGroup) -> None:
     """Use the from_orm function of UserGroupRead to read data from an ORM."""
-    model = user_group_cls(**user_group_model_dict(attr)).save()
     item = UserGroupRead.from_orm(model)
     assert item.schema_type == "private"
     assert item.uid == model.uid
@@ -125,17 +119,19 @@ def test_read_from_orm(user_group_cls: type[UserGroup], attr: str) -> None:
     assert item.name == model.name
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_base_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base_public"))
+def test_invalid_base_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for UserGroupBasePublic."""
-    with pytest.raises(ValueError):
-        UserGroupBasePublic(**user_group_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for UserGroupBasePublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        UserGroupBasePublic(**data)
 
 
 @parametrize_with_cases("user_group_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base"))
 def test_invalid_base(
     user_group_cls: type[UserGroupBase] | type[UserGroupCreate],
+    data: dict[str, Any],
     attr: str,
 ) -> None:
     """Test invalid attributes for base and create.
@@ -143,26 +139,32 @@ def test_invalid_base(
     Apply to UserGroupBase, PrivateUserGroupCreate and
     SharedUserGroupCreate.
     """
-    with pytest.raises(ValueError):
-        user_group_cls(**user_group_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for {user_group_cls.__name__}\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        user_group_cls(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "update"))
-def test_invalid_update(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "update"))
+def test_invalid_update(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for UserGroupUpdate."""
-    with pytest.raises(ValueError):
-        UserGroupUpdate(**user_group_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for UserGroupUpdate\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        UserGroupUpdate(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_read_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read_public"))
+def test_invalid_read_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for UserGroupReadPublic."""
-    with pytest.raises(ValueError):
-        UserGroupReadPublic(**user_group_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for UserGroupReadPublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        UserGroupReadPublic(**data, uid=uid)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
-def test_invalid_read(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read"))
+def test_invalid_read(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for UserGroupRead."""
-    with pytest.raises(ValueError):
-        UserGroupRead(**user_group_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for UserGroupRead\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        UserGroupRead(**data, uid=uid)
