@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -13,39 +14,32 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.sla.models import SLA
 from fed_reg.user_group.models import UserGroup
-from tests.models.utils import (
-    identity_provider_model_dict,
-    sla_model_dict,
-    user_group_model_dict,
-)
+from tests.models.utils import identity_provider_model_dict, sla_model_dict
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_user_group_attr(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_user_group_attr(data: dict[str, Any]) -> None:
     """Test attribute values (default and set)."""
-    d = user_group_model_dict(attr)
-    item = UserGroup(**d)
+    item = UserGroup(**data)
     assert isinstance(item, UserGroup)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
     saved = item.save()
     assert saved.element_id_property
     assert saved.uid == item.uid
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
-def test_user_group_missing_mandatory_attr(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
+def test_user_group_missing_mandatory_attr(data: dict[str, Any], attr: str) -> None:
     """Test UserGroup required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     """
     err_msg = f"property '{attr}' on objects of class {UserGroup.__name__}"
-    d = user_group_model_dict()
-    d.pop(attr)
     with pytest.raises(RequiredProperty, match=err_msg):
-        UserGroup(**d).save()
+        UserGroup(**data).save()
 
 
 def test_rel_def(user_group_model: UserGroup) -> None:
@@ -70,7 +64,7 @@ def test_rel_def(user_group_model: UserGroup) -> None:
 
 
 def test_required_rel(user_group_model: UserGroup) -> None:
-    """Test Model required relationships.
+    """Test UserGroup required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.
@@ -116,7 +110,7 @@ def test_multiple_linked_identity_provider(user_group_model: UserGroup) -> None:
 
 
 def test_optional_rel(user_group_model: UserGroup) -> None:
-    """Test Model optional relationships."""
+    """Test UserGroup optional relationships."""
     assert len(user_group_model.slas.all()) == 0
     assert user_group_model.slas.single() is None
 

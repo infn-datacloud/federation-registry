@@ -13,8 +13,8 @@ from tests.models.utils import region_model_dict, service_model_dict
 from tests.utils import random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("dict", "valid", "mandatory"))
+class CaseRegionModel:
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return region_model_dict()
 

@@ -7,8 +7,8 @@ from tests.models.utils import image_model_dict
 from tests.utils import random_lower_string
 
 
-class CaseImageDict:
-    @case(tags=("dict", "valid", "mandatory"))
+class CaseImageModel:
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return image_model_dict()
 

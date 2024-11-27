@@ -7,7 +7,7 @@ from tests.utils import random_lower_string
 
 
 class CaseIdentityProviderModel:
-    @case(tags=("dict", "valid", "mandatory"))
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return identity_provider_model_dict()
 

@@ -7,8 +7,8 @@ from tests.models.utils import network_model_dict
 from tests.utils import random_int, random_lower_string
 
 
-class CaseNetworkDict:
-    @case(tags=("dict", "valid", "mandatory"))
+class CaseNetworkModel:
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return network_model_dict()
 

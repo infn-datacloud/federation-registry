@@ -8,7 +8,7 @@ from tests.utils import random_int, random_lower_string
 
 
 class CaseFlavorModel:
-    @case(tags=("dict", "valid", "mandatory"))
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return flavor_model_dict()
 

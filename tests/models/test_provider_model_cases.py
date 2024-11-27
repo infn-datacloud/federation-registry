@@ -6,8 +6,8 @@ from tests.models.utils import provider_model_dict
 from tests.utils import random_lower_string
 
 
-class CaseProviderModelDict:
-    @case(tags=("dict", "valid", "mandatory"))
+class CaseProviderModel:
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return provider_model_dict()
 

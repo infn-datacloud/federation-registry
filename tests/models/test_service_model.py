@@ -202,7 +202,7 @@ def test_required_rel(
     | NetworkService
     | ObjectStoreService,
 ) -> None:
-    """Test Model required relationships.
+    """Test Service required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.

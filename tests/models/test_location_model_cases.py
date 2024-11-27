@@ -6,8 +6,8 @@ from tests.models.utils import location_model_dict
 from tests.utils import random_float, random_lower_string
 
 
-class CaseLocationDictAttr:
-    @case(tags=("dict", "valid", "mandatory"))
+class CaseLocationModel:
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return location_model_dict()
 

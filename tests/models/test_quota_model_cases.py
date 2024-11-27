@@ -13,8 +13,8 @@ from tests.models.utils import quota_model_dict
 from tests.utils import random_int, random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("dict", "valid", "mandatory"))
+class CaseQuotaModel:
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return quota_model_dict()
 
@@ -87,45 +87,49 @@ class CaseAttr:
         return {**quota_model_dict(), "objects": random_int()}
 
     @case(tags="class")
-    def case_quota_cls(self) -> type[Quota]:
+    def case_quota(self) -> type[Quota]:
         return Quota
 
     @case(tags=("class", "derived"))
-    def case_block_storage_quota_cls(self) -> type[BlockStorageQuota]:
+    def case_block_storage_quota(self) -> type[BlockStorageQuota]:
         return BlockStorageQuota
 
     @case(tags=("class", "derived"))
-    def case_compute_quota_cls(self) -> type[ComputeQuota]:
+    def case_compute_quota(self) -> type[ComputeQuota]:
         return ComputeQuota
 
     @case(tags=("class", "derived"))
-    def case_network_quota_cls(self) -> type[NetworkQuota]:
+    def case_network_quota(self) -> type[NetworkQuota]:
         return NetworkQuota
 
     @case(tags=("class", "derived"))
-    def case_object_store_quota_cls(self) -> type[ObjectStoreQuota]:
+    def case_object_store_quota(self) -> type[ObjectStoreQuota]:
         return ObjectStoreQuota
 
     @case(tags="model")
-    def case_quota(self, quota_model: Quota) -> Quota:
+    def case_quota_model(self, quota_model: Quota) -> Quota:
         return quota_model
 
     @case(tags=("model", "derived"))
-    def case_block_storage_quota(
+    def case_block_storage_quota_model(
         self, block_storage_quota_model: BlockStorageQuota
     ) -> BlockStorageQuota:
         return block_storage_quota_model
 
     @case(tags=("model", "derived"))
-    def case_compute_quota(self, compute_quota_model: ComputeQuota) -> ComputeQuota:
+    def case_compute_quota_model(
+        self, compute_quota_model: ComputeQuota
+    ) -> ComputeQuota:
         return compute_quota_model
 
     @case(tags=("model", "derived"))
-    def case_network_quota(self, network_quota_model: NetworkQuota) -> NetworkQuota:
+    def case_network_quota_model(
+        self, network_quota_model: NetworkQuota
+    ) -> NetworkQuota:
         return network_quota_model
 
     @case(tags=("model", "derived"))
-    def case_object_store_quota(
+    def case_object_store_quota_model(
         self, object_store_quota_model: ObjectStoreQuota
     ) -> ObjectStoreQuota:
         return object_store_quota_model

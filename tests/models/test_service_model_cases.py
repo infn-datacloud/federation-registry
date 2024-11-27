@@ -23,8 +23,8 @@ from tests.models.utils import (
 from tests.utils import random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("dict", "valid", "mandatory"))
+class CaseServiceModel:
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return service_model_dict()
 
@@ -45,59 +45,59 @@ class CaseAttr:
         return d, "name"
 
     @case(tags="class")
-    def case_service_cls(self) -> type[Service]:
+    def case_service(self) -> type[Service]:
         return Service
 
     @case(tags=("class", "derived"))
-    def case_block_storage_service_cls(self) -> type[BlockStorageService]:
+    def case_block_storage_service(self) -> type[BlockStorageService]:
         return BlockStorageService
 
     @case(tags=("class", "derived"))
-    def case_compute_service_cls(self) -> type[ComputeService]:
+    def case_compute_service(self) -> type[ComputeService]:
         return ComputeService
 
     @case(tags=("class", "derived"))
-    def case_identity_service_cls(self) -> type[IdentityService]:
+    def case_identity_service(self) -> type[IdentityService]:
         return IdentityService
 
     @case(tags=("class", "derived"))
-    def case_network_service_cls(self) -> type[NetworkService]:
+    def case_network_service(self) -> type[NetworkService]:
         return NetworkService
 
     @case(tags=("class", "derived"))
-    def case_object_store_service_cls(self) -> type[ObjectStoreService]:
+    def case_object_store_service(self) -> type[ObjectStoreService]:
         return ObjectStoreService
 
     @case(tags="model")
-    def case_service(self, service_model: Service) -> Service:
+    def case_service_model(self, service_model: Service) -> Service:
         return service_model
 
     @case(tags=("model", "derived", "with_quotas"))
-    def case_block_storage_service(
+    def case_block_storage_service_model(
         self, block_storage_service_model: BlockStorageService
     ) -> BlockStorageService:
         return block_storage_service_model
 
     @case(tags=("model", "derived", "with_quotas"))
-    def case_compute_service(
+    def case_compute_service_model(
         self, compute_service_model: ComputeService
     ) -> ComputeService:
         return compute_service_model
 
     @case(tags=("model", "derived"))
-    def case_identity_service(
+    def case_identity_service_model(
         self, identity_service_model: IdentityService
     ) -> IdentityService:
         return identity_service_model
 
     @case(tags=("model", "derived", "with_quotas"))
-    def case_network_service(
+    def case_network_service_model(
         self, network_service_model: NetworkService
     ) -> NetworkService:
         return network_service_model
 
     @case(tags=("model", "derived", "with_quotas"))
-    def case_object_store_service(
+    def case_object_store_service_model(
         self, object_store_service_model: ObjectStoreService
     ) -> ObjectStoreService:
         return object_store_service_model

@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -12,37 +13,34 @@ from pytest_cases import parametrize_with_cases
 from fed_reg.project.models import Project
 from fed_reg.sla.models import SLA
 from fed_reg.user_group.models import UserGroup
-from tests.models.utils import project_model_dict, sla_model_dict, user_group_model_dict
+from tests.models.utils import project_model_dict, user_group_model_dict
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_sla_attr(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_sla_valid_attr(data: dict[str, Any]) -> None:
     """Test attribute values (default and set)."""
-    d = sla_model_dict(attr)
-    item = SLA(**d)
+    item = SLA(**data)
     assert isinstance(item, SLA)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.doc_uuid == d.get("doc_uuid")
-    assert item.start_date == d.get("start_date")
-    assert item.end_date == d.get("end_date")
+    assert item.description == data.get("description", "")
+    assert item.doc_uuid == data.get("doc_uuid")
+    assert item.start_date == data.get("start_date")
+    assert item.end_date == data.get("end_date")
 
     saved = item.save()
     assert saved.element_id_property
     assert saved.uid == item.uid
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
-def test_missing_mandatory_attr(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
+def test_missing_mandatory_attr(data: dict[str, Any], attr: str) -> None:
     """Test SLA required attributes.
 
     Creating a model without required values raises a RequiredProperty error.
     """
     err_msg = f"property '{attr}' on objects of class {SLA.__name__}"
-    d = sla_model_dict()
-    d.pop(attr)
     with pytest.raises(RequiredProperty, match=err_msg):
-        SLA(**d).save()
+        SLA(**data).save()
 
 
 def test_rel_def(sla_model: SLA) -> None:
@@ -65,7 +63,7 @@ def test_rel_def(sla_model: SLA) -> None:
 
 
 def test_required_rel(sla_model: SLA) -> None:
-    """Test Model required relationships.
+    """Test SLA required relationships.
 
     A model without required relationships can exist but when querying those values, it
     raises a CardinalityViolation error.

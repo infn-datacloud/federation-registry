@@ -12,8 +12,8 @@ from tests.models.utils import project_model_dict, quota_model_dict
 from tests.utils import random_lower_string
 
 
-class CaseProjectModelDict:
-    @case(tags=("dict", "valid", "mandatory"))
+class CaseProjectModel:
+    @case(tags=("dict", "valid"))
     def case_mandatory(self) -> dict[str, Any]:
         return project_model_dict()
 
