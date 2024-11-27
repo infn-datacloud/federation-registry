@@ -1,6 +1,13 @@
+from enum import Enum
+from random import choice, randint, random
 from typing import Any
 from uuid import uuid4
 
+from pycountry import countries
+
+from fed_reg.image.enum import ImageOS
+from fed_reg.models import BaseNodeRead
+from fed_reg.provider.enum import ProviderStatus, ProviderType
 from fed_reg.service.enum import (
     BlockStorageServiceName,
     ComputeServiceName,
@@ -9,18 +16,13 @@ from fed_reg.service.enum import (
     ObjectStoreServiceName,
 )
 from tests.utils import (
-    random_country,
     random_date_after,
     random_date_before,
     random_email,
     random_float,
-    random_image_os_type,
     random_lower_string,
     random_non_negative_int,
     random_positive_int,
-    random_provider_status,
-    random_provider_type,
-    random_service_name,
     random_start_end_dates,
     random_url,
 )
@@ -30,93 +32,57 @@ def auth_method_schema_dict() -> dict[str, Any]:
     return {"idp_name": random_lower_string(), "protocol": random_lower_string()}
 
 
-def flavor_schema_dict(read: bool = False) -> dict[str, Any]:
+def flavor_schema_dict() -> dict[str, Any]:
     """Return a dict with the flavor pydantic mandatory attributes.
 
     If 'read' is true add the 'uid' attribute.
     """
-    data = {"name": random_lower_string(), "uuid": uuid4()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+    return {"name": random_lower_string(), "uuid": uuid4()}
 
 
-def identity_provider_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {"endpoint": random_url(), "group_claim": random_lower_string()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def identity_provider_schema_dict() -> dict[str, Any]:
+    return {"endpoint": random_url(), "group_claim": random_lower_string()}
 
 
-def image_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {"name": random_lower_string(), "uuid": uuid4()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def image_schema_dict() -> dict[str, Any]:
+    return {"name": random_lower_string(), "uuid": uuid4()}
 
 
-def location_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {"site": random_lower_string(), "country": random_country()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def location_schema_dict() -> dict[str, Any]:
+    return {"site": random_lower_string(), "country": random_country()}
 
 
-def network_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {"name": random_lower_string(), "uuid": uuid4()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def network_schema_dict() -> dict[str, Any]:
+    return {"name": random_lower_string(), "uuid": uuid4()}
 
 
-def project_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {"name": random_lower_string(), "uuid": uuid4()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def project_schema_dict() -> dict[str, Any]:
+    return {"name": random_lower_string(), "uuid": uuid4()}
 
 
-def provider_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {"name": random_lower_string(), "type": random_provider_type()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def provider_schema_dict() -> dict[str, Any]:
+    return {"name": random_lower_string(), "type": random_provider_type()}
 
 
-def quota_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def quota_schema_dict() -> dict[str, Any]:
+    return {}
 
 
-def region_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {"name": random_lower_string()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def region_schema_dict() -> dict[str, Any]:
+    return {"name": random_lower_string()}
 
 
-def service_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {"endpoint": random_lower_string(), "name": random_lower_string()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def service_schema_dict() -> dict[str, Any]:
+    return {"endpoint": random_lower_string(), "name": random_lower_string()}
 
 
-def sla_schema_dict(read: bool = False) -> dict[str, Any]:
+def sla_schema_dict() -> dict[str, Any]:
     start_date, end_date = random_start_end_dates()
-    data = {"doc_uuid": uuid4(), "start_date": start_date, "end_date": end_date}
-    if read:
-        data["uid"] = uuid4()
-    return data
+    return {"doc_uuid": uuid4(), "start_date": start_date, "end_date": end_date}
 
 
-def user_group_schema_dict(read: bool = False) -> dict[str, Any]:
-    data = {"name": random_lower_string()}
-    if read:
-        data["uid"] = uuid4()
-    return data
+def user_group_schema_dict() -> dict[str, Any]:
+    return {"name": random_lower_string()}
 
 
 def identity_provider_valid_dict(
@@ -140,34 +106,6 @@ def identity_provider_invalid_dict(
             data.pop(k)
         elif k in ("not_an_endpoint",):
             data["country"] = random_lower_string()
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def image_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in (
-            "description",
-            "name",
-            "os_distro",
-            "os_version",
-            "architecture",
-            "kernel_id",
-        ):
-            data[k] = random_lower_string()
-        elif k in ("uuid",):
-            data[k] = uuid4()
-        elif k in ("cuda_support", "gpu_driver"):
-            data[k] = True
-        elif k in ("os_type",):
-            data[k] = random_image_os_type()
-        elif k in ("tags",):
-            data[k] = [random_lower_string()]
-        elif k in ("is_shared",):
-            data["is_shared"] = True
-        elif k in ("is_private",):
-            data["is_shared"] = False
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data
@@ -435,3 +373,49 @@ def user_group_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, 
         else:
             raise AttributeError(f"attribute {k} not found in class definition")
     return data
+
+
+# Schema specifics # TODO Move to schemas.utils?
+
+
+def random_country() -> str:
+    """Return random country."""
+    return choice([i.name for i in countries])
+
+
+def random_latitude() -> float:
+    """Return a valid latitude value."""
+    return randint(-90, 89) + random()
+
+
+def random_longitude() -> float:
+    """Return a valid longitude value."""
+    return randint(-180, 179) + random()
+
+
+def random_provider_type() -> ProviderType:
+    return choice([i for i in ProviderType])
+
+
+def random_provider_status() -> ProviderStatus:
+    return choice([i for i in ProviderStatus])
+
+
+def random_service_name(enum_cls: Enum) -> Any:
+    return choice([i for i in enum_cls])
+
+
+def random_image_os_type() -> ImageOS:
+    return choice([i for i in ImageOS])
+
+
+def detect_public_extended_details(read_class: type[BaseNodeRead]) -> tuple[bool, bool]:
+    """From class name detect if it public or not, extended or not."""
+    cls_name = read_class.__name__
+    is_public = False
+    is_extended = False
+    if "Public" in cls_name:
+        is_public = True
+    if "Extended" in cls_name:
+        is_extended = True
+    return is_public, is_extended

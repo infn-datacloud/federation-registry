@@ -1,55 +1,74 @@
-from pytest_cases import case, parametrize
+from typing import Any, Literal
+
+from pytest_cases import case, parametrize_with_cases
 
 from fed_reg.image.models import Image, PrivateImage, SharedImage
 from fed_reg.image.schemas import ImageBase, PrivateImageCreate, SharedImageCreate
+from tests.schemas.utils import image_schema_dict, random_image_os_type
+from tests.utils import random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("attr", "mandatory", "base_public", "base", "update"))
-    @parametrize(value=("name", "uuid"))
-    def case_mandatory(self, value: str) -> str:
-        return value
+class CaseImageSchema:
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_mandatory(self) -> dict[str, Any]:
+        return image_schema_dict()
 
-    @case(tags=("attr", "optional", "base_public", "base", "update"))
-    @parametrize(value=("description",))
-    def case_description(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_description(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "description": random_lower_string()}
 
-    @case(tags=("attr", "optional", "base", "update"))
-    @parametrize(
-        value=(
-            "os_type",
-            "os_distro",
-            "os_version",
-            "architecture",
-            "kernel_id",
-            "cuda_support",
-            "gpu_driver",
-            "tags",
-        )
-    )
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_os_type(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "os_type": random_image_os_type()}
 
-    @case(tags=("attr", "read"))
-    @parametrize(value=("is_shared", "is_private"))
-    def case_visibility(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_os_distro(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "os_distro": random_lower_string()}
 
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_os_version(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "os_version": random_lower_string()}
 
-class CaseInvalidAttr:
-    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
-    @parametrize(value=("name", "uuid"))
-    def case_missing_mandatory(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_architecture(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "architecture": random_lower_string()}
 
-    @case(tags=("invalid_attr", "read_public", "read"))
-    @parametrize(value=("uid",))
-    def case_missing_uid(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_kernel_id(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "kernel_id": random_lower_string()}
 
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_cuda_support(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "cuda_support": True}
 
-class CaseClass:
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_gpu_driver(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "gpu_driver": True}
+
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_tags(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "tags": [random_lower_string()]}
+
+    @case(tags=("dict", "valid"))
+    def case_is_shared(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "is_shared": True}
+
+    @case(tags=("dict", "valid"))
+    def case_is_private(self) -> dict[str, Any]:
+        return {**image_schema_dict(), "is_shared": False}
+
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_name(self) -> tuple[dict[str, Any], Literal["name"]]:
+        d = image_schema_dict()
+        d.pop("name")
+        return d, "name"
+
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_uuid(self) -> tuple[dict[str, Any], Literal["uuid"]]:
+        d = image_schema_dict()
+        d.pop("uuid")
+        return d, "uuid"
+
     @case(tags="class")
     def case_base_class(self) -> type[ImageBase]:
         return ImageBase
@@ -63,15 +82,24 @@ class CaseClass:
         return SharedImageCreate
 
 
-class CaseModel:
+class CaseImageModel:
     @case(tags="model")
-    def case_private_image(self) -> type[PrivateImage]:
-        return PrivateImage
+    @parametrize_with_cases(
+        "data", cases=CaseImageSchema, has_tag=("dict", "valid", "base")
+    )
+    def case_image_model(self, data: dict[str, Any]) -> Image:
+        return Image(**ImageBase(**data).dict()).save()
 
     @case(tags="model")
-    def case_shared_image(self) -> type[SharedImage]:
-        return SharedImage
+    @parametrize_with_cases(
+        "data", cases=CaseImageSchema, has_tag=("dict", "valid", "base")
+    )
+    def case_private_image_class(self, data: dict[str, Any]) -> PrivateImage:
+        return PrivateImage(**PrivateImageCreate(**data).dict()).save()
 
     @case(tags="model")
-    def case_image(self) -> type[Image]:
-        return Image
+    @parametrize_with_cases(
+        "data", cases=CaseImageSchema, has_tag=("dict", "valid", "base")
+    )
+    def case_shared_image_class(self, data: dict[str, Any]) -> SharedImage:
+        return SharedImage(**SharedImageCreate(**data).dict()).save()

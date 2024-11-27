@@ -2,16 +2,9 @@
 import string
 import time
 from datetime import date, datetime, timezone
-from enum import Enum
-from random import choice, choices, getrandbits, randint, random, randrange
-from typing import Any, Type
+from random import choices, getrandbits, randint, randrange
 
-from pycountry import countries
 from pydantic import AnyHttpUrl
-
-from fed_reg.image.enum import ImageOS
-from fed_reg.models import BaseNodeRead
-from fed_reg.provider.enum import ProviderStatus, ProviderType
 
 MOCK_READ_EMAIL = "user@test.it"
 MOCK_WRITE_EMAIL = "admin@test.it"
@@ -114,49 +107,3 @@ def random_date_before(end_date: date):
 def random_date_after(start_date: date):
     timestamp = int(time.mktime(start_date.timetuple()))
     return date.fromtimestamp(randrange(timestamp * 2, timestamp * 3))
-
-
-# Schema specifics # TODO Move to schemas.utils?
-
-
-def random_country() -> str:
-    """Return random country."""
-    return choice([i.name for i in countries])
-
-
-def random_latitude() -> float:
-    """Return a valid latitude value."""
-    return randint(-90, 89) + random()
-
-
-def random_longitude() -> float:
-    """Return a valid longitude value."""
-    return randint(-180, 179) + random()
-
-
-def random_provider_type() -> ProviderType:
-    return choice([i for i in ProviderType])
-
-
-def random_provider_status() -> ProviderStatus:
-    return choice([i for i in ProviderStatus])
-
-
-def random_service_name(enum_cls: Enum) -> Any:
-    return choice([i for i in enum_cls])
-
-
-def random_image_os_type() -> ImageOS:
-    return choice([i for i in ImageOS])
-
-
-def detect_public_extended_details(read_class: Type[BaseNodeRead]) -> tuple[bool, bool]:
-    """From class name detect if it public or not, extended or not."""
-    cls_name = read_class.__name__
-    is_public = False
-    is_extended = False
-    if "Public" in cls_name:
-        is_public = True
-    if "Extended" in cls_name:
-        is_extended = True
-    return is_public, is_extended

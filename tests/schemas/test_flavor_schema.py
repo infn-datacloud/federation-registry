@@ -150,9 +150,7 @@ def test_read(data: dict[str, Any]) -> None:
 
 
 @parametrize_with_cases("model", has_tag="model")
-def test_read_public_from_orm(
-    model: Flavor | PrivateFlavor | SharedFlavor,
-) -> None:
+def test_read_public_from_orm(model: Flavor | PrivateFlavor | SharedFlavor) -> None:
     """Use the from_orm function of FlavorReadPublic to read data from an ORM."""
     item = FlavorReadPublic.from_orm(model)
     assert item.schema_type == "public"
@@ -163,9 +161,7 @@ def test_read_public_from_orm(
 
 
 @parametrize_with_cases("model", has_tag="model")
-def test_read_from_orm(
-    model: Flavor | PrivateFlavor | SharedFlavor,
-) -> None:
+def test_read_from_orm(model: Flavor | PrivateFlavor | SharedFlavor) -> None:
     """Use the from_orm function of FlavorRead to read data from an ORM."""
     item = FlavorRead.from_orm(model)
     assert item.schema_type == "private"
