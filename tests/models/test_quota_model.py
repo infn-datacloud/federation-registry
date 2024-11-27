@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -23,7 +24,7 @@ from fed_reg.service.models import (
     NetworkService,
     ObjectStoreService,
 )
-from tests.models.utils import project_model_dict, quota_model_dict, service_model_dict
+from tests.models.utils import project_model_dict, service_model_dict
 
 
 @parametrize_with_cases("quota_cls", has_tag=("class", "derived"))
@@ -42,27 +43,49 @@ def test_quota_inheritance(
 
 
 @parametrize_with_cases("quota_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag="attr")
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
 def test_quota_attr(
     quota_cls: type[Quota]
     | type[BlockStorageQuota]
     | type[ComputeQuota]
     | type[NetworkQuota]
     | type[ObjectStoreQuota],
-    attr: str,
+    data: dict[str, Any],
 ) -> None:
     """Test attribute values (default and set).
 
     Execute this test on Quota, BlockStorageQuota, ComputeQuota, NetworkQuota and
     ObjectStoreQuota.
     """
-    d = quota_model_dict(attr)
-    item = quota_cls(**d)
+    item = quota_cls(**data)
     assert isinstance(item, quota_cls)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.per_user is d.get("per_user", False)
-    assert item.usage is d.get("usage", False)
+    assert item.description == data.get("description", "")
+    assert item.per_user is data.get("per_user", False)
+    assert item.usage is data.get("usage", False)
+
+    if isinstance(data, BlockStorageQuota):
+        assert item.type == QuotaType.BLOCK_STORAGE.value
+        assert item.gigabytes is data.get("gigabytes", None)
+        assert item.per_volume_gigabytes is data.get("per_volume_gigabytes", None)
+        assert item.volumes is data.get("volumes", None)
+    if isinstance(data, ComputeQuota):
+        assert item.type == QuotaType.COMPUTE.value
+        assert item.cores is data.get("cores", None)
+        assert item.instances is data.get("instances", None)
+        assert item.ram is data.get("ram", None)
+    if isinstance(data, NetworkQuota):
+        assert item.type == QuotaType.NETWORK.value
+        assert item.public_ips is data.get("public_ips", None)
+        assert item.networks is data.get("networks", None)
+        assert item.ports is data.get("ports", None)
+        assert item.security_groups is data.get("security_groups", None)
+        assert item.security_group_rules is data.get("security_group_rules", None)
+    if isinstance(data, ObjectStoreQuota):
+        assert item.type == QuotaType.OBJECT_STORE.value
+        assert item.bytes is data.get("bytes", None)
+        assert item.containers is data.get("containers", None)
+        assert item.objects is data.get("objects", None)
 
     saved = item.save()
     assert saved.element_id_property
@@ -90,6 +113,39 @@ def test_rel_def(
     assert quota_model.project.definition
     assert quota_model.project.definition["node_class"] == Project
 
+    if isinstance(quota_model, BlockStorageQuota):
+        assert isinstance(quota_model.service, RelationshipManager)
+        assert quota_model.service.name
+        assert quota_model.service.source
+        assert isinstance(quota_model.service.source, BlockStorageQuota)
+        assert quota_model.service.source.uid == quota_model.uid
+        assert quota_model.service.definition
+        assert quota_model.service.definition["node_class"] == BlockStorageService
+    if isinstance(quota_model, ComputeQuota):
+        assert isinstance(quota_model.service, RelationshipManager)
+        assert quota_model.service.name
+        assert quota_model.service.source
+        assert isinstance(quota_model.service.source, ComputeQuota)
+        assert quota_model.service.source.uid == quota_model.uid
+        assert quota_model.service.definition
+        assert quota_model.service.definition["node_class"] == ComputeService
+    if isinstance(quota_model, NetworkQuota):
+        assert isinstance(quota_model.service, RelationshipManager)
+        assert quota_model.service.name
+        assert quota_model.service.source
+        assert isinstance(quota_model.service.source, NetworkQuota)
+        assert quota_model.service.source.uid == quota_model.uid
+        assert quota_model.service.definition
+        assert quota_model.service.definition["node_class"] == NetworkService
+    if isinstance(quota_model, ObjectStoreQuota):
+        assert isinstance(quota_model.service, RelationshipManager)
+        assert quota_model.service.name
+        assert quota_model.service.source
+        assert isinstance(quota_model.service.source, ObjectStoreQuota)
+        assert quota_model.service.source.uid == quota_model.uid
+        assert quota_model.service.definition
+        assert quota_model.service.definition["node_class"] == ObjectStoreService
+
 
 @parametrize_with_cases("quota_model", has_tag="model")
 def test_required_rel(
@@ -110,6 +166,24 @@ def test_required_rel(
         quota_model.project.all()
     with pytest.raises(CardinalityViolation):
         quota_model.project.single()
+
+
+@parametrize_with_cases("quota_model", has_tag=("model", "derived"))
+def test_derived_quotas_required_rel(
+    quota_model: BlockStorageQuota | ComputeQuota | NetworkQuota | ObjectStoreQuota,
+) -> None:
+    """Test derived models required relationships.
+
+    All derived models have a required relationships called service.
+    This relationship can be empty but when querying those values, it raises a
+    CardinalityViolation error.
+    Execute this test on BlockStorageQuota, ComputeQuota, NetworkQuota and
+    ObjectStoreQuota.
+    """
+    with pytest.raises(CardinalityViolation):
+        quota_model.service.all()
+    with pytest.raises(CardinalityViolation):
+        quota_model.service.single()
 
 
 @parametrize_with_cases("quota_model", has_tag="model")
@@ -161,127 +235,6 @@ def test_multiple_linked_projects(
         quota_model.project.connect(item)
         with pytest.raises(CardinalityViolation):
             quota_model.project.all()
-
-
-@parametrize_with_cases("attr", has_tag=("attr", "block_storage"))
-def test_block_storage_default_attr(attr: str) -> None:
-    """Test BlockStorageQuota specific attribute values."""
-    d = quota_model_dict(attr)
-    item = BlockStorageQuota(**d)
-    assert item.type == QuotaType.BLOCK_STORAGE.value
-    assert item.gigabytes is d.get("gigabytes", None)
-    assert item.per_volume_gigabytes is d.get("per_volume_gigabytes", None)
-    assert item.volumes is d.get("volumes", None)
-
-
-def test_block_storage_quota_rel_def(
-    block_storage_quota_model: BlockStorageQuota,
-) -> None:
-    """Test relationships definition."""
-    assert isinstance(block_storage_quota_model.service, RelationshipManager)
-    assert block_storage_quota_model.service.name
-    assert block_storage_quota_model.service.source
-    assert isinstance(block_storage_quota_model.service.source, BlockStorageQuota)
-    assert block_storage_quota_model.service.source.uid == block_storage_quota_model.uid
-    assert block_storage_quota_model.service.definition
-    assert (
-        block_storage_quota_model.service.definition["node_class"]
-        == BlockStorageService
-    )
-
-
-@parametrize_with_cases("attr", has_tag=("attr", "compute"))
-def test_compute_default_attr(attr: str) -> None:
-    """Test ComputeQuota specific attribute values."""
-    d = quota_model_dict(attr)
-    item = ComputeQuota(**d)
-    assert item.type == QuotaType.COMPUTE.value
-    assert item.cores is d.get("cores", None)
-    assert item.instances is d.get("instances", None)
-    assert item.ram is d.get("ram", None)
-
-
-def test_compute_quota_rel_def(
-    compute_quota_model: ComputeQuota,
-) -> None:
-    """Test relationships definition."""
-    assert isinstance(compute_quota_model.service, RelationshipManager)
-    assert compute_quota_model.service.name
-    assert compute_quota_model.service.source
-    assert isinstance(compute_quota_model.service.source, ComputeQuota)
-    assert compute_quota_model.service.source.uid == compute_quota_model.uid
-    assert compute_quota_model.service.definition
-    assert compute_quota_model.service.definition["node_class"] == ComputeService
-
-
-@parametrize_with_cases("attr", has_tag=("attr", "network"))
-def test_network_default_attr(attr: str) -> None:
-    """Test NetworkQuota specific attribute values."""
-    d = quota_model_dict(attr)
-    item = NetworkQuota(**d)
-    assert item.type == QuotaType.NETWORK.value
-    assert item.public_ips is d.get("public_ips", None)
-    assert item.networks is d.get("networks", None)
-    assert item.ports is d.get("ports", None)
-    assert item.security_groups is d.get("security_groups", None)
-    assert item.security_group_rules is d.get("security_group_rules", None)
-
-
-def test_network_quota_rel_def(
-    network_quota_model: NetworkQuota,
-) -> None:
-    """Test relationships definition."""
-    assert isinstance(network_quota_model.service, RelationshipManager)
-    assert network_quota_model.service.name
-    assert network_quota_model.service.source
-    assert isinstance(network_quota_model.service.source, NetworkQuota)
-    assert network_quota_model.service.source.uid == network_quota_model.uid
-    assert network_quota_model.service.definition
-    assert network_quota_model.service.definition["node_class"] == NetworkService
-
-
-@parametrize_with_cases("attr", has_tag=("attr", "object_store"))
-def test_object_store_default_attr(attr: str) -> None:
-    """Test ObjectStoreQuota specific attribute values."""
-    d = quota_model_dict(attr)
-    item = ObjectStoreQuota(**d)
-    assert item.type == QuotaType.OBJECT_STORE.value
-    assert item.bytes is d.get("bytes", None)
-    assert item.containers is d.get("containers", None)
-    assert item.objects is d.get("objects", None)
-
-
-def test_object_store_quota_rel_def(
-    object_store_quota_model: ObjectStoreQuota,
-) -> None:
-    """Test relationships definition."""
-    assert isinstance(object_store_quota_model.service, RelationshipManager)
-    assert object_store_quota_model.service.name
-    assert object_store_quota_model.service.source
-    assert isinstance(object_store_quota_model.service.source, ObjectStoreQuota)
-    assert object_store_quota_model.service.source.uid == object_store_quota_model.uid
-    assert object_store_quota_model.service.definition
-    assert (
-        object_store_quota_model.service.definition["node_class"] == ObjectStoreService
-    )
-
-
-@parametrize_with_cases("quota_model", has_tag=("model", "derived"))
-def test_derived_quotas_required_rel(
-    quota_model: BlockStorageQuota | ComputeQuota | NetworkQuota | ObjectStoreQuota,
-) -> None:
-    """Test derived models required relationships.
-
-    All derived models have a required relationships called service.
-    This relationship can be empty but when querying those values, it raises a
-    CardinalityViolation error.
-    Execute this test on BlockStorageQuota, ComputeQuota, NetworkQuota and
-    ObjectStoreQuota.
-    """
-    with pytest.raises(CardinalityViolation):
-        quota_model.service.all()
-    with pytest.raises(CardinalityViolation):
-        quota_model.service.single()
 
 
 def test_single_linked_block_storage_service(

@@ -1,4 +1,6 @@
-from pytest_cases import case, parametrize
+from typing import Any
+
+from pytest_cases import case
 
 from fed_reg.quota.models import (
     BlockStorageQuota,
@@ -7,66 +9,103 @@ from fed_reg.quota.models import (
     ObjectStoreQuota,
     Quota,
 )
+from tests.models.utils import quota_model_dict
+from tests.utils import random_int, random_lower_string
 
 
 class CaseAttr:
-    @case(tags=("attr", "optional"))
-    @parametrize(value=("description", "per_user", "usage"))
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "mandatory"))
+    def case_mandatory(self) -> dict[str, Any]:
+        return quota_model_dict()
 
-    @case(tags=("attr", "block_storage"))
-    @parametrize(value=("gigabytes", "per_volume_gigabytes", "volumes"))
-    def case_block_storage(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid"))
+    def case_description(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "description": random_lower_string()}
 
-    @case(tags=("attr", "compute"))
-    @parametrize(value=("cores", "instances", "ram"))
-    def case_compute(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid"))
+    def case_per_user(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "per_user": True}
 
-    @case(tags=("attr", "network"))
-    @parametrize(
-        value=(
-            "public_ips",
-            "networks",
-            "ports",
-            "security_groups",
-            "security_group_rules",
-        )
-    )
-    def case_network(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid"))
+    def case_usage(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "usage": True}
 
-    @case(tags=("attr", "object_store"))
-    @parametrize(value=("bytes", "containers", "objects"))
-    def case_object_store(self, value: str) -> str:
-        return value
+    @case(tags=("attr", "valid", "block_storage"))
+    def case_gigabytes(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "gigabytes": random_int()}
 
+    @case(tags=("attr", "valid", "block_storage"))
+    def case_per_volume_gigabytes(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "per_volume_gigabytes": random_int()}
 
-class CaseClass:
+    @case(tags=("attr", "valid", "block_storage"))
+    def case_volumes(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "volumes": random_int()}
+
+    @case(tags=("attr", "valid", "compute"))
+    def case_cores(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "cores": random_int()}
+
+    @case(tags=("attr", "valid", "compute"))
+    def case_instances(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "instances": random_int()}
+
+    @case(tags=("attr", "valid", "compute"))
+    def case_ram(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "ram": random_int()}
+
+    @case(tags=("attr", "valid", "network"))
+    def case_public_ips(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "public_ips": random_int()}
+
+    @case(tags=("attr", "valid", "network"))
+    def case_networks(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "networks": random_int()}
+
+    @case(tags=("attr", "valid", "network"))
+    def case_ports(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "ports": random_int()}
+
+    @case(tags=("attr", "valid", "network"))
+    def case_security_groups(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "security_groups": random_int()}
+
+    @case(tags=("attr", "valid", "network"))
+    def case_security_group_rules(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "security_group_rules": random_int()}
+
+    @case(tags=("attr", "valid", "object_store"))
+    def case_bytes(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "bytes": random_int()}
+
+    @case(tags=("attr", "valid", "object_store"))
+    def case_containers(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "containers": random_int()}
+
+    @case(tags=("attr", "valid", "object_store"))
+    def case_objects(self) -> dict[str, Any]:
+        return {**quota_model_dict(), "objects": random_int()}
+
     @case(tags="class")
-    def case_quota(self) -> type[Quota]:
+    def case_quota_cls(self) -> type[Quota]:
         return Quota
 
     @case(tags=("class", "derived"))
-    def case_block_storage_quota(self) -> type[BlockStorageQuota]:
+    def case_block_storage_quota_cls(self) -> type[BlockStorageQuota]:
         return BlockStorageQuota
 
     @case(tags=("class", "derived"))
-    def case_compute_quota(self) -> type[ComputeQuota]:
+    def case_compute_quota_cls(self) -> type[ComputeQuota]:
         return ComputeQuota
 
     @case(tags=("class", "derived"))
-    def case_network_quota(self) -> type[NetworkQuota]:
+    def case_network_quota_cls(self) -> type[NetworkQuota]:
         return NetworkQuota
 
     @case(tags=("class", "derived"))
-    def case_object_store_quota(self) -> type[ObjectStoreQuota]:
+    def case_object_store_quota_cls(self) -> type[ObjectStoreQuota]:
         return ObjectStoreQuota
 
-
-class CaseModel:
     @case(tags="model")
     def case_quota(self, quota_model: Quota) -> Quota:
         return quota_model
