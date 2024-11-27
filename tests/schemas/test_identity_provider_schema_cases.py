@@ -52,5 +52,5 @@ class CaseIdentityProviderModel:
     @parametrize_with_cases(
         "data", cases=CaseIdentityProviderSchema, has_tag=("dict", "valid", "base")
     )
-    def case_flavor_model(self, data: dict[str, Any]) -> IdentityProvider:
+    def case_identity_provider_model(self, data: dict[str, Any]) -> IdentityProvider:
         return IdentityProvider(**IdentityProviderBase(**data).dict()).save()

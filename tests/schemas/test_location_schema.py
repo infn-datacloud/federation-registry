@@ -1,3 +1,6 @@
+from typing import Any
+from uuid import uuid4
+
 import pytest
 from pytest_cases import parametrize_with_cases
 
@@ -17,8 +20,6 @@ from fed_reg.models import (
     BaseReadPrivate,
     BaseReadPublic,
 )
-from tests.models.utils import location_model_dict
-from tests.schemas.utils import location_schema_dict
 
 
 def test_classes_inheritance() -> None:
@@ -44,79 +45,74 @@ def test_classes_inheritance() -> None:
     assert issubclass(LocationCreate, BaseNodeCreate)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_base_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_base_public(data: dict[str, Any]) -> None:
     """Test LocationBasePublic class' attribute values."""
-    d = location_schema_dict(attr)
-    item = LocationBasePublic(**d)
-    assert item.description == d.get("description", "")
-    assert item.site == d.get("site")
-    assert item.country == d.get("country")
+    item = LocationBasePublic(**data)
+    assert item.description == data.get("description", "")
+    assert item.site == data.get("site")
+    assert item.country == data.get("country")
 
 
 @parametrize_with_cases("location_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base"))
 def test_base(
     location_cls: type[LocationBase] | type[LocationCreate],
-    attr: str,
+    data: dict[str, Any],
 ) -> None:
     """Test class' attribute values.
 
     Execute this test on LocationBase, PrivateLocationCreate
     and SharedLocationCreate.
     """
-    d = location_schema_dict(attr)
-    item = location_cls(**d)
-    assert item.description == d.get("description", "")
-    assert item.site == d.get("site")
-    assert item.country == d.get("country")
-    assert item.latitude == d.get("latitude", None)
-    assert item.longitude == d.get("longitude", None)
+    item = location_cls(**data)
+    assert item.description == data.get("description", "")
+    assert item.site == data.get("site")
+    assert item.country == data.get("country")
+    assert item.latitude == data.get("latitude", None)
+    assert item.longitude == data.get("longitude", None)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "update"))
-def test_update(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "update"))
+def test_update(data: dict[str, Any]) -> None:
     """Test LocationUpdate class' attribute values."""
-    d = location_schema_dict(attr)
-    item = LocationUpdate(**d)
-    assert item.description == d.get("description", "")
-    assert item.site == d.get("site", None)
-    assert item.country == d.get("country", None)
-    assert item.latitude == d.get("latitude", None)
-    assert item.longitude == d.get("longitude", None)
+    item = LocationUpdate(**data)
+    assert item.description == data.get("description", "")
+    assert item.site == data.get("site", None)
+    assert item.country == data.get("country", None)
+    assert item.latitude == data.get("latitude", None)
+    assert item.longitude == data.get("longitude", None)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_read_public(data: dict[str, Any]) -> None:
     """Test LocationReadPublic class' attribute values."""
-    d = location_schema_dict(attr, read=True)
-    item = LocationReadPublic(**d)
+    uid = uuid4()
+    item = LocationReadPublic(**data, uid=uid)
     assert item.schema_type == "public"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.site == d.get("site")
-    assert item.country == d.get("country")
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.site == data.get("site")
+    assert item.country == data.get("country")
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_read(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_read(data: dict[str, Any]) -> None:
     """Test LocationRead class' attribute values."""
-    d = location_schema_dict(attr, read=True)
-    item = LocationRead(**d)
+    uid = uuid4()
+    item = LocationRead(**data, uid=uid)
     assert item.schema_type == "private"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.site == d.get("site")
-    assert item.country == d.get("country")
-    assert item.latitude == d.get("latitude", None)
-    assert item.longitude == d.get("longitude", None)
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.site == data.get("site")
+    assert item.country == data.get("country")
+    assert item.latitude == data.get("latitude", None)
+    assert item.longitude == data.get("longitude", None)
 
 
-@parametrize_with_cases("location_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public_from_orm(location_cls: type[Location], attr: str) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_public_from_orm(model: Location) -> None:
     """Use the from_orm function of LocationReadPublic to read data from ORM."""
-    model = location_cls(**location_model_dict(attr)).save()
     item = LocationReadPublic.from_orm(model)
     assert item.schema_type == "public"
     assert item.uid == model.uid
@@ -125,11 +121,9 @@ def test_read_public_from_orm(location_cls: type[Location], attr: str) -> None:
     assert item.country == model.country
 
 
-@parametrize_with_cases("location_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
-def test_read_from_orm(location_cls: type[Location], attr: str) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_from_orm(model: Location) -> None:
     """Use the from_orm function of LocationRead to read data from an ORM."""
-    model = location_cls(**location_model_dict(attr)).save()
     item = LocationRead.from_orm(model)
     assert item.schema_type == "private"
     assert item.uid == model.uid
@@ -140,17 +134,19 @@ def test_read_from_orm(location_cls: type[Location], attr: str) -> None:
     assert item.longitude == model.longitude
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_base_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base_public"))
+def test_invalid_base_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for LocationBasePublic."""
-    with pytest.raises(ValueError):
-        LocationBasePublic(**location_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for LocationBasePublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        LocationBasePublic(**data)
 
 
 @parametrize_with_cases("location_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base"))
 def test_invalid_base(
     location_cls: type[LocationBase] | type[LocationCreate],
+    data: dict[str, Any],
     attr: str,
 ) -> None:
     """Test invalid attributes for base and create.
@@ -158,26 +154,32 @@ def test_invalid_base(
     Apply to LocationBase, PrivateLocationCreate and
     SharedLocationCreate.
     """
-    with pytest.raises(ValueError):
-        location_cls(**location_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for {location_cls.__name__}\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        location_cls(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "update"))
-def test_invalid_update(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "update"))
+def test_invalid_update(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for LocationUpdate."""
-    with pytest.raises(ValueError):
-        LocationUpdate(**location_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for LocationUpdate\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        LocationUpdate(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_read_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read_public"))
+def test_invalid_read_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for LocationReadPublic."""
-    with pytest.raises(ValueError):
-        LocationReadPublic(**location_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for LocationReadPublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        LocationReadPublic(**data, uid=uid)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
-def test_invalid_read(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read"))
+def test_invalid_read(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for LocationRead."""
-    with pytest.raises(ValueError):
-        LocationRead(**location_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for LocationRead\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        LocationRead(**data, uid=uid)

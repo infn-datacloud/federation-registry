@@ -19,7 +19,6 @@ from tests.utils import (
     random_date_after,
     random_date_before,
     random_email,
-    random_float,
     random_lower_string,
     random_non_negative_int,
     random_start_end_dates,
@@ -82,38 +81,6 @@ def sla_schema_dict() -> dict[str, Any]:
 
 def user_group_schema_dict() -> dict[str, Any]:
     return {"name": random_lower_string()}
-
-
-def location_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("description", "site"):
-            data[k] = random_lower_string()
-        elif k in ("country",):
-            data[k] = random_country()
-        elif k in ("latitude", "longitude"):
-            data[k] = random_float(0, 90)
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def location_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("country", "site", "uid"):
-            data.pop(k)
-        elif k in ("not_a_country",):
-            data["country"] = random_lower_string()
-        elif k in ("under_min_latitude",):
-            data["latitude"] = -91
-        elif k in ("over_max_latitude",):
-            data["latitude"] = 91
-        elif k in ("under_min_longitude",):
-            data["longitude"] = -181
-        elif k in ("over_max_longitude",):
-            data["longitude"] = 181
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
 
 
 def provider_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:

@@ -37,5 +37,5 @@ class CaseUserGroupModel:
     @parametrize_with_cases(
         "data", cases=CaseUserGroupSchema, has_tag=("dict", "valid", "base")
     )
-    def case_flavor_model(self, data: dict[str, Any]) -> UserGroup:
+    def case_user_group_model(self, data: dict[str, Any]) -> UserGroup:
         return UserGroup(**UserGroupBase(**data).dict()).save()

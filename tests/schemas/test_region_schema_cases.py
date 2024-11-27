@@ -37,5 +37,5 @@ class CaseRegionModel:
     @parametrize_with_cases(
         "data", cases=CaseRegionSchema, has_tag=("dict", "valid", "base")
     )
-    def case_flavor_model(self, data: dict[str, Any]) -> Region:
+    def case_region_model(self, data: dict[str, Any]) -> Region:
         return Region(**RegionBase(**data).dict()).save()
