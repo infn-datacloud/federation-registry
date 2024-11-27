@@ -1,4 +1,6 @@
-from pytest_cases import case, parametrize
+from typing import Any, Literal
+
+from pytest_cases import case
 
 from fed_reg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fed_reg.image.models import Image, PrivateImage, SharedImage
@@ -12,48 +14,60 @@ from fed_reg.service.models import (
     ObjectStoreService,
     Service,
 )
-from tests.models.utils import flavor_model_dict, image_model_dict, network_model_dict
+from tests.models.utils import (
+    flavor_model_dict,
+    image_model_dict,
+    network_model_dict,
+    service_model_dict,
+)
+from tests.utils import random_lower_string
 
 
 class CaseAttr:
-    @case(tags=("attr", "mandatory"))
-    @parametrize(value=("name", "endpoint"))
-    def case_mandatory(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "mandatory"))
+    def case_mandatory(self) -> dict[str, Any]:
+        return service_model_dict()
 
-    @case(tags=("attr", "optional"))
-    @parametrize(value=("description",))
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid"))
+    def case_description(self) -> dict[str, Any]:
+        return {**service_model_dict(), "description": random_lower_string()}
 
+    @case(tags=("dict", "invalid"))
+    def case_missing_endpoint(self) -> tuple[dict[str, Any], Literal["endpoint"]]:
+        d = service_model_dict()
+        d.pop("endpoint")
+        return d, "endpoint"
 
-class CaseClass:
+    @case(tags=("dict", "invalid"))
+    def case_missing_name(self) -> tuple[dict[str, Any], Literal["name"]]:
+        d = service_model_dict()
+        d.pop("name")
+        return d, "name"
+
     @case(tags="class")
-    def case_service(self) -> type[Service]:
+    def case_service_cls(self) -> type[Service]:
         return Service
 
     @case(tags=("class", "derived"))
-    def case_block_storage_service(self) -> type[BlockStorageService]:
+    def case_block_storage_service_cls(self) -> type[BlockStorageService]:
         return BlockStorageService
 
     @case(tags=("class", "derived"))
-    def case_compute_service(self) -> type[ComputeService]:
+    def case_compute_service_cls(self) -> type[ComputeService]:
         return ComputeService
 
     @case(tags=("class", "derived"))
-    def case_identity_service(self) -> type[IdentityService]:
+    def case_identity_service_cls(self) -> type[IdentityService]:
         return IdentityService
 
     @case(tags=("class", "derived"))
-    def case_network_service(self) -> type[NetworkService]:
+    def case_network_service_cls(self) -> type[NetworkService]:
         return NetworkService
 
     @case(tags=("class", "derived"))
-    def case_object_store_service(self) -> type[ObjectStoreService]:
+    def case_object_store_service_cls(self) -> type[ObjectStoreService]:
         return ObjectStoreService
 
-
-class CaseModel:
     @case(tags="model")
     def case_service(self, service_model: Service) -> Service:
         return service_model

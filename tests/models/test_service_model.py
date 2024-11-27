@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -54,24 +55,34 @@ def test_service_inheritance(
 
 
 @parametrize_with_cases("service_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag="attr")
-def test_service_attr(
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_service_valid_attr(
     service_cls: type[Service]
     | type[BlockStorageService]
     | type[ComputeService]
     | type[IdentityService]
     | type[NetworkService]
     | type[ObjectStoreService],
-    attr: str,
+    data: dict[str, Any],
 ) -> None:
     """Test attribute values (default and set)."""
-    d = service_model_dict(attr)
-    item = service_cls(**d)
+    item = service_cls(**data)
     assert isinstance(item, service_cls)
     assert item.uid is not None
-    assert item.description == d.get("description", "")
-    assert item.endpoint == d.get("endpoint")
-    assert item.name == d.get("name")
+    assert item.description == data.get("description", "")
+    assert item.endpoint == data.get("endpoint")
+    assert item.name == data.get("name")
+
+    if isinstance(data, BlockStorageService):
+        assert item.type == ServiceType.BLOCK_STORAGE.value
+    if isinstance(data, ComputeService):
+        assert item.type == ServiceType.COMPUTE.value
+    if isinstance(data, IdentityService):
+        assert item.type == ServiceType.IDENTITY.value
+    if isinstance(data, NetworkService):
+        assert item.type == ServiceType.NETWORK.value
+    if isinstance(data, ObjectStoreService):
+        assert item.type == ServiceType.OBJECT_STORE.value
 
     saved = item.save()
     assert saved.element_id_property
@@ -79,7 +90,7 @@ def test_service_attr(
 
 
 @parametrize_with_cases("service_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("attr", "mandatory"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid"))
 def test_service_missing_mandatory_attr(
     service_cls: type[Service]
     | type[BlockStorageService]
@@ -87,6 +98,7 @@ def test_service_missing_mandatory_attr(
     | type[IdentityService]
     | type[NetworkService]
     | type[ObjectStoreService],
+    data: dict[str, Any],
     attr: str,
 ) -> None:
     """Test Service required attributes.
@@ -95,10 +107,8 @@ def test_service_missing_mandatory_attr(
     Execute this test on Service, PrivateService and SharedService.
     """
     err_msg = f"property '{attr}' on objects of class {service_cls.__name__}"
-    d = service_model_dict()
-    d.pop(attr)
     with pytest.raises(RequiredProperty, match=err_msg):
-        service_cls(**d).save()
+        service_cls(**data).save()
 
 
 @parametrize_with_cases("service_model", has_tag="model")
@@ -122,6 +132,65 @@ def test_rel_def(
     assert service_model.region.source.uid == service_model.uid
     assert service_model.region.definition
     assert service_model.region.definition["node_class"] == Region
+
+    if isinstance(service_model, BlockStorageService):
+        assert isinstance(service_model.quotas, RelationshipManager)
+        assert service_model.quotas.name
+        assert service_model.quotas.source
+        assert isinstance(service_model.quotas.source, BlockStorageService)
+        assert service_model.quotas.source.uid == service_model.uid
+        assert service_model.quotas.definition
+        assert service_model.quotas.definition["node_class"] == BlockStorageQuota
+    if isinstance(service_model, ComputeService):
+        assert isinstance(service_model.flavors, RelationshipManager)
+        assert service_model.flavors.name
+        assert service_model.flavors.source
+        assert isinstance(service_model.flavors.source, ComputeService)
+        assert service_model.flavors.source.uid == service_model.uid
+        assert service_model.flavors.definition
+        assert service_model.flavors.definition["node_class"] == Flavor
+
+        assert isinstance(service_model.images, RelationshipManager)
+        assert service_model.images.name
+        assert service_model.images.source
+        assert isinstance(service_model.images.source, ComputeService)
+        assert service_model.images.source.uid == service_model.uid
+        assert service_model.images.definition
+        assert service_model.images.definition["node_class"] == Image
+
+        assert isinstance(service_model.quotas, RelationshipManager)
+        assert service_model.quotas.name
+        assert service_model.quotas.source
+        assert isinstance(service_model.quotas.source, ComputeService)
+        assert service_model.quotas.source.uid == service_model.uid
+        assert service_model.quotas.definition
+        assert service_model.quotas.definition["node_class"] == ComputeQuota
+    if isinstance(service_model, IdentityService):
+        pass
+    if isinstance(service_model, NetworkService):
+        assert isinstance(service_model.networks, RelationshipManager)
+        assert service_model.quotas.name
+        assert service_model.quotas.source
+        assert isinstance(service_model.quotas.source, NetworkService)
+        assert service_model.quotas.source.uid == service_model.uid
+        assert service_model.quotas.definition
+        assert service_model.quotas.definition["node_class"] == NetworkQuota
+
+        assert isinstance(service_model.quotas, RelationshipManager)
+        assert service_model.networks.name
+        assert service_model.networks.source
+        assert isinstance(service_model.networks.source, NetworkService)
+        assert service_model.networks.source.uid == service_model.uid
+        assert service_model.networks.definition
+        assert service_model.networks.definition["node_class"] == Network
+    if isinstance(service_model, ObjectStoreService):
+        assert isinstance(service_model.quotas, RelationshipManager)
+        assert service_model.quotas.name
+        assert service_model.quotas.source
+        assert isinstance(service_model.quotas.source, ObjectStoreService)
+        assert service_model.quotas.source.uid == service_model.uid
+        assert service_model.quotas.definition
+        assert service_model.quotas.definition["node_class"] == ObjectStoreQuota
 
 
 @parametrize_with_cases("service_model", has_tag="model")
@@ -198,127 +267,8 @@ def test_multiple_linked_regions(
             service_model.region.all()
 
 
-def test_block_storage_default_attr() -> None:
-    """Test BlockStorageService specific attribute values and relationships"""
-    d = service_model_dict()
-    item = BlockStorageService(**d)
-    assert item.type == ServiceType.BLOCK_STORAGE.value
-
-
-def test_block_storage_rel_def(
-    block_storage_service_model: BlockStorageService,
-) -> None:
-    """Test relationships definition."""
-    assert isinstance(block_storage_service_model.quotas, RelationshipManager)
-    assert block_storage_service_model.quotas.name
-    assert block_storage_service_model.quotas.source
-    assert isinstance(block_storage_service_model.quotas.source, BlockStorageService)
-    assert (
-        block_storage_service_model.quotas.source.uid == block_storage_service_model.uid
-    )
-    assert block_storage_service_model.quotas.definition
-    assert (
-        block_storage_service_model.quotas.definition["node_class"] == BlockStorageQuota
-    )
-
-
-def test_compute_default_attr() -> None:
-    """Test ComputeService specific attribute values and relationships"""
-    d = service_model_dict()
-    item = ComputeService(**d)
-    assert item.type == ServiceType.COMPUTE.value
-
-
-def test_compute_rel_def(
-    compute_service_model: ComputeService,
-) -> None:
-    """Test relationships definition."""
-    assert isinstance(compute_service_model.flavors, RelationshipManager)
-    assert compute_service_model.flavors.name
-    assert compute_service_model.flavors.source
-    assert isinstance(compute_service_model.flavors.source, ComputeService)
-    assert compute_service_model.flavors.source.uid == compute_service_model.uid
-    assert compute_service_model.flavors.definition
-    assert compute_service_model.flavors.definition["node_class"] == Flavor
-
-    assert isinstance(compute_service_model.images, RelationshipManager)
-    assert compute_service_model.images.name
-    assert compute_service_model.images.source
-    assert isinstance(compute_service_model.images.source, ComputeService)
-    assert compute_service_model.images.source.uid == compute_service_model.uid
-    assert compute_service_model.images.definition
-    assert compute_service_model.images.definition["node_class"] == Image
-
-    assert isinstance(compute_service_model.quotas, RelationshipManager)
-    assert compute_service_model.quotas.name
-    assert compute_service_model.quotas.source
-    assert isinstance(compute_service_model.quotas.source, ComputeService)
-    assert compute_service_model.quotas.source.uid == compute_service_model.uid
-    assert compute_service_model.quotas.definition
-    assert compute_service_model.quotas.definition["node_class"] == ComputeQuota
-
-
-def test_identity_default_attr() -> None:
-    """Test IdentityService specific attribute values and relationships"""
-    d = service_model_dict()
-    item = IdentityService(**d)
-    assert item.type == ServiceType.IDENTITY.value
-
-
-def test_network_default_attr() -> None:
-    """Test NetworkService specific attribute values and relationships"""
-    d = service_model_dict()
-    item = NetworkService(**d)
-    assert item.type == ServiceType.NETWORK.value
-
-
-def test_network_rel_def(
-    network_service_model: NetworkService,
-) -> None:
-    """Test relationships definition."""
-    assert isinstance(network_service_model.networks, RelationshipManager)
-    assert network_service_model.quotas.name
-    assert network_service_model.quotas.source
-    assert isinstance(network_service_model.quotas.source, NetworkService)
-    assert network_service_model.quotas.source.uid == network_service_model.uid
-    assert network_service_model.quotas.definition
-    assert network_service_model.quotas.definition["node_class"] == NetworkQuota
-
-    assert isinstance(network_service_model.quotas, RelationshipManager)
-    assert network_service_model.networks.name
-    assert network_service_model.networks.source
-    assert isinstance(network_service_model.networks.source, NetworkService)
-    assert network_service_model.networks.source.uid == network_service_model.uid
-    assert network_service_model.networks.definition
-    assert network_service_model.networks.definition["node_class"] == Network
-
-
-def test_object_store_default_attr() -> None:
-    """Test ObjectStore specific attribute values and relationships"""
-    d = service_model_dict()
-    item = ObjectStoreService(**d)
-    assert item.type == ServiceType.OBJECT_STORE.value
-
-
-def test_object_store_rel_def(
-    object_store_service_model: ObjectStoreService,
-) -> None:
-    """Test relationships definition."""
-    assert isinstance(object_store_service_model.quotas, RelationshipManager)
-    assert object_store_service_model.quotas.name
-    assert object_store_service_model.quotas.source
-    assert isinstance(object_store_service_model.quotas.source, ObjectStoreService)
-    assert (
-        object_store_service_model.quotas.source.uid == object_store_service_model.uid
-    )
-    assert object_store_service_model.quotas.definition
-    assert (
-        object_store_service_model.quotas.definition["node_class"] == ObjectStoreQuota
-    )
-
-
-@parametrize_with_cases("service_model", has_tag=("model", "derived", "with_quotas"))
-def test_derived_services_required_rel(
+@parametrize_with_cases("service_model", has_tag=("model", "derived"))
+def test_derived_services_optional_rel(
     service_model: BlockStorageService
     | ComputeService
     | NetworkService
@@ -328,25 +278,30 @@ def test_derived_services_required_rel(
 
     All derived models, except for the IdentityService, have an optional relationships
     called quotas.
+    Each derived model has its own optional relationships.
     Execute this test on BlockStorageService, ComputeService, NetworkService and
     ObjectStoreService.
     """
-    assert len(service_model.quotas.all()) == 0
-    assert service_model.quotas.single() is None
-
-
-def test_compute_optional_rel(compute_service_model: ComputeService) -> None:
-    """Test ComputeService specific optional relationships."""
-    assert len(compute_service_model.flavors.all()) == 0
-    assert compute_service_model.flavors.single() is None
-    assert len(compute_service_model.images.all()) == 0
-    assert compute_service_model.images.single() is None
-
-
-def test_network_optional_rel(network_service_model: NetworkService) -> None:
-    """Test NetworkService specific optional relationships."""
-    assert len(network_service_model.networks.all()) == 0
-    assert network_service_model.networks.single() is None
+    if isinstance(service_model, BlockStorageService):
+        assert len(service_model.quotas.all()) == 0
+        assert service_model.quotas.single() is None
+    if isinstance(service_model, ComputeService):
+        assert len(service_model.quotas.all()) == 0
+        assert service_model.quotas.single() is None
+        assert len(service_model.flavors.all()) == 0
+        assert service_model.flavors.single() is None
+        assert len(service_model.images.all()) == 0
+        assert service_model.images.single() is None
+    if isinstance(service_model, IdentityService):
+        pass
+    if isinstance(service_model, NetworkService):
+        assert len(service_model.quotas.all()) == 0
+        assert service_model.quotas.single() is None
+        assert len(service_model.networks.all()) == 0
+        assert service_model.networks.single() is None
+    if isinstance(service_model, ObjectStoreService):
+        assert len(service_model.quotas.all()) == 0
+        assert service_model.quotas.single() is None
 
 
 def test_single_linked_block_storage_quota(
@@ -406,6 +361,65 @@ def test_multiple_linked_compute_quotas(compute_service_model: ComputeService) -
     item = ComputeQuota(**quota_model_dict()).save()
     compute_service_model.quotas.connect(item)
     assert len(compute_service_model.quotas.all()) == 2
+
+
+def test_single_linked_network_quota(
+    network_service_model: NetworkService, network_quota_model: NetworkQuota
+) -> None:
+    """Verify `quotas` relationship works correctly.
+
+    Connect a single NetworkQuota to a NetworkService.
+    """
+    r = network_service_model.quotas.connect(network_quota_model)
+    assert r is True
+
+    assert len(network_service_model.quotas.all()) == 1
+    quotas = network_service_model.quotas.single()
+    assert isinstance(quotas, NetworkQuota)
+    assert quotas.uid == network_quota_model.uid
+
+
+def test_multiple_linked_network_quotas(network_service_model: NetworkService) -> None:
+    """Verify `quotas` relationship works correctly.
+
+    Connect multiple NetworkQuota to a NetworkService.
+    """
+    item = NetworkQuota(**quota_model_dict()).save()
+    network_service_model.quotas.connect(item)
+    item = NetworkQuota(**quota_model_dict()).save()
+    network_service_model.quotas.connect(item)
+    assert len(network_service_model.quotas.all()) == 2
+
+
+def test_single_linked_object_store_quota(
+    object_store_service_model: ObjectStoreService,
+    object_store_quota_model: ObjectStoreQuota,
+) -> None:
+    """Verify `quotas` relationship works correctly.
+
+    Connect a single ObjectStoreQuota to a ObjectStoreService.
+    """
+    r = object_store_service_model.quotas.connect(object_store_quota_model)
+    assert r is True
+
+    assert len(object_store_service_model.quotas.all()) == 1
+    quotas = object_store_service_model.quotas.single()
+    assert isinstance(quotas, ObjectStoreQuota)
+    assert quotas.uid == object_store_quota_model.uid
+
+
+def test_multiple_linked_object_store_quotas(
+    object_store_service_model: ObjectStoreService,
+) -> None:
+    """Verify `quotas` relationship works correctly.
+
+    Connect multiple ObjectStoreQuota to a ObjectStoreService.
+    """
+    item = ObjectStoreQuota(**quota_model_dict()).save()
+    object_store_service_model.quotas.connect(item)
+    item = ObjectStoreQuota(**quota_model_dict()).save()
+    object_store_service_model.quotas.connect(item)
+    assert len(object_store_service_model.quotas.all()) == 2
 
 
 @parametrize_with_cases("flavor_model", has_tag=("flavor", "single"))
@@ -471,34 +485,6 @@ def test_multiple_linked_images(
     assert len(compute_service_model.images.all()) == len(image_models)
 
 
-def test_single_linked_network_quota(
-    network_service_model: NetworkService, network_quota_model: NetworkQuota
-) -> None:
-    """Verify `quotas` relationship works correctly.
-
-    Connect a single NetworkQuota to a NetworkService.
-    """
-    r = network_service_model.quotas.connect(network_quota_model)
-    assert r is True
-
-    assert len(network_service_model.quotas.all()) == 1
-    quotas = network_service_model.quotas.single()
-    assert isinstance(quotas, NetworkQuota)
-    assert quotas.uid == network_quota_model.uid
-
-
-def test_multiple_linked_network_quotas(network_service_model: NetworkService) -> None:
-    """Verify `quotas` relationship works correctly.
-
-    Connect multiple NetworkQuota to a NetworkService.
-    """
-    item = NetworkQuota(**quota_model_dict()).save()
-    network_service_model.quotas.connect(item)
-    item = NetworkQuota(**quota_model_dict()).save()
-    network_service_model.quotas.connect(item)
-    assert len(network_service_model.quotas.all()) == 2
-
-
 @parametrize_with_cases("network_model", has_tag=("network", "single"))
 def test_single_linked_network(
     network_service_model: NetworkService,
@@ -529,37 +515,6 @@ def test_multiple_linked_networks(
     for network_model in network_models:
         network_service_model.networks.connect(network_model)
     assert len(network_service_model.networks.all()) == len(network_models)
-
-
-def test_single_linked_object_store_quota(
-    object_store_service_model: ObjectStoreService,
-    object_store_quota_model: ObjectStoreQuota,
-) -> None:
-    """Verify `quotas` relationship works correctly.
-
-    Connect a single ObjectStoreQuota to a ObjectStoreService.
-    """
-    r = object_store_service_model.quotas.connect(object_store_quota_model)
-    assert r is True
-
-    assert len(object_store_service_model.quotas.all()) == 1
-    quotas = object_store_service_model.quotas.single()
-    assert isinstance(quotas, ObjectStoreQuota)
-    assert quotas.uid == object_store_quota_model.uid
-
-
-def test_multiple_linked_object_store_quotas(
-    object_store_service_model: ObjectStoreService,
-) -> None:
-    """Verify `quotas` relationship works correctly.
-
-    Connect multiple ObjectStoreQuota to a ObjectStoreService.
-    """
-    item = ObjectStoreQuota(**quota_model_dict()).save()
-    object_store_service_model.quotas.connect(item)
-    item = ObjectStoreQuota(**quota_model_dict()).save()
-    object_store_service_model.quotas.connect(item)
-    assert len(object_store_service_model.quotas.all()) == 2
 
 
 def test_block_storage_pre_delete_hook_remove_quotas(

@@ -220,7 +220,7 @@ def test_single_linked_quota(
 
     assert len(project_model.quotas.all()) == 1
     quota = project_model.quotas.single()
-    assert isinstance(quota, Quota)
+    assert isinstance(quota, type(quota_model))
     assert quota.uid == quota_model.uid
 
 
