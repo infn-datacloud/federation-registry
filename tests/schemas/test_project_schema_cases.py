@@ -1,34 +1,34 @@
-from pytest_cases import case, parametrize
+from typing import Any, Literal
+
+from pytest_cases import case, parametrize_with_cases
 
 from fed_reg.project.models import Project
 from fed_reg.project.schemas import ProjectBase, ProjectCreate
+from tests.schemas.utils import project_schema_dict
+from tests.utils import random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("attr", "mandatory", "base_public", "base", "update"))
-    @parametrize(value=("name", "uuid"))
-    def case_mandatory(self, value: str) -> str:
-        return value
+class CaseProjectSchema:
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_mandatory(self) -> dict[str, Any]:
+        return project_schema_dict()
 
-    @case(tags=("attr", "optional", "base_public", "base", "update"))
-    @parametrize(value=("description",))
-    def case_description(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_description(self) -> dict[str, Any]:
+        return {**project_schema_dict(), "description": random_lower_string()}
 
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_name(self) -> tuple[dict[str, Any], Literal["name"]]:
+        d = project_schema_dict()
+        d.pop("name")
+        return d, "name"
 
-class CaseInvalidAttr:
-    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
-    @parametrize(value=("name", "uuid"))
-    def case_missing_mandatory(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_uuid(self) -> tuple[dict[str, Any], Literal["uuid"]]:
+        d = project_schema_dict()
+        d.pop("uuid")
+        return d, "uuid"
 
-    @case(tags=("invalid_attr", "read_public", "read"))
-    @parametrize(value=("uid",))
-    def case_missing_uid(self, value: str) -> str:
-        return value
-
-
-class CaseClass:
     @case(tags="class")
     def case_base_class(self) -> type[ProjectBase]:
         return ProjectBase
@@ -40,5 +40,8 @@ class CaseClass:
 
 class CaseModel:
     @case(tags="model")
-    def case_project(self) -> type[Project]:
-        return Project
+    @parametrize_with_cases(
+        "data", cases=CaseProjectSchema, has_tag=("dict", "valid", "base")
+    )
+    def case_project_model(self, data: dict[str, Any]) -> Project:
+        return Project(**ProjectCreate(**data).dict()).save()
