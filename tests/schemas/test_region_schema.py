@@ -1,3 +1,6 @@
+from typing import Any
+from uuid import uuid4
+
 import pytest
 from pytest_cases import parametrize_with_cases
 
@@ -17,8 +20,6 @@ from fed_reg.region.schemas import (
     RegionReadPublic,
     RegionUpdate,
 )
-from tests.models.utils import region_model_dict
-from tests.schemas.utils import region_schema_dict
 
 
 def test_classes_inheritance() -> None:
@@ -44,68 +45,63 @@ def test_classes_inheritance() -> None:
     assert issubclass(RegionCreate, BaseNodeCreate)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_base_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_base_public(data: dict[str, Any]) -> None:
     """Test RegionBasePublic class' attribute values."""
-    d = region_schema_dict(attr)
-    item = RegionBasePublic(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    item = RegionBasePublic(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
 
 @parametrize_with_cases("region_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base"))
 def test_base(
     region_cls: type[RegionBase] | type[RegionCreate],
-    attr: str,
+    data: dict[str, Any],
 ) -> None:
     """Test class' attribute values.
 
     Execute this test on RegionBase, PrivateRegionCreate
     and SharedRegionCreate.
     """
-    d = region_schema_dict(attr)
-    item = region_cls(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    item = region_cls(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "update"))
-def test_update(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "update"))
+def test_update(data: dict[str, Any]) -> None:
     """Test RegionUpdate class' attribute values."""
-    d = region_schema_dict(attr)
-    item = RegionUpdate(**d)
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name", None)
+    item = RegionUpdate(**data)
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name", None)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_read_public(data: dict[str, Any]) -> None:
     """Test RegionReadPublic class' attribute values."""
-    d = region_schema_dict(attr, read=True)
-    item = RegionReadPublic(**d)
+    uid = uuid4()
+    item = RegionReadPublic(**data, uid=uid)
     assert item.schema_type == "public"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_read(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid"))
+def test_read(data: dict[str, Any]) -> None:
     """Test RegionRead class' attribute values."""
-    d = region_schema_dict(attr, read=True)
-    item = RegionRead(**d)
+    uid = uuid4()
+    item = RegionRead(**data, uid=uid)
     assert item.schema_type == "private"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.name == d.get("name")
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.name == data.get("name")
 
 
-@parametrize_with_cases("region_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public_from_orm(region_cls: type[Region], attr: str) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_public_from_orm(model: Region) -> None:
     """Use the from_orm function of RegionReadPublic to read data from ORM."""
-    model = region_cls(**region_model_dict(attr)).save()
     item = RegionReadPublic.from_orm(model)
     assert item.schema_type == "public"
     assert item.uid == model.uid
@@ -113,11 +109,9 @@ def test_read_public_from_orm(region_cls: type[Region], attr: str) -> None:
     assert item.name == model.name
 
 
-@parametrize_with_cases("region_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
-def test_read_from_orm(region_cls: type[Region], attr: str) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_from_orm(model: Region) -> None:
     """Use the from_orm function of RegionRead to read data from an ORM."""
-    model = region_cls(**region_model_dict(attr)).save()
     item = RegionRead.from_orm(model)
     assert item.schema_type == "private"
     assert item.uid == model.uid
@@ -125,17 +119,19 @@ def test_read_from_orm(region_cls: type[Region], attr: str) -> None:
     assert item.name == model.name
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_base_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base_public"))
+def test_invalid_base_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for RegionBasePublic."""
-    with pytest.raises(ValueError):
-        RegionBasePublic(**region_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for RegionBasePublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        RegionBasePublic(**data)
 
 
 @parametrize_with_cases("region_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base"))
 def test_invalid_base(
     region_cls: type[RegionBase] | type[RegionCreate],
+    data: dict[str, Any],
     attr: str,
 ) -> None:
     """Test invalid attributes for base and create.
@@ -143,26 +139,32 @@ def test_invalid_base(
     Apply to RegionBase, PrivateRegionCreate and
     SharedRegionCreate.
     """
-    with pytest.raises(ValueError):
-        region_cls(**region_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for {region_cls.__name__}\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        region_cls(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "update"))
-def test_invalid_update(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "update"))
+def test_invalid_update(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for RegionUpdate."""
-    with pytest.raises(ValueError):
-        RegionUpdate(**region_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for RegionUpdate\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        RegionUpdate(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_read_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read_public"))
+def test_invalid_read_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for RegionReadPublic."""
-    with pytest.raises(ValueError):
-        RegionReadPublic(**region_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for RegionReadPublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        RegionReadPublic(**data, uid=uid)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
-def test_invalid_read(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read"))
+def test_invalid_read(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for RegionRead."""
-    with pytest.raises(ValueError):
-        RegionRead(**region_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for RegionRead\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        RegionRead(**data, uid=uid)

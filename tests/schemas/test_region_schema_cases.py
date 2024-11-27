@@ -1,29 +1,28 @@
-from pytest_cases import case, parametrize
+from typing import Any, Literal
+
+from pytest_cases import case, parametrize_with_cases
 
 from fed_reg.region.models import Region
 from fed_reg.region.schemas import RegionBase, RegionCreate
+from tests.schemas.utils import region_schema_dict
+from tests.utils import random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("attr", "mandatory", "base_public", "base", "update"))
-    @parametrize(value=("name",))
-    def case_mandatory(self, value: str) -> str:
-        return value
+class CaseRegionSchema:
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_mandatory(self) -> dict[str, Any]:
+        return region_schema_dict()
 
-    @case(tags=("attr", "optional", "base_public", "base", "update"))
-    @parametrize(value=("description",))
-    def case_description(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_description(self) -> dict[str, Any]:
+        return {**region_schema_dict(), "description": random_lower_string()}
 
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_name(self) -> tuple[dict[str, Any], Literal["name"]]:
+        d = region_schema_dict()
+        d.pop("name")
+        return d, "name"
 
-class CaseInvalidAttr:
-    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
-    @parametrize(value=("name",))
-    def case_missing_mandatory(self, value: str) -> str:
-        return value
-
-
-class CaseClass:
     @case(tags="class")
     def case_base_class(self) -> type[RegionBase]:
         return RegionBase
@@ -33,7 +32,10 @@ class CaseClass:
         return RegionCreate
 
 
-class CaseModel:
+class CaseRegionModel:
     @case(tags="model")
-    def case_region(self) -> type[Region]:
-        return Region
+    @parametrize_with_cases(
+        "data", cases=CaseRegionSchema, has_tag=("dict", "valid", "base")
+    )
+    def case_flavor_model(self, data: dict[str, Any]) -> Region:
+        return Region(**RegionBase(**data).dict()).save()

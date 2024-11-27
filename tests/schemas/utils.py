@@ -142,26 +142,6 @@ def location_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, An
     return data
 
 
-def project_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("description", "name"):
-            data[k] = random_lower_string()
-        elif k in ("uuid",):
-            data[k] = uuid4()
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def project_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("name", "uuid", "uid"):
-            data.pop(k)
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
 def provider_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
     for k in args:
         if k in ("description", "name"):
@@ -223,24 +203,6 @@ def quota_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
 
 
 def quota_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    return data
-
-
-def region_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("description", "name"):
-            data[k] = random_lower_string()
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def region_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("name", "uid"):
-            data.pop(k)
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
     return data
 
 
