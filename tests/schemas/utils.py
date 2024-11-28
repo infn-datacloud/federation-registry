@@ -16,8 +16,6 @@ from fed_reg.service.enum import (
     ObjectStoreServiceName,
 )
 from tests.utils import (
-    random_date_after,
-    random_date_before,
     random_lower_string,
     random_non_negative_int,
     random_start_end_dates,
@@ -157,32 +155,6 @@ def object_store_service_schema_dict(*args, **kwargs) -> dict[str, Any]:
     d = service_schema_dict(*args, **kwargs)
     d["name"] = random_service_name(ObjectStoreServiceName)
     return d
-
-
-def sla_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("description",):
-            data[k] = random_lower_string()
-        elif k in ("doc_uuid",):
-            data[k] = uuid4()
-        elif k in ("start_date",):
-            data[k] = random_date_before(data["end_date"])
-        elif k in ("end_date",):
-            data[k] = random_date_after(data["start_date"])
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def sla_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("doc_uuid", "start_date", "end_date", "uid"):
-            data.pop(k)
-        elif k in ("inverted_dates",):
-            data["end_date"], data["start_date"] = random_start_end_dates()
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
 
 
 def random_country() -> str:

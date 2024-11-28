@@ -1,44 +1,57 @@
-from pytest_cases import case, parametrize
+from typing import Any, Literal
+
+from pytest_cases import case, parametrize_with_cases
 
 from fed_reg.sla.models import SLA
 from fed_reg.sla.schemas import SLABase, SLACreate
+from tests.schemas.utils import sla_schema_dict
+from tests.utils import random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("attr", "mandatory", "base_public", "base", "update"))
-    @parametrize(value=("doc_uuid",))
-    def case_mandatory_public(self, value: str) -> str:
-        return value
+class CaseSLASchema:
+    @case(tags=("dict", "valid", "base_public", "update"))
+    def case_mandatory_public(self) -> dict[str, Any]:
+        d = sla_schema_dict()
+        d.pop("start_date")
+        d.pop("end_date")
+        return d
 
-    @case(tags=("attr", "mandatory", "base", "update"))
-    @parametrize(value=("start_date", "end_date"))
-    def case_mandatory(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_mandatory(self) -> dict[str, Any]:
+        return sla_schema_dict()
 
-    @case(tags=("attr", "optional", "base_public", "base", "update"))
-    @parametrize(value=("description",))
-    def case_description(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_description(self) -> dict[str, Any]:
+        return {**sla_schema_dict(), "description": random_lower_string()}
 
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_doc_uuid(self) -> tuple[dict[str, Any], Literal["doc_uuid"]]:
+        d = sla_schema_dict()
+        d.pop("doc_uuid")
+        return d, "doc_uuid"
 
-class CaseInvalidAttr:
-    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
-    @parametrize(value=("doc_uuid",))
-    def case_missing_mandatory_public(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "invalid", "base", "read"))
+    def case_missing_start_date(self) -> tuple[dict[str, Any], Literal["start_date"]]:
+        d = sla_schema_dict()
+        d.pop("start_date")
+        return d, "start_date"
 
-    @case(tags=("invalid_attr", "base", "read"))
-    @parametrize(value=("start_date", "end_date"))
-    def case_missing_mandatory(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "invalid", "base", "read"))
+    def case_missing_end_date(self) -> tuple[dict[str, Any], Literal["end_date"]]:
+        d = sla_schema_dict()
+        d.pop("end_date")
+        return d, "end_date"
 
-    @case(tags=("invalid_attr", "base", "read"))
-    @parametrize(value=("inverted_dates",))
-    def case_invalid_combination(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "invalid", "base", "read"))
+    def case_invalid_date_combination(
+        self,
+    ) -> tuple[dict[str, Any], Literal["end_date"]]:
+        d = sla_schema_dict()
+        tmp = d.get("end_date")
+        d["end_date"] = d["start_date"]
+        d["start_date"] = tmp
+        return d, "end_date"
 
-
-class CaseClass:
     @case(tags="class")
     def case_base_class(self) -> type[SLABase]:
         return SLABase
@@ -48,7 +61,10 @@ class CaseClass:
         return SLACreate
 
 
-class CaseModel:
+class CaseSLAModel:
     @case(tags="model")
-    def case_sla(self) -> type[SLA]:
-        return SLA
+    @parametrize_with_cases(
+        "data", cases=CaseSLASchema, has_tag=("dict", "valid", "base")
+    )
+    def case_sla_model(self, data: dict[str, Any]) -> SLA:
+        return SLA(**SLABase(**data).dict()).save()

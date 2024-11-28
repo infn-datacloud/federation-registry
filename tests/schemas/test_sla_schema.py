@@ -1,3 +1,6 @@
+from typing import Any
+from uuid import uuid4
+
 import pytest
 from pytest_cases import parametrize_with_cases
 
@@ -17,8 +20,6 @@ from fed_reg.sla.schemas import (
     SLAReadPublic,
     SLAUpdate,
 )
-from tests.models.utils import sla_model_dict
-from tests.schemas.utils import sla_schema_dict
 
 
 def test_classes_inheritance() -> None:
@@ -44,76 +45,71 @@ def test_classes_inheritance() -> None:
     assert issubclass(SLACreate, BaseNodeCreate)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_base_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_base_public(data: dict[str, Any]) -> None:
     """Test SLABasePublic class' attribute values."""
-    d = sla_schema_dict(attr)
-    item = SLABasePublic(**d)
-    assert item.description == d.get("description", "")
-    assert item.doc_uuid == d.get("doc_uuid").hex
+    item = SLABasePublic(**data)
+    assert item.description == data.get("description", "")
+    assert item.doc_uuid == data.get("doc_uuid").hex
 
 
 @parametrize_with_cases("sla_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base"))
 def test_base(
     sla_cls: type[SLABase] | type[SLACreate],
-    attr: str,
+    data: dict[str, Any],
 ) -> None:
     """Test class' attribute values.
 
     Execute this test on SLABase, PrivateSLACreate
     and SharedSLACreate.
     """
-    d = sla_schema_dict(attr)
-    item = sla_cls(**d)
-    assert item.description == d.get("description", "")
-    assert item.doc_uuid == d.get("doc_uuid").hex
-    assert item.start_date == d.get("start_date")
-    assert item.end_date == d.get("end_date")
+    item = sla_cls(**data)
+    assert item.description == data.get("description", "")
+    assert item.doc_uuid == data.get("doc_uuid").hex
+    assert item.start_date == data.get("start_date")
+    assert item.end_date == data.get("end_date")
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "update"))
-def test_update(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "update"))
+def test_update(data: dict[str, Any]) -> None:
     """Test SLAUpdate class' attribute values."""
-    d = sla_schema_dict(attr)
-    item = SLAUpdate(**d)
-    assert item.description == d.get("description", "")
+    item = SLAUpdate(**data)
+    assert item.description == data.get("description", "")
     assert item.doc_uuid == (
-        d.get("doc_uuid", None).hex if d.get("doc_uuid", None) else None
+        data.get("doc_uuid", None).hex if data.get("doc_uuid", None) else None
     )
-    assert item.start_date == d.get("start_date", None)
-    assert item.end_date == d.get("end_date", None)
+    assert item.start_date == data.get("start_date", None)
+    assert item.end_date == data.get("end_date", None)
 
 
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base_public"))
+def test_read_public(data: dict[str, Any]) -> None:
     """Test SLAReadPublic class' attribute values."""
-    d = sla_schema_dict(attr, read=True)
-    item = SLAReadPublic(**d)
+    uid = uuid4()
+    item = SLAReadPublic(**data, uid=uid)
     assert item.schema_type == "public"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.doc_uuid == d.get("doc_uuid").hex
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.doc_uuid == data.get("doc_uuid").hex
 
 
-@parametrize_with_cases("attr", has_tag="attr")
-def test_read(attr: str) -> None:
+@parametrize_with_cases("data", has_tag=("dict", "valid", "base"))
+def test_read(data: dict[str, Any]) -> None:
     """Test SLARead class' attribute values."""
-    d = sla_schema_dict(attr, read=True)
-    item = SLARead(**d)
+    uid = uuid4()
+    item = SLARead(**data, uid=uid)
     assert item.schema_type == "private"
-    assert item.uid == d.get("uid").hex
-    assert item.description == d.get("description", "")
-    assert item.doc_uuid == d.get("doc_uuid").hex
-    assert item.start_date == d.get("start_date")
-    assert item.end_date == d.get("end_date")
+    assert item.uid == uid.hex
+    assert item.description == data.get("description", "")
+    assert item.doc_uuid == data.get("doc_uuid").hex
+    assert item.start_date == data.get("start_date")
+    assert item.end_date == data.get("end_date")
 
 
-@parametrize_with_cases("sla_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base_public"))
-def test_read_public_from_orm(sla_cls: type[SLA], attr: str) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_public_from_orm(model: SLA) -> None:
     """Use the from_orm function of SLAReadPublic to read data from ORM."""
-    model = sla_cls(**sla_model_dict(attr)).save()
     item = SLAReadPublic.from_orm(model)
     assert item.schema_type == "public"
     assert item.uid == model.uid
@@ -121,11 +117,9 @@ def test_read_public_from_orm(sla_cls: type[SLA], attr: str) -> None:
     assert item.doc_uuid == model.doc_uuid
 
 
-@parametrize_with_cases("sla_cls", has_tag="model")
-@parametrize_with_cases("attr", has_tag=("attr", "base"))
-def test_read_from_orm(sla_cls: type[SLA], attr: str) -> None:
+@parametrize_with_cases("model", has_tag="model")
+def test_read_from_orm(model: SLA) -> None:
     """Use the from_orm function of SLARead to read data from an ORM."""
-    model = sla_cls(**sla_model_dict(attr)).save()
     item = SLARead.from_orm(model)
     assert item.schema_type == "private"
     assert item.uid == model.uid
@@ -135,17 +129,19 @@ def test_read_from_orm(sla_cls: type[SLA], attr: str) -> None:
     assert item.end_date == model.end_date
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_base_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base_public"))
+def test_invalid_base_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for SLABasePublic."""
-    with pytest.raises(ValueError):
-        SLABasePublic(**sla_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for SLABasePublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        SLABasePublic(**data)
 
 
 @parametrize_with_cases("sla_cls", has_tag="class")
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "base"))
 def test_invalid_base(
     sla_cls: type[SLABase] | type[SLACreate],
+    data: dict[str, Any],
     attr: str,
 ) -> None:
     """Test invalid attributes for base and create.
@@ -153,26 +149,32 @@ def test_invalid_base(
     Apply to SLABase, PrivateSLACreate and
     SharedSLACreate.
     """
-    with pytest.raises(ValueError):
-        sla_cls(**sla_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for {sla_cls.__name__}\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        sla_cls(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "update"))
-def test_invalid_update(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "update"))
+def test_invalid_update(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for SLAUpdate."""
-    with pytest.raises(ValueError):
-        SLAUpdate(**sla_schema_dict(attr, valid=False))
+    err_msg = rf"1 validation error for SLAUpdate\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        SLAUpdate(**data)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base_public"))
-def test_invalid_read_public(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read_public"))
+def test_invalid_read_public(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for SLAReadPublic."""
-    with pytest.raises(ValueError):
-        SLAReadPublic(**sla_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for SLAReadPublic\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        SLAReadPublic(**data, uid=uid)
 
 
-@parametrize_with_cases("attr", has_tag=("invalid_attr", "base"))
-def test_invalid_read(attr: str) -> None:
+@parametrize_with_cases("data, attr", has_tag=("dict", "invalid", "read"))
+def test_invalid_read(data: dict[str, Any], attr: str) -> None:
     """Test invalid attributes for SLARead."""
-    with pytest.raises(ValueError):
-        SLARead(**sla_schema_dict(attr, valid=False, read=True))
+    uid = uuid4()
+    err_msg = rf"1 validation error for SLARead\s{attr}"
+    with pytest.raises(ValueError, match=err_msg):
+        SLARead(**data, uid=uid)
