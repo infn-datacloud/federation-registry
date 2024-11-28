@@ -1,49 +1,66 @@
-from pytest_cases import case, parametrize
+from typing import Any, Literal
+
+from pytest_cases import case, parametrize_with_cases
 
 from fed_reg.provider.models import Provider
 from fed_reg.provider.schemas import ProviderBase, ProviderCreate
+from tests.schemas.utils import provider_schema_dict, random_provider_status
+from tests.utils import random_email, random_lower_string
 
 
-class CaseAttr:
-    @case(tags=("attr", "mandatory", "base_public", "base", "update"))
-    @parametrize(value=("name", "type"))
-    def case_mandatory(self, value: str) -> str:
-        return value
+class CaseProviderSchema:
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_mandatory(self) -> dict[str, Any]:
+        return provider_schema_dict()
 
-    @case(tags=("attr", "optional", "base_public", "base", "update"))
-    @parametrize(value=("description",))
-    def case_description(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base_public", "base", "update"))
+    def case_description(self) -> dict[str, Any]:
+        return {**provider_schema_dict(), "description": random_lower_string()}
 
-    @case(tags=("attr", "optional", "base", "update"))
-    @parametrize(value=("is_public", "status", "support_emails"))
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_is_public(self) -> dict[str, Any]:
+        return {**provider_schema_dict(), "is_public": True}
 
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_status(self) -> dict[str, Any]:
+        return {**provider_schema_dict(), "status": random_provider_status()}
 
-class CaseInvalidAttr:
-    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
-    @parametrize(value=("name", "type"))
-    def case_missing_mandatory_public(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "valid", "base", "update"))
+    def case_support_emails(self) -> dict[str, Any]:
+        return {**provider_schema_dict(), "support_emails": [random_email()]}
 
-    @case(tags=("invalid_attr", "read_public", "read"))
-    @parametrize(value=("uid",))
-    def case_missing_uid(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_name(self) -> tuple[dict[str, Any], Literal["name"]]:
+        d = provider_schema_dict()
+        d.pop("name")
+        return d, "name"
 
-    @case(tags=("invalid_attr", "base_public", "base", "read_public", "read"))
-    @parametrize(value=("not_a_type",))
-    def case_invalid_mandatory(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "invalid", "base_public", "base", "read_public", "read"))
+    def case_missing_type(self) -> tuple[dict[str, Any], Literal["type"]]:
+        d = provider_schema_dict()
+        d.pop("type")
+        return d, "type"
 
-    @case(tags=("invalid_attr", "base", "read_public", "read"))
-    @parametrize(value=("not_a_status", "not_an_email"))
-    def case_optional(self, value: str) -> str:
-        return value
+    @case(tags=("dict", "invalid", "base", "update", "read"))
+    def case_invalid_type(self) -> tuple[dict[str, Any], Literal["type"]]:
+        d = provider_schema_dict()
+        d["type"] = random_lower_string()
+        return d, "type"
 
+    @case(tags=("dict", "invalid", "base", "update", "read"))
+    def case_invalid_status(self) -> tuple[dict[str, Any], Literal["status"]]:
+        d = provider_schema_dict()
+        d["status"] = random_lower_string()
+        return d, "status"
 
-class CaseClass:
+    @case(tags=("dict", "invalid", "base", "update", "read"))
+    def case_invalid_support_emails(
+        self,
+    ) -> tuple[dict[str, Any], Literal["support_emails"]]:
+        d = provider_schema_dict()
+        d["support_emails"] = [random_lower_string()]
+        return d, "support_emails"
+
     @case(tags="class")
     def case_base_class(self) -> type[ProviderBase]:
         return ProviderBase
@@ -53,7 +70,10 @@ class CaseClass:
         return ProviderCreate
 
 
-class CaseModel:
+class CaseProviderModel:
     @case(tags="model")
-    def case_provider(self) -> type[Provider]:
-        return Provider
+    @parametrize_with_cases(
+        "data", cases=CaseProviderSchema, has_tag=("dict", "valid", "base")
+    )
+    def case_provider_model(self, data: dict[str, Any]) -> Provider:
+        return Provider(**ProviderBase(**data).dict()).save()

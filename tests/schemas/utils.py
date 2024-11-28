@@ -18,7 +18,6 @@ from fed_reg.service.enum import (
 from tests.utils import (
     random_date_after,
     random_date_before,
-    random_email,
     random_lower_string,
     random_non_negative_int,
     random_start_end_dates,
@@ -81,38 +80,6 @@ def sla_schema_dict() -> dict[str, Any]:
 
 def user_group_schema_dict() -> dict[str, Any]:
     return {"name": random_lower_string()}
-
-
-def provider_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("description", "name"):
-            data[k] = random_lower_string()
-        elif k in ("type",):
-            data[k] = random_provider_type()
-        elif k in ("status",):
-            data[k] = random_provider_status()
-        elif k in ("is_public",):
-            data[k] = True
-        elif k in ("support_emails",):
-            data[k] = [random_email()]
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
-
-
-def provider_invalid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
-    for k in args:
-        if k in ("name", "type", "uid"):
-            data.pop(k)
-        elif k in ("not_a_type",):
-            data["type"] = random_lower_string()
-        elif k in ("not_a_status",):
-            data["status"] = random_lower_string()
-        elif k in ("not_an_email",):
-            data["support_emails"] = [random_lower_string()]
-        else:
-            raise AttributeError(f"attribute {k} not found in class definition")
-    return data
 
 
 def quota_valid_dict(data: dict[str, Any], *args, **kwargs) -> dict[str, Any]:
