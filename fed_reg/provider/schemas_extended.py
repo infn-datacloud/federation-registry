@@ -379,6 +379,10 @@ class ProviderReadExtended(BaseNodeRead, BaseReadPrivateExtended, ProviderBase):
         status (str | None): Provider status.
         is_public (bool): Public or private Provider.
         support_email (list of str): list of maintainers emails.
+        overbooking_cpu (float): CPU overbooking factor.
+        overbooking_ram (float): RAM overbooking factor.
+        bandwidth_in (float): Bandwidth in.
+        bandwidth_out (float): Bandwidth out.
         identity_providers (list of IdentityProviderReadExtended): Supported identity
             providers.
         projects (list of ProjectRead): Supplied projects.
@@ -994,6 +998,10 @@ class ProviderCreateExtended(ProviderCreate):
         status (str | None): Provider status.
         is_public (bool): Public or private Provider.
         support_email (list of str): list of maintainers emails.
+        overbooking_cpu (float): CPU overbooking factor.
+        overbooking_ram (float): RAM overbooking factor.
+        bandwidth_in (float): Bandwidth in.
+        bandwidth_out (float): Bandwidth out.
         identity_providers (list of IdentityProviderCreateExtended): Supported identity
             providers.
         projects (list of ProjectCreate): Supplied projects.

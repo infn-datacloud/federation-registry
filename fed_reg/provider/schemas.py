@@ -11,8 +11,12 @@ from fed_reg.models import (
     BaseReadPublic,
 )
 from fed_reg.provider.constants import (
+    DOC_BAND_IN,
+    DOC_BAND_OUT,
     DOC_EMAIL,
     DOC_NAME,
+    DOC_OVERBOOKING_CPU,
+    DOC_OVERBOOKING_RAM,
     DOC_SHARED,
     DOC_STAT,
     DOC_TYPE,
@@ -46,11 +50,19 @@ class ProviderBase(ProviderBasePublic):
         status (str | None): Provider status.
         is_public (bool): Public or private Provider.
         support_email (list of str): list of maintainers emails.
+        overbooking_cpu (float): CPU overbooking factor.
+        overbooking_ram (float): RAM overbooking factor.
+        bandwidth_in (float): Bandwidth in.
+        bandwidth_out (float): Bandwidth out.
     """
 
     status: ProviderStatus = Field(default=ProviderStatus.ACTIVE, description=DOC_STAT)
     is_public: bool = Field(default=False, description=DOC_SHARED)
     support_emails: list[EmailStr] = Field(default_factory=list, description=DOC_EMAIL)
+    overbooking_cpu: float = Field(default=1.0, description=DOC_OVERBOOKING_CPU)
+    overbooking_ram: float = Field(default=1.0, description=DOC_OVERBOOKING_RAM)
+    bandwidth_in: float = Field(default=10.0, description=DOC_BAND_IN)
+    bandwidth_out: float = Field(default=10.0, description=DOC_BAND_OUT)
 
 
 class ProviderCreate(BaseNodeCreate, ProviderBase):
@@ -67,6 +79,10 @@ class ProviderCreate(BaseNodeCreate, ProviderBase):
         status (str | None): Provider status.
         is_public (bool): Public or private Provider.
         support_email (list of str): list of maintainers emails.
+        overbooking_cpu (float): CPU overbooking factor.
+        overbooking_ram (float): RAM overbooking factor.
+        bandwidth_in (float): Bandwidth in.
+        bandwidth_out (float): Bandwidth out.
     """
 
 
@@ -86,6 +102,10 @@ class ProviderUpdate(BaseNodeCreate, ProviderBase):
         status (str | None): Provider status.
         is_public (bool | None): Public or private Provider.
         support_email (list of str | None): list of maintainers emails.
+        overbooking_cpu (float): CPU overbooking factor.
+        overbooking_ram (float): RAM overbooking factor.
+        bandwidth_in (float): Bandwidth in.
+        bandwidth_out (float): Bandwidth out.
     """
 
     name: Optional[str] = Field(default=None, description=DOC_NAME)
@@ -126,6 +146,10 @@ class ProviderRead(BaseNodeRead, BaseReadPrivate, ProviderBase):
         status (str | None): Provider status.
         is_public (bool): Public or private Provider.
         support_email (list of str): list of maintainers emails.
+        overbooking_cpu (float): CPU overbooking factor.
+        overbooking_ram (float): RAM overbooking factor.
+        bandwidth_in (float): Bandwidth in.
+        bandwidth_out (float): Bandwidth out.
     """
 
 

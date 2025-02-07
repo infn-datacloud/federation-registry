@@ -2,6 +2,7 @@
 from neomodel import (
     ArrayProperty,
     BooleanProperty,
+    FloatProperty,
     RelationshipTo,
     StringProperty,
     StructuredNode,
@@ -43,6 +44,10 @@ class Provider(StructuredNode):
     status = StringProperty()
     is_public = BooleanProperty(default=False)
     support_emails = ArrayProperty(StringProperty(), default=[])
+    overbooking_cpu = FloatProperty(default=1.0)
+    overbooking_ram = FloatProperty(default=1.0)
+    bandwidth_in = FloatProperty(default=10.0)
+    bandwidth_out = FloatProperty(default=10.0)
 
     projects = RelationshipTo(
         "fed_reg.project.models.Project",
