@@ -1,6 +1,10 @@
 """Definition of Region constants."""
 
 DOC_NAME = "Region name in the Provider."
+DOC_OVERBOOKING_CPU = "CPU overbooking factor."
+DOC_OVERBOOKING_RAM = "RAM overbooking factor."
+DOC_BAND_IN = "Bandwidth in."
+DOC_BAND_OUT = "Bandwidth out."
 DOC_EXT_PROV = "Provider hosting this region."
 DOC_EXT_LOC = "Location hosting the this region."
 DOC_EXT_SERV = "Supplied services (block-storage, compute, identity and network type)."

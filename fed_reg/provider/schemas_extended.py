@@ -327,6 +327,10 @@ class RegionReadExtended(RegionRead):
         uid (uuid): AssociatedRegion unique ID.
         description (str): Brief description.
         name (str): Name of the Region in the Provider.
+        overbooking_cpu (float): CPU overbooking factor.
+        overbooking_ram (float): RAM overbooking factor.
+        bandwidth_in (float): Bandwidth in.
+        bandwidth_out (float): Bandwidth out.
         location (LocationRead | None): Location hosting this region.
         services (list of Service): Supplied services (block-storage, compute, identity
             and network type).
@@ -929,6 +933,10 @@ class RegionCreateExtended(RegionCreate):
         uid (uuid): AssociatedRegion unique ID.
         description (str): Brief description.
         name (str): Name of the Region in the Provider.
+        overbooking_cpu (float): CPU overbooking factor.
+        overbooking_ram (float): RAM overbooking factor.
+        bandwidth_in (float): Bandwidth in.
+        bandwidth_out (float): Bandwidth out.
         provider (ProviderRead): Provider hosting this region.
         location (LocationRead | None): Location hosting this region.
         block_storage_services (list of BlockStorageServiceCreateExtended): Supplied
@@ -998,10 +1006,6 @@ class ProviderCreateExtended(ProviderCreate):
         status (str | None): Provider status.
         is_public (bool): Public or private Provider.
         support_email (list of str): list of maintainers emails.
-        overbooking_cpu (float): CPU overbooking factor.
-        overbooking_ram (float): RAM overbooking factor.
-        bandwidth_in (float): Bandwidth in.
-        bandwidth_out (float): Bandwidth out.
         identity_providers (list of IdentityProviderCreateExtended): Supported identity
             providers.
         projects (list of ProjectCreate): Supplied projects.

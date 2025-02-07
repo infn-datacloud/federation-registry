@@ -33,6 +33,10 @@ class RegionReadExtended(BaseNodeRead, BaseReadPrivateExtended, RegionBase):
         uid (uuid): AssociatedRegion unique ID.
         description (str): Brief description.
         name (str): Name of the Region in the Provider.
+        overbooking_cpu (float): CPU overbooking factor.
+        overbooking_ram (float): RAM overbooking factor.
+        bandwidth_in (float): Bandwidth in.
+        bandwidth_out (float): Bandwidth out.
         provider (ProviderRead): Provider hosting this region.
         location (LocationRead | None): Location hosting this region.
         services (list of Service): Supplied services (block-storage, compute,
