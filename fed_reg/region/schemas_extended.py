@@ -22,6 +22,8 @@ from fed_reg.service.schemas import (
     IdentityServiceReadPublic,
     NetworkServiceRead,
     NetworkServiceReadPublic,
+    ObjectStoreServiceRead,
+    ObjectStoreServiceReadPublic,
 )
 
 
@@ -50,6 +52,7 @@ class RegionReadExtended(BaseNodeRead, BaseReadPrivateExtended, RegionBase):
         | ComputeServiceRead
         | IdentityServiceRead
         | NetworkServiceRead
+        | ObjectStoreServiceRead
     ] = Field(description=DOC_EXT_SERV)
 
 
@@ -76,6 +79,7 @@ class RegionReadExtendedPublic(BaseNodeRead, BaseReadPublicExtended, RegionBaseP
         | ComputeServiceReadPublic
         | IdentityServiceReadPublic
         | NetworkServiceReadPublic
+        | ObjectStoreServiceReadPublic
     ] = Field(description=DOC_EXT_SERV)
 
 
