@@ -1,6 +1,4 @@
 """Pydantic models of the Region owned by a Provider."""
-from typing import Optional
-
 from pydantic import Field
 
 from fed_reg.models import (
@@ -86,7 +84,11 @@ class RegionUpdate(BaseNodeCreate, RegionBase):
         bandwidth_out (float | None): Bandwidth out.
     """
 
-    name: Optional[str] = Field(default=None, description=DOC_NAME)
+    name: str | None = Field(default=None, description=DOC_NAME)
+    overbooking_cpu: float | None = Field(default=1.0, description=DOC_OVERBOOKING_CPU)
+    overbooking_ram: float | None = Field(default=1.0, description=DOC_OVERBOOKING_RAM)
+    bandwidth_in: float | None = Field(default=10.0, description=DOC_BAND_IN)
+    bandwidth_out: float | None = Field(default=10.0, description=DOC_BAND_OUT)
 
 
 class RegionReadPublic(BaseNodeRead, BaseReadPublic, RegionBasePublic):
