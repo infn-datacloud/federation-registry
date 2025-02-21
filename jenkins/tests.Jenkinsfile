@@ -26,7 +26,7 @@ void runTests(String pythonVersion) {
 }
 
 pipeline {
-    agent { label 'jenkinsworker01' }
+    agent { label 'jenkins-node-label-1' }
 
     environment {
         NEO4J_IMAGE = 'neo4j:5.18'
