@@ -1,4 +1,5 @@
 """SLA endpoints to execute POST, GET, PUT, PATCH and DELETE operations."""
+
 from typing import Optional
 
 # from app.user_group.api.dependencies import valid_user_group_id

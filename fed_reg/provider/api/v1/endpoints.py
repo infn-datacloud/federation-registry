@@ -1,4 +1,5 @@
 """Provider endpoints to execute POST, GET, PUT, PATCH, DELETE operations."""
+
 from typing import Optional
 
 # from app.service.api.dependencies import valid_service_endpoint

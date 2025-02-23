@@ -1,4 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a Location."""
+
 from fedreg.location.models import Location
 from fedreg.location.schemas import (
     LocationCreate,

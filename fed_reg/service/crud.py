@@ -1,5 +1,6 @@
 """Module with Create, Read, Update and Delete operations for a Services."""
-from typing import Any, Dict, Optional, Tuple
+
+from typing import Any, Optional
 
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import (
@@ -63,7 +64,7 @@ from fed_reg.quota.crud import (
 )
 
 
-def split_quota(quotas: list[Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+def split_quota(quotas: list[Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     """Split quotas in usage, per-user, per-project."""
     db_items_usage = {
         db_item.project.single().uuid: db_item

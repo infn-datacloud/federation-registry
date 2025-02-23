@@ -1,4 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a Flavor."""
+
 from typing import Optional
 
 from fedreg.flavor.models import Flavor

@@ -1,5 +1,6 @@
 """Module defining the classes with query common attributes."""
-from typing import Any, Dict, Optional
+
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, validator
 
@@ -31,7 +32,7 @@ class Pagination(BaseModel):
 
     @validator("page", pre=True)
     @classmethod
-    def set_page_to_0(cls, v: int, values: Dict[str, Any]) -> int:
+    def set_page_to_0(cls, v: int, values: dict[str, Any]) -> int:
         """If chunk size is 0 set page index to 0."""
         if values.get("size") is None:
             return 0

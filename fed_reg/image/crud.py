@@ -1,4 +1,5 @@
 """Module with Create, Read, Update and Delete operations for an Image."""
+
 from typing import Optional
 
 from fedreg.image.models import Image

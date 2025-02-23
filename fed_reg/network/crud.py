@@ -1,4 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a Network."""
+
 from typing import Optional
 
 from fedreg.network.models import Network

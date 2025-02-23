@@ -1,4 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a Project."""
+
 from fedreg.project.models import Project
 from fedreg.project.schemas import (
     ProjectCreate,

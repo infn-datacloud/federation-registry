@@ -1,4 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a Region."""
+
 from typing import Optional
 
 from fedreg.project.models import Project

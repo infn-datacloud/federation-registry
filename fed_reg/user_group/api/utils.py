@@ -1,6 +1,5 @@
 """Utilities used in User Group endpoints."""
 
-
 from fedreg.provider.schemas import ProviderQuery
 from fedreg.region.schemas import RegionQuery
 from fedreg.user_group.models import UserGroup

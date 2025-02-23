@@ -1,4 +1,5 @@
 """Quotas endpoints to execute POST, GET, PUT, PATCH, DELETE operations."""
+
 from typing import Optional
 
 from fastapi import (

@@ -1,4 +1,5 @@
 """User Group endpoints to execute POST, GET, PUT, PATCH and DELETE operations."""
+
 from typing import Optional
 
 from fastapi import (

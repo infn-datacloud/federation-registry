@@ -1,4 +1,5 @@
 """Flavor REST API dependencies."""
+
 from fastapi import Depends, HTTPException, status
 from fedreg.flavor.models import Flavor
 from fedreg.flavor.schemas import FlavorCreate, FlavorUpdate

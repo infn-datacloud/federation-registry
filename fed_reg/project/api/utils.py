@@ -1,6 +1,5 @@
 """Utilities used in Project endpoints."""
 
-
 from fedreg.project.models import Project
 from fedreg.region.schemas import RegionQuery
 from fedreg.service.schemas import IdentityServiceQuery

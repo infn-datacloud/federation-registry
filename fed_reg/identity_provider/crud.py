@@ -1,4 +1,5 @@
 """Module with Create, Read, Update and Delete operations for an Identity Provider."""
+
 from typing import Optional
 
 from fedreg.identity_provider.models import IdentityProvider

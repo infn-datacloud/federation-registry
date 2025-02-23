@@ -1,4 +1,5 @@
 """Quota REST API dependencies."""
+
 from fastapi import Depends, HTTPException, status
 from fedreg.quota.models import (
     BlockStorageQuota,
