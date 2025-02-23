@@ -1,21 +1,22 @@
 """Module with Create, Read, Update and Delete operations for a Provider."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
-from fed_reg.identity_provider.crud import identity_provider_mng
-from fed_reg.project.crud import project_mng
-from fed_reg.provider.models import Provider
-from fed_reg.provider.schemas import (
+from fedreg.provider.models import Provider
+from fedreg.provider.schemas import (
     ProviderCreate,
     ProviderRead,
     ProviderReadPublic,
     ProviderUpdate,
 )
-from fed_reg.provider.schemas_extended import (
+from fedreg.provider.schemas_extended import (
     ProviderCreateExtended,
     ProviderReadExtended,
     ProviderReadExtendedPublic,
 )
+
+from fed_reg.crud import CRUDBase
+from fed_reg.identity_provider.crud import identity_provider_mng
+from fed_reg.project.crud import project_mng
 from fed_reg.region.crud import region_mng
 
 

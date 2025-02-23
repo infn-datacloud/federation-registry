@@ -1,9 +1,8 @@
 """Module with common Create, Read, Update and delete operations."""
 from typing import Generic, Literal, Optional, Type, TypeVar
 
+from fedreg.core import BaseNodeCreate, BaseNodeRead, BaseReadPrivate, BaseReadPublic
 from neomodel import StructuredNode
-
-from fed_reg.models import BaseNodeCreate, BaseNodeRead, BaseReadPrivate, BaseReadPublic
 
 ModelType = TypeVar("ModelType", bound=StructuredNode)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseNodeCreate)

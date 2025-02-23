@@ -1,9 +1,9 @@
 """Utilities used in Project endpoints."""
 
 
-from fed_reg.project.models import Project
-from fed_reg.region.schemas import RegionQuery
-from fed_reg.service.schemas import IdentityServiceQuery
+from fedreg.project.models import Project
+from fedreg.region.schemas import RegionQuery
+from fedreg.service.schemas import IdentityServiceQuery
 
 
 def filter_on_region_attr(  # noqa: C901

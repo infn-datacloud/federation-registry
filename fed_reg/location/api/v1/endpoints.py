@@ -11,6 +11,16 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.location.models import Location
+from fedreg.location.schemas import (
+    LocationQuery,
+    LocationRead,
+    LocationUpdate,
+)
+from fedreg.location.schemas_extended import (
+    LocationReadMulti,
+    LocationReadSingle,
+)
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -20,16 +30,6 @@ from fed_reg.location.api.dependencies import (
     validate_new_location_values,
 )
 from fed_reg.location.crud import location_mng
-from fed_reg.location.models import Location
-from fed_reg.location.schemas import (
-    LocationQuery,
-    LocationRead,
-    LocationUpdate,
-)
-from fed_reg.location.schemas_extended import (
-    LocationReadMulti,
-    LocationReadSingle,
-)
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 
 # from app.region.models import Region

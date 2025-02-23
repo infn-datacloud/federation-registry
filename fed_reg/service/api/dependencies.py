@@ -1,22 +1,14 @@
 """Service REST API dependencies."""
 
 from fastapi import Depends, HTTPException, status
-
-from fed_reg.service.crud import (
-    block_storage_service_mng,
-    compute_service_mng,
-    identity_service_mng,
-    network_service_mng,
-    object_store_service_mng,
-)
-from fed_reg.service.models import (
+from fedreg.service.models import (
     BlockStorageService,
     ComputeService,
     IdentityService,
     NetworkService,
     ObjectStoreService,
 )
-from fed_reg.service.schemas import (
+from fedreg.service.schemas import (
     BlockStorageServiceCreate,
     BlockStorageServiceUpdate,
     ComputeServiceCreate,
@@ -27,6 +19,14 @@ from fed_reg.service.schemas import (
     NetworkServiceUpdate,
     ObjectStoreServiceCreate,
     ObjectStoreServiceUpdate,
+)
+
+from fed_reg.service.crud import (
+    block_storage_service_mng,
+    compute_service_mng,
+    identity_service_mng,
+    network_service_mng,
+    object_store_service_mng,
 )
 
 

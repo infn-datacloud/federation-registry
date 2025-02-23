@@ -11,6 +11,18 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.project.models import Project
+from fedreg.project.schemas import (
+    ProjectQuery,
+    ProjectRead,
+    ProjectUpdate,
+)
+from fedreg.project.schemas_extended import (
+    ProjectReadMulti,
+    ProjectReadSingle,
+)
+from fedreg.region.schemas import RegionQuery
+from fedreg.service.schemas import IdentityServiceQuery
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -32,19 +44,7 @@ from fed_reg.project.api.dependencies import (
 )
 from fed_reg.project.api.utils import filter_on_region_attr, filter_on_service_attr
 from fed_reg.project.crud import project_mng
-from fed_reg.project.models import Project
-from fed_reg.project.schemas import (
-    ProjectQuery,
-    ProjectRead,
-    ProjectUpdate,
-)
-from fed_reg.project.schemas_extended import (
-    ProjectReadMulti,
-    ProjectReadSingle,
-)
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
-from fed_reg.region.schemas import RegionQuery
-from fed_reg.service.schemas import IdentityServiceQuery
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 

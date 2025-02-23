@@ -1,10 +1,10 @@
 """Location REST API dependencies."""
 
 from fastapi import Depends, HTTPException, status
+from fedreg.location.models import Location
+from fedreg.location.schemas import LocationCreate, LocationUpdate
 
 from fed_reg.location.crud import location_mng
-from fed_reg.location.models import Location
-from fed_reg.location.schemas import LocationCreate, LocationUpdate
 
 
 def valid_location_id(location_uid: str) -> Location:

@@ -1,10 +1,10 @@
 """SLA REST API dependencies."""
 
 from fastapi import Depends, HTTPException, status
+from fedreg.sla.models import SLA
+from fedreg.sla.schemas import SLACreate, SLAUpdate
 
 from fed_reg.sla.crud import sla_mng
-from fed_reg.sla.models import SLA
-from fed_reg.sla.schemas import SLACreate, SLAUpdate
 
 
 def valid_sla_id(sla_uid: str) -> SLA:

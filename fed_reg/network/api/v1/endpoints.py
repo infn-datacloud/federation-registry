@@ -11,6 +11,16 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.network.models import Network
+from fedreg.network.schemas import (
+    NetworkQuery,
+    NetworkRead,
+    NetworkUpdate,
+)
+from fedreg.network.schemas_extended import (
+    NetworkReadMulti,
+    NetworkReadSingle,
+)
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -20,16 +30,6 @@ from fed_reg.network.api.dependencies import (
     validate_new_network_values,
 )
 from fed_reg.network.crud import network_mng
-from fed_reg.network.models import Network
-from fed_reg.network.schemas import (
-    NetworkQuery,
-    NetworkRead,
-    NetworkUpdate,
-)
-from fed_reg.network.schemas_extended import (
-    NetworkReadMulti,
-    NetworkReadSingle,
-)
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 
 router = APIRouter(prefix="/networks", tags=["networks"])

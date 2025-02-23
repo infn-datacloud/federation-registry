@@ -1,32 +1,33 @@
 """Module with Create, Read, Update and Delete operations for a Region."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
-from fed_reg.location.crud import location_mng
-from fed_reg.project.models import Project
-from fed_reg.provider.models import Provider
-from fed_reg.provider.schemas_extended import RegionCreateExtended
-from fed_reg.region.models import Region
-from fed_reg.region.schemas import (
+from fedreg.project.models import Project
+from fedreg.provider.models import Provider
+from fedreg.provider.schemas_extended import RegionCreateExtended
+from fedreg.region.models import Region
+from fedreg.region.schemas import (
     RegionCreate,
     RegionRead,
     RegionReadPublic,
     RegionUpdate,
 )
-from fed_reg.region.schemas_extended import RegionReadExtended, RegionReadExtendedPublic
+from fedreg.region.schemas_extended import RegionReadExtended, RegionReadExtendedPublic
+from fedreg.service.models import (
+    BlockStorageService,
+    ComputeService,
+    IdentityService,
+    NetworkService,
+    ObjectStoreService,
+)
+
+from fed_reg.crud import CRUDBase
+from fed_reg.location.crud import location_mng
 from fed_reg.service.crud import (
     block_storage_service_mng,
     compute_service_mng,
     identity_service_mng,
     network_service_mng,
     object_store_service_mng,
-)
-from fed_reg.service.models import (
-    BlockStorageService,
-    ComputeService,
-    IdentityService,
-    NetworkService,
-    ObjectStoreService,
 )
 
 

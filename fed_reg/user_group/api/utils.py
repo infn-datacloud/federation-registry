@@ -1,9 +1,9 @@
 """Utilities used in User Group endpoints."""
 
 
-from fed_reg.provider.schemas import ProviderQuery
-from fed_reg.region.schemas import RegionQuery
-from fed_reg.user_group.models import UserGroup
+from fedreg.provider.schemas import ProviderQuery
+from fedreg.region.schemas import RegionQuery
+from fedreg.user_group.models import UserGroup
 
 
 def filter_on_provider_attr(

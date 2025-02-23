@@ -1,21 +1,22 @@
 """Module with Create, Read, Update and Delete operations for a Network."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
-from fed_reg.network.models import Network
-from fed_reg.network.schemas import (
+from fedreg.network.models import Network
+from fedreg.network.schemas import (
     NetworkCreate,
     NetworkRead,
     NetworkReadPublic,
     NetworkUpdate,
 )
-from fed_reg.network.schemas_extended import (
+from fedreg.network.schemas_extended import (
     NetworkReadExtended,
     NetworkReadExtendedPublic,
 )
-from fed_reg.project.models import Project
-from fed_reg.provider.schemas_extended import NetworkCreateExtended
-from fed_reg.service.models import NetworkService
+from fedreg.project.models import Project
+from fedreg.provider.schemas_extended import NetworkCreateExtended
+from fedreg.service.models import NetworkService
+
+from fed_reg.crud import CRUDBase
 
 
 class CRUDNetwork(

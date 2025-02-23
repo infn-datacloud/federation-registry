@@ -1,17 +1,18 @@
 """Module with Create, Read, Update and Delete operations for a Location."""
-from fed_reg.crud import CRUDBase
-from fed_reg.location.models import Location
-from fed_reg.location.schemas import (
+from fedreg.location.models import Location
+from fedreg.location.schemas import (
     LocationCreate,
     LocationRead,
     LocationReadPublic,
     LocationUpdate,
 )
-from fed_reg.location.schemas_extended import (
+from fedreg.location.schemas_extended import (
     LocationReadExtended,
     LocationReadExtendedPublic,
 )
-from fed_reg.region.models import Region
+from fedreg.region.models import Region
+
+from fed_reg.crud import CRUDBase
 
 
 class CRUDLocation(

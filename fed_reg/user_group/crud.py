@@ -1,22 +1,23 @@
 """Module with Create, Read, Update and Delete operations for a User Group."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
-from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.project.models import Project
-from fed_reg.provider.schemas_extended import UserGroupCreateExtended
-from fed_reg.sla.crud import sla_mng
-from fed_reg.user_group.models import UserGroup
-from fed_reg.user_group.schemas import (
+from fedreg.identity_provider.models import IdentityProvider
+from fedreg.project.models import Project
+from fedreg.provider.schemas_extended import UserGroupCreateExtended
+from fedreg.user_group.models import UserGroup
+from fedreg.user_group.schemas import (
     UserGroupCreate,
     UserGroupRead,
     UserGroupReadPublic,
     UserGroupUpdate,
 )
-from fed_reg.user_group.schemas_extended import (
+from fedreg.user_group.schemas_extended import (
     UserGroupReadExtended,
     UserGroupReadExtendedPublic,
 )
+
+from fed_reg.crud import CRUDBase
+from fed_reg.sla.crud import sla_mng
 
 
 class CRUDUserGroup(

@@ -1,32 +1,22 @@
 """Module with Create, Read, Update and Delete operations for a Services."""
 from typing import Any, Dict, Optional, Tuple
 
-from fed_reg.crud import CRUDBase
-from fed_reg.flavor.crud import flavor_mng
-from fed_reg.image.crud import image_mng
-from fed_reg.network.crud import network_mng
-from fed_reg.project.models import Project
-from fed_reg.provider.schemas_extended import (
+from fedreg.project.models import Project
+from fedreg.provider.schemas_extended import (
     BlockStorageServiceCreateExtended,
     ComputeServiceCreateExtended,
     NetworkServiceCreateExtended,
     ObjectStoreServiceCreateExtended,
 )
-from fed_reg.quota.crud import (
-    block_storage_quota_mng,
-    compute_quota_mng,
-    network_quota_mng,
-    object_store_quota_mng,
-)
-from fed_reg.region.models import Region
-from fed_reg.service.models import (
+from fedreg.region.models import Region
+from fedreg.service.models import (
     BlockStorageService,
     ComputeService,
     IdentityService,
     NetworkService,
     ObjectStoreService,
 )
-from fed_reg.service.schemas import (
+from fedreg.service.schemas import (
     BlockStorageServiceCreate,
     BlockStorageServiceRead,
     BlockStorageServiceReadPublic,
@@ -48,7 +38,7 @@ from fed_reg.service.schemas import (
     ObjectStoreServiceReadPublic,
     ObjectStoreServiceUpdate,
 )
-from fed_reg.service.schemas_extended import (
+from fedreg.service.schemas_extended import (
     BlockStorageServiceReadExtended,
     BlockStorageServiceReadExtendedPublic,
     ComputeServiceReadExtended,
@@ -59,6 +49,17 @@ from fed_reg.service.schemas_extended import (
     NetworkServiceReadExtendedPublic,
     ObjectStoreServiceReadExtended,
     ObjectStoreServiceReadExtendedPublic,
+)
+
+from fed_reg.crud import CRUDBase
+from fed_reg.flavor.crud import flavor_mng
+from fed_reg.image.crud import image_mng
+from fed_reg.network.crud import network_mng
+from fed_reg.quota.crud import (
+    block_storage_quota_mng,
+    compute_quota_mng,
+    network_quota_mng,
+    object_store_quota_mng,
 )
 
 

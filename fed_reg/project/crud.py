@@ -1,28 +1,29 @@
 """Module with Create, Read, Update and Delete operations for a Project."""
-from fed_reg.crud import CRUDBase
-from fed_reg.project.models import Project
-from fed_reg.project.schemas import (
+from fedreg.project.models import Project
+from fedreg.project.schemas import (
     ProjectCreate,
     ProjectRead,
     ProjectReadPublic,
     ProjectUpdate,
 )
-from fed_reg.project.schemas_extended import (
+from fedreg.project.schemas_extended import (
     ProjectReadExtended,
     ProjectReadExtendedPublic,
 )
-from fed_reg.provider.models import Provider
+from fedreg.provider.models import Provider
+from fedreg.quota.models import (
+    BlockStorageQuota,
+    ComputeQuota,
+    NetworkQuota,
+    ObjectStoreQuota,
+)
+
+from fed_reg.crud import CRUDBase
 from fed_reg.quota.crud import (
     block_storage_quota_mng,
     compute_quota_mng,
     network_quota_mng,
     object_store_quota_mng,
-)
-from fed_reg.quota.models import (
-    BlockStorageQuota,
-    ComputeQuota,
-    NetworkQuota,
-    ObjectStoreQuota,
 )
 from fed_reg.sla.crud import sla_mng
 

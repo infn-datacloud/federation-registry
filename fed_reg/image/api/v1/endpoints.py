@@ -11,6 +11,16 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.image.models import Image
+from fedreg.image.schemas import (
+    ImageQuery,
+    ImageRead,
+    ImageUpdate,
+)
+from fedreg.image.schemas_extended import (
+    ImageReadMulti,
+    ImageReadSingle,
+)
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -20,16 +30,6 @@ from fed_reg.image.api.dependencies import (
     validate_new_image_values,
 )
 from fed_reg.image.crud import image_mng
-from fed_reg.image.models import Image
-from fed_reg.image.schemas import (
-    ImageQuery,
-    ImageRead,
-    ImageUpdate,
-)
-from fed_reg.image.schemas_extended import (
-    ImageReadMulti,
-    ImageReadSingle,
-)
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 
 router = APIRouter(prefix="/images", tags=["images"])

@@ -1,19 +1,20 @@
 """Provider REST API dependencies."""
 
 from fastapi import Depends, HTTPException, status
-from pydantic import UUID4
-
-from fed_reg.identity_provider.crud import identity_provider_mng
-from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.location.crud import location_mng
-from fed_reg.provider.crud import provider_mng
-from fed_reg.provider.models import Provider
-from fed_reg.provider.schemas import ProviderUpdate
-from fed_reg.provider.schemas_extended import (
+from fedreg.identity_provider.models import IdentityProvider
+from fedreg.provider.models import Provider
+from fedreg.provider.schemas import ProviderUpdate
+from fedreg.provider.schemas_extended import (
     IdentityProviderCreateExtended,
     ProviderCreateExtended,
     RegionCreateExtended,
 )
+from fedreg.user_group.models import UserGroup
+from pydantic import UUID4
+
+from fed_reg.identity_provider.crud import identity_provider_mng
+from fed_reg.location.crud import location_mng
+from fed_reg.provider.crud import provider_mng
 from fed_reg.service.api.dependencies import (
     valid_block_storage_service_endpoint,
     valid_compute_service_endpoint,
@@ -21,7 +22,6 @@ from fed_reg.service.api.dependencies import (
     valid_network_service_endpoint,
 )
 from fed_reg.sla.crud import sla_mng
-from fed_reg.user_group.models import UserGroup
 
 
 def valid_provider_id(provider_uid: UUID4) -> Provider:

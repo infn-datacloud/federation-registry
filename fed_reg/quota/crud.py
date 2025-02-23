@@ -1,21 +1,20 @@
 """Module with Create, Read, Update and Delete operations for a Quotas."""
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
-from fed_reg.project.models import Project
-from fed_reg.provider.schemas_extended import (
+from fedreg.project.models import Project
+from fedreg.provider.schemas_extended import (
     BlockStorageQuotaCreateExtended,
     ComputeQuotaCreateExtended,
     NetworkQuotaCreateExtended,
     ObjectStoreQuotaCreateExtended,
 )
-from fed_reg.quota.models import (
+from fedreg.quota.models import (
     BlockStorageQuota,
     ComputeQuota,
     NetworkQuota,
     ObjectStoreQuota,
 )
-from fed_reg.quota.schemas import (
+from fedreg.quota.schemas import (
     BlockStorageQuotaCreate,
     BlockStorageQuotaRead,
     BlockStorageQuotaReadPublic,
@@ -33,7 +32,7 @@ from fed_reg.quota.schemas import (
     ObjectStoreQuotaReadPublic,
     ObjectStoreQuotaUpdate,
 )
-from fed_reg.quota.schemas_extended import (
+from fedreg.quota.schemas_extended import (
     BlockStorageQuotaReadExtended,
     BlockStorageQuotaReadExtendedPublic,
     ComputeQuotaReadExtended,
@@ -43,12 +42,14 @@ from fed_reg.quota.schemas_extended import (
     ObjectStoreQuotaReadExtended,
     ObjectStoreQuotaReadExtendedPublic,
 )
-from fed_reg.service.models import (
+from fedreg.service.models import (
     BlockStorageService,
     ComputeService,
     NetworkService,
     ObjectStoreService,
 )
+
+from fed_reg.crud import CRUDBase
 
 
 class CRUDBlockStorageQuota(

@@ -1,23 +1,23 @@
 """Quota REST API dependencies."""
 from fastapi import Depends, HTTPException, status
+from fedreg.quota.models import (
+    BlockStorageQuota,
+    ComputeQuota,
+    NetworkQuota,
+    ObjectStoreQuota,
+)
+from fedreg.quota.schemas import (
+    BlockStorageQuotaUpdate,
+    ComputeQuotaUpdate,
+    NetworkQuotaUpdate,
+    ObjectStoreQuotaUpdate,
+)
 
 from fed_reg.quota.crud import (
     block_storage_quota_mng,
     compute_quota_mng,
     network_quota_mng,
     object_store_quota_mng,
-)
-from fed_reg.quota.models import (
-    BlockStorageQuota,
-    ComputeQuota,
-    NetworkQuota,
-    ObjectStoreQuota,
-)
-from fed_reg.quota.schemas import (
-    BlockStorageQuotaUpdate,
-    ComputeQuotaUpdate,
-    NetworkQuotaUpdate,
-    ObjectStoreQuotaUpdate,
 )
 
 

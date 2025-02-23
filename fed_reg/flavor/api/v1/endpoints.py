@@ -11,6 +11,16 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.flavor.models import Flavor
+from fedreg.flavor.schemas import (
+    FlavorQuery,
+    FlavorRead,
+    FlavorUpdate,
+)
+from fedreg.flavor.schemas_extended import (
+    FlavorReadMulti,
+    FlavorReadSingle,
+)
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -20,16 +30,6 @@ from fed_reg.flavor.api.dependencies import (
     validate_new_flavor_values,
 )
 from fed_reg.flavor.crud import flavor_mng
-from fed_reg.flavor.models import Flavor
-from fed_reg.flavor.schemas import (
-    FlavorQuery,
-    FlavorRead,
-    FlavorUpdate,
-)
-from fed_reg.flavor.schemas_extended import (
-    FlavorReadMulti,
-    FlavorReadSingle,
-)
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 
 router = APIRouter(prefix="/flavors", tags=["flavors"])
