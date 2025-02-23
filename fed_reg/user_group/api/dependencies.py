@@ -1,12 +1,12 @@
 """User Group REST API dependencies."""
 
 from fastapi import Depends, HTTPException, status
+from fedreg.identity_provider.models import IdentityProvider
+from fedreg.user_group.models import UserGroup
+from fedreg.user_group.schemas import UserGroupCreate, UserGroupUpdate
 
 from fed_reg.identity_provider.api.dependencies import valid_identity_provider_id
-from fed_reg.identity_provider.models import IdentityProvider
 from fed_reg.user_group.crud import user_group_mng
-from fed_reg.user_group.models import UserGroup
-from fed_reg.user_group.schemas import UserGroupCreate, UserGroupUpdate
 
 
 def valid_user_group_id(user_group_uid: str) -> UserGroup:

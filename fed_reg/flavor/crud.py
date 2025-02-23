@@ -1,18 +1,20 @@
 """Module with Create, Read, Update and Delete operations for a Flavor."""
+
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
-from fed_reg.flavor.models import Flavor
-from fed_reg.flavor.schemas import (
+from fedreg.flavor.models import Flavor
+from fedreg.flavor.schemas import (
     FlavorCreate,
     FlavorRead,
     FlavorReadPublic,
     FlavorUpdate,
 )
-from fed_reg.flavor.schemas_extended import FlavorReadExtended, FlavorReadExtendedPublic
-from fed_reg.project.models import Project
-from fed_reg.provider.schemas_extended import FlavorCreateExtended
-from fed_reg.service.models import ComputeService
+from fedreg.flavor.schemas_extended import FlavorReadExtended, FlavorReadExtendedPublic
+from fedreg.project.models import Project
+from fedreg.provider.schemas_extended import FlavorCreateExtended
+from fedreg.service.models import ComputeService
+
+from fed_reg.crud import CRUDBase
 
 
 class CRUDFlavor(

@@ -1,12 +1,12 @@
 """Project REST API dependencies."""
 
 from fastapi import Depends, HTTPException, status
+from fedreg.project.models import Project
+from fedreg.project.schemas import ProjectCreate, ProjectUpdate
+from fedreg.provider.models import Provider
 
 from fed_reg.project.crud import project_mng
-from fed_reg.project.models import Project
-from fed_reg.project.schemas import ProjectCreate, ProjectUpdate
 from fed_reg.provider.api.dependencies import valid_provider_id
-from fed_reg.provider.models import Provider
 
 
 def valid_project_id(project_uid: str) -> Project:

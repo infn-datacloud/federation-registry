@@ -1,8 +1,9 @@
 """Module with the configuration parameters."""
+
 import os
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from neomodel import config
 from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, Field, validator
@@ -49,7 +50,7 @@ class Settings(BaseSettings):
 
     @validator("NEO4J_DB_URL", pre=True)
     @classmethod
-    def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> str:
+    def assemble_db_connection(cls, v: Optional[str], values: dict[str, Any]) -> str:
         """Before checking the DB URL, assemble the target DB uri from single parts."""
         if v:
             return v
@@ -77,7 +78,7 @@ class Settings(BaseSettings):
 
     @validator("DOC_V1_URL", pre=True)
     @classmethod
-    def create_doc_url(cls, v: Optional[str], values: Dict[str, Any]) -> str:
+    def create_doc_url(cls, v: Optional[str], values: dict[str, Any]) -> str:
         """Build URL for internal documentation."""
         if v:
             return v

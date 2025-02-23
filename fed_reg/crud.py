@@ -1,9 +1,9 @@
 """Module with common Create, Read, Update and delete operations."""
-from typing import Generic, Literal, Optional, Type, TypeVar
 
+from typing import Generic, Literal, Optional, TypeVar
+
+from fedreg.core import BaseNodeCreate, BaseNodeRead, BaseReadPrivate, BaseReadPublic
 from neomodel import StructuredNode
-
-from fed_reg.models import BaseNodeCreate, BaseNodeRead, BaseReadPrivate, BaseReadPublic
 
 ModelType = TypeVar("ModelType", bound=StructuredNode)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseNodeCreate)
@@ -34,12 +34,12 @@ class CRUDBase(
     def __init__(
         self,
         *,
-        model: Type[ModelType],
-        create_schema: Type[CreateSchemaType],
-        read_schema: Type[ReadSchemaType],
-        read_public_schema: Type[ReadPublicSchemaType],
-        read_extended_schema: Type[ReadExtendedSchemaType],
-        read_extended_public_schema: Type[ReadExtendedPublicSchemaType],
+        model: type[ModelType],
+        create_schema: type[CreateSchemaType],
+        read_schema: type[ReadSchemaType],
+        read_public_schema: type[ReadPublicSchemaType],
+        read_extended_schema: type[ReadExtendedSchemaType],
+        read_extended_public_schema: type[ReadExtendedPublicSchemaType],
     ):
         """CRUD object with default methods to Create, Read, Update, Delete (CRUD).
 

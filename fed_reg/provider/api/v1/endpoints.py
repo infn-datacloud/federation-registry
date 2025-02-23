@@ -1,4 +1,5 @@
 """Provider endpoints to execute POST, GET, PUT, PATCH, DELETE operations."""
+
 from typing import Optional
 
 # from app.service.api.dependencies import valid_service_endpoint
@@ -29,6 +30,18 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.provider.models import Provider
+from fedreg.provider.schemas import (
+    ProviderQuery,
+    ProviderRead,
+    ProviderUpdate,
+)
+from fedreg.provider.schemas_extended import (
+    ProviderCreateExtended,
+    ProviderReadExtended,
+    ProviderReadMulti,
+    ProviderReadSingle,
+)
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -53,18 +66,6 @@ from fed_reg.provider.api.dependencies import (
     validate_new_provider_values,
 )
 from fed_reg.provider.crud import provider_mng
-from fed_reg.provider.models import Provider
-from fed_reg.provider.schemas import (
-    ProviderQuery,
-    ProviderRead,
-    ProviderUpdate,
-)
-from fed_reg.provider.schemas_extended import (
-    ProviderCreateExtended,
-    ProviderReadExtended,
-    ProviderReadMulti,
-    ProviderReadSingle,
-)
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 
 router = APIRouter(prefix="/providers", tags=["providers"])

@@ -1,4 +1,5 @@
 """Quotas endpoints to execute POST, GET, PUT, PATCH, DELETE operations."""
+
 from typing import Optional
 
 from fastapi import (
@@ -11,6 +12,36 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.quota.models import (
+    BlockStorageQuota,
+    ComputeQuota,
+    NetworkQuota,
+    ObjectStoreQuota,
+)
+from fedreg.quota.schemas import (
+    BlockStorageQuotaQuery,
+    BlockStorageQuotaRead,
+    BlockStorageQuotaUpdate,
+    ComputeQuotaQuery,
+    ComputeQuotaRead,
+    ComputeQuotaUpdate,
+    NetworkQuotaQuery,
+    NetworkQuotaRead,
+    NetworkQuotaUpdate,
+    ObjectStoreQuotaQuery,
+    ObjectStoreQuotaRead,
+    ObjectStoreQuotaUpdate,
+)
+from fedreg.quota.schemas_extended import (
+    BlockStorageQuotaReadMulti,
+    BlockStorageQuotaReadSingle,
+    ComputeQuotaReadMulti,
+    ComputeQuotaReadSingle,
+    NetworkQuotaReadMulti,
+    NetworkQuotaReadSingle,
+    ObjectStoreQuotaReadMulti,
+    ObjectStoreQuotaReadSingle,
+)
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -31,36 +62,6 @@ from fed_reg.quota.crud import (
     compute_quota_mng,
     network_quota_mng,
     object_store_quota_mng,
-)
-from fed_reg.quota.models import (
-    BlockStorageQuota,
-    ComputeQuota,
-    NetworkQuota,
-    ObjectStoreQuota,
-)
-from fed_reg.quota.schemas import (
-    BlockStorageQuotaQuery,
-    BlockStorageQuotaRead,
-    BlockStorageQuotaUpdate,
-    ComputeQuotaQuery,
-    ComputeQuotaRead,
-    ComputeQuotaUpdate,
-    NetworkQuotaQuery,
-    NetworkQuotaRead,
-    NetworkQuotaUpdate,
-    ObjectStoreQuotaQuery,
-    ObjectStoreQuotaRead,
-    ObjectStoreQuotaUpdate,
-)
-from fed_reg.quota.schemas_extended import (
-    BlockStorageQuotaReadMulti,
-    BlockStorageQuotaReadSingle,
-    ComputeQuotaReadMulti,
-    ComputeQuotaReadSingle,
-    NetworkQuotaReadMulti,
-    NetworkQuotaReadSingle,
-    ObjectStoreQuotaReadMulti,
-    ObjectStoreQuotaReadSingle,
 )
 
 bs_router = APIRouter(prefix="/block_storage_quotas", tags=["block_storage_quotas"])

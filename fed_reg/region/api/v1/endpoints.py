@@ -1,4 +1,5 @@
 """Region endpoints to execute POST, GET, PUT, PATCH, DELETE operations."""
+
 from typing import Optional
 
 from fastapi import (
@@ -11,6 +12,16 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.region.models import Region
+from fedreg.region.schemas import (
+    RegionQuery,
+    RegionRead,
+    RegionUpdate,
+)
+from fedreg.region.schemas_extended import (
+    RegionReadMulti,
+    RegionReadSingle,
+)
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -22,16 +33,6 @@ from fed_reg.region.api.dependencies import (
     validate_new_region_values,
 )
 from fed_reg.region.crud import region_mng
-from fed_reg.region.models import Region
-from fed_reg.region.schemas import (
-    RegionQuery,
-    RegionRead,
-    RegionUpdate,
-)
-from fed_reg.region.schemas_extended import (
-    RegionReadMulti,
-    RegionReadSingle,
-)
 
 router = APIRouter(prefix="/regions", tags=["regions"])
 

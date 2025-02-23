@@ -1,4 +1,5 @@
 """Services endpoints to execute POST, GET, PUT, PATCH, DELETE operations."""
+
 from typing import Optional
 
 from fastapi import (
@@ -11,6 +12,42 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.service.models import (
+    BlockStorageService,
+    ComputeService,
+    IdentityService,
+    NetworkService,
+    ObjectStoreService,
+)
+from fedreg.service.schemas import (
+    BlockStorageServiceQuery,
+    BlockStorageServiceRead,
+    BlockStorageServiceUpdate,
+    ComputeServiceQuery,
+    ComputeServiceRead,
+    ComputeServiceUpdate,
+    IdentityServiceQuery,
+    IdentityServiceRead,
+    IdentityServiceUpdate,
+    NetworkServiceQuery,
+    NetworkServiceRead,
+    NetworkServiceUpdate,
+    ObjectStoreServiceQuery,
+    ObjectStoreServiceRead,
+    ObjectStoreServiceUpdate,
+)
+from fedreg.service.schemas_extended import (
+    BlockStorageServiceReadMulti,
+    BlockStorageServiceReadSingle,
+    ComputeServiceReadMulti,
+    ComputeServiceReadSingle,
+    IdentityServiceReadMulti,
+    IdentityServiceReadSingle,
+    NetworkServiceReadMulti,
+    NetworkServiceReadSingle,
+    ObjectStoreServiceReadMulti,
+    ObjectStoreServiceReadSingle,
+)
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -45,42 +82,6 @@ from fed_reg.service.crud import (
     identity_service_mng,
     network_service_mng,
     object_store_service_mng,
-)
-from fed_reg.service.models import (
-    BlockStorageService,
-    ComputeService,
-    IdentityService,
-    NetworkService,
-    ObjectStoreService,
-)
-from fed_reg.service.schemas import (
-    BlockStorageServiceQuery,
-    BlockStorageServiceRead,
-    BlockStorageServiceUpdate,
-    ComputeServiceQuery,
-    ComputeServiceRead,
-    ComputeServiceUpdate,
-    IdentityServiceQuery,
-    IdentityServiceRead,
-    IdentityServiceUpdate,
-    NetworkServiceQuery,
-    NetworkServiceRead,
-    NetworkServiceUpdate,
-    ObjectStoreServiceQuery,
-    ObjectStoreServiceRead,
-    ObjectStoreServiceUpdate,
-)
-from fed_reg.service.schemas_extended import (
-    BlockStorageServiceReadMulti,
-    BlockStorageServiceReadSingle,
-    ComputeServiceReadMulti,
-    ComputeServiceReadSingle,
-    IdentityServiceReadMulti,
-    IdentityServiceReadSingle,
-    NetworkServiceReadMulti,
-    NetworkServiceReadSingle,
-    ObjectStoreServiceReadMulti,
-    ObjectStoreServiceReadSingle,
 )
 
 bs_router = APIRouter(prefix="/block_storage_services", tags=["block_storage_services"])

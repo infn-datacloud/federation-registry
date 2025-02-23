@@ -1,4 +1,5 @@
 """Identity Provider endpoints to execute POST, GET, PUT, PATCH, DELETE operations."""
+
 from typing import Optional
 
 # from app.user_group.api.dependencies import is_unique_user_group
@@ -14,6 +15,16 @@ from fastapi import (
     status,
 )
 from fastapi.security import HTTPBasicCredentials
+from fedreg.identity_provider.models import IdentityProvider
+from fedreg.identity_provider.schemas import (
+    IdentityProviderQuery,
+    IdentityProviderRead,
+    IdentityProviderUpdate,
+)
+from fedreg.identity_provider.schemas_extended import (
+    IdentityProviderReadMulti,
+    IdentityProviderReadSingle,
+)
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -25,16 +36,6 @@ from fed_reg.identity_provider.api.dependencies import (
     validate_new_identity_provider_values,
 )
 from fed_reg.identity_provider.crud import identity_provider_mng
-from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.identity_provider.schemas import (
-    IdentityProviderQuery,
-    IdentityProviderRead,
-    IdentityProviderUpdate,
-)
-from fed_reg.identity_provider.schemas_extended import (
-    IdentityProviderReadMulti,
-    IdentityProviderReadSingle,
-)
 
 # from app.project.schemas_extended import UserGroupReadExtended
 # from app.provider.api.dependencies import valid_provider_id

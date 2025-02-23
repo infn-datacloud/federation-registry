@@ -1,12 +1,12 @@
 """Region REST API dependencies."""
 
 from fastapi import Depends, HTTPException, status
+from fedreg.provider.models import Provider
+from fedreg.region.models import Region
+from fedreg.region.schemas import RegionCreate, RegionUpdate
 
 from fed_reg.provider.api.dependencies import valid_provider_id
-from fed_reg.provider.models import Provider
 from fed_reg.region.crud import region_mng
-from fed_reg.region.models import Region
-from fed_reg.region.schemas import RegionCreate, RegionUpdate
 
 
 def valid_region_id(region_uid: str) -> Region:

@@ -1,21 +1,23 @@
 """Module with Create, Read, Update and Delete operations for an Identity Provider."""
+
 from typing import Optional
 
-from fed_reg.crud import CRUDBase
-from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.identity_provider.schemas import (
+from fedreg.identity_provider.models import IdentityProvider
+from fedreg.identity_provider.schemas import (
     IdentityProviderCreate,
     IdentityProviderRead,
     IdentityProviderReadPublic,
     IdentityProviderUpdate,
 )
-from fed_reg.identity_provider.schemas_extended import (
+from fedreg.identity_provider.schemas_extended import (
     IdentityProviderReadExtended,
     IdentityProviderReadExtendedPublic,
 )
-from fed_reg.project.models import Project
-from fed_reg.provider.models import Provider
-from fed_reg.provider.schemas_extended import IdentityProviderCreateExtended
+from fedreg.project.models import Project
+from fedreg.provider.models import Provider
+from fedreg.provider.schemas_extended import IdentityProviderCreateExtended
+
+from fed_reg.crud import CRUDBase
 from fed_reg.user_group.crud import user_group_mng
 
 

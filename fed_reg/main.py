@@ -1,4 +1,5 @@
 """Entry point for the Federation-Registry web app."""
+
 import uvicorn
 from fastapi import FastAPI
 

@@ -1,4 +1,5 @@
 """Authentication and authorization rules."""
+
 from fastapi import HTTPException, Request, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from flaat import AuthWorkflow

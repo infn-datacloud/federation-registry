@@ -1,13 +1,13 @@
 """Identity Provider REST API dependencies."""
 
 from fastapi import Depends, HTTPException, status
-
-from fed_reg.identity_provider.crud import identity_provider_mng
-from fed_reg.identity_provider.models import IdentityProvider
-from fed_reg.identity_provider.schemas import (
+from fedreg.identity_provider.models import IdentityProvider
+from fedreg.identity_provider.schemas import (
     IdentityProviderCreate,
     IdentityProviderUpdate,
 )
+
+from fed_reg.identity_provider.crud import identity_provider_mng
 
 
 def valid_identity_provider_id(identity_provider_uid: str) -> IdentityProvider:

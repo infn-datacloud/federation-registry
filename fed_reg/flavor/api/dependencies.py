@@ -1,11 +1,12 @@
 """Flavor REST API dependencies."""
+
 from fastapi import Depends, HTTPException, status
+from fedreg.flavor.models import Flavor
+from fedreg.flavor.schemas import FlavorCreate, FlavorUpdate
+from fedreg.service.models import ComputeService
 
 from fed_reg.flavor.crud import flavor_mng
-from fed_reg.flavor.models import Flavor
-from fed_reg.flavor.schemas import FlavorCreate, FlavorUpdate
 from fed_reg.service.api.dependencies import valid_compute_service_id
-from fed_reg.service.models import ComputeService
 
 
 def valid_flavor_id(flavor_uid: str) -> Flavor:

@@ -1,13 +1,15 @@
 """Module with Create, Read, Update and Delete operations for an SLA."""
+
 from typing import Optional
 
+from fedreg.project.models import Project
+from fedreg.provider.schemas_extended import SLACreateExtended
+from fedreg.sla.models import SLA
+from fedreg.sla.schemas import SLACreate, SLARead, SLAReadPublic, SLAUpdate
+from fedreg.sla.schemas_extended import SLAReadExtended, SLAReadExtendedPublic
+from fedreg.user_group.models import UserGroup
+
 from fed_reg.crud import CRUDBase
-from fed_reg.project.models import Project
-from fed_reg.provider.schemas_extended import SLACreateExtended
-from fed_reg.sla.models import SLA
-from fed_reg.sla.schemas import SLACreate, SLARead, SLAReadPublic, SLAUpdate
-from fed_reg.sla.schemas_extended import SLAReadExtended, SLAReadExtendedPublic
-from fed_reg.user_group.models import UserGroup
 
 
 class CRUDSLA(

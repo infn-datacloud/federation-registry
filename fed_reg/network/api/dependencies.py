@@ -1,12 +1,12 @@
 """Network REST API dependencies."""
 
 from fastapi import Depends, HTTPException, status
+from fedreg.network.models import Network
+from fedreg.network.schemas import NetworkCreate, NetworkUpdate
+from fedreg.service.models import NetworkService
 
 from fed_reg.network.crud import network_mng
-from fed_reg.network.models import Network
-from fed_reg.network.schemas import NetworkCreate, NetworkUpdate
 from fed_reg.service.api.dependencies import valid_network_service_id
-from fed_reg.service.models import NetworkService
 
 
 def valid_network_id(network_uid: str) -> Network:
