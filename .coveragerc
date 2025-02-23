@@ -2,3 +2,4 @@
 relative_files = True
 source = fed_reg/
 branch = True
+omit = tests/
