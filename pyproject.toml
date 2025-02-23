@@ -6,27 +6,21 @@ authors = ["Giovanni Savarese <giovanni.savarese@ba.infn.it>", "Marica Antonacci
 packages = [{ include = "fed_reg"}]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0.0"
+python = ">=3.9.2,<4.0.0"
 flaat = "^1.1.15"
 fastapi = "^0.108"
-uvicorn = "^0.22.0"
 neomodel = "^5.3.0"
 pydantic = {extras = ["email"], version = ">=1.10.9,<2.0.0"}
-fedreg = {git = "https://github.com/infn-datacloud/federation-registry-lib.git", branch = "main"}
+fedreg = {git = "https://github.com/infn-datacloud/federation-registry-lib.git", tag = "v1.0.0"}
 
 [tool.poetry.group.dev.dependencies]
-CairoSVG = "^2.7.0"
+uvicorn = "^0.22.0"
 httpx = "^0.24.1"
-mkdocs-material = "^9.1.17"
-mkdocs-git-authors-plugin = "^0.7.2"
-mkdocstrings-python = "^1.1.2"
-Pillow = "^10.3.0"
 pytest = "^7.4.4"
 pytest-cases = "^3.8.1"
 pytest-cov = "^4.1.0"
 pre-commit = "^3.3.3"
 ruff = "^0.9.6"
-networkx = "^3.2.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -50,14 +44,14 @@ extend-immutable-calls = [
     "fastapi.params.Security",
 ]
 
-[tool.ruff.lint.pep8-naming]
-# Ignore pep8-naming errors raised by functions decorated with @validator and @root_validator
-classmethod-decorators = [
-    "pydantic.root_validator",
-]
-
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.pytest.ini_options]
 addopts = "--resetdb"
+
+[tool.coverage.run]
+relative_files = true
+source = ["fed_reg"]
+branch = true
+omit = ["tests/**"]
