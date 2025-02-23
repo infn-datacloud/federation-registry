@@ -12,7 +12,7 @@ fastapi = "^0.108"
 uvicorn = "^0.22.0"
 neomodel = "^5.3.0"
 pydantic = {extras = ["email"], version = ">=1.10.9,<2.0.0"}
-pycountry = "^22.3.5"
+fedreg = {git = "https://github.com/infn-datacloud/federation-registry-lib.git", branch = "main"}
 
 [tool.poetry.group.dev.dependencies]
 CairoSVG = "^2.7.0"
