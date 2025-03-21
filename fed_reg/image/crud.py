@@ -13,7 +13,7 @@ from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateImageCreateExtended
 from fedreg.service.models import ComputeService
 
-from fed_reg.crud import CRUDBase, ResourceWithProjectsBase
+from fed_reg.crud import CRUDBase, ResourceMultiProjectsBase
 
 
 class CRUDPrivateImage(
@@ -26,7 +26,7 @@ class CRUDPrivateImage(
         ImageReadExtended,
         ImageReadExtendedPublic,
     ],
-    ResourceWithProjectsBase[PrivateImage, PrivateImageCreateExtended],
+    ResourceMultiProjectsBase[PrivateImage, PrivateImageCreateExtended],
 ):
     """Private Image Create, Read, Update and Delete operations."""
 
@@ -65,32 +65,13 @@ class CRUDPrivateImage(
                 )
 
         db_obj.services.connect(service)
-
-        filtered_projects = list(
-            filter(lambda x: x.uuid in obj_in.projects, provider_projects)
+        super()._connect_projects(
+            db_obj=db_obj,
+            input_uuids=obj_in.projects,
+            provider_projects=provider_projects,
         )
-        if len(filtered_projects) == 0:
-            db_region = service.region.single()
-            db_provider = db_region.provider.single()
-            raise ValueError(
-                f"None of the input projects {[i for i in obj_in.projects]} "
-                f"belongs to provider {db_provider.name}"
-            )
-        else:
-            for project in filtered_projects:
-                db_obj.projects.connect(project)
 
         return db_obj
-
-    def patch(
-        self, *, db_obj: PrivateImage, obj_in: ImageUpdate
-    ) -> PrivateImage | None:
-        """Update Image attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked projects and apply default values when explicit.
-        """
-        return super().update(db_obj=db_obj, obj_in=obj_in)
 
     def update(
         self,
@@ -158,16 +139,6 @@ class CRUDSharedImage(
         db_obj.services.connect(service)
 
         return db_obj
-
-    def patch(
-        self, *, db_obj: SharedImage, obj_in: ImageUpdate
-    ) -> SharedImage | None:
-        """Update Image attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked projects and apply default values when explicit.
-        """
-        return super().update(db_obj=db_obj, obj_in=obj_in)
 
     def update(
         self, *, db_obj: SharedImage, obj_in: SharedImageCreate

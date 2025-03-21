@@ -13,7 +13,7 @@ from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateFlavorCreateExtended
 from fedreg.service.models import ComputeService
 
-from fed_reg.crud import CRUDBase, ResourceWithProjectsBase
+from fed_reg.crud import CRUDBase, ResourceMultiProjectsBase
 
 
 class CRUDPrivateFlavor(
@@ -26,7 +26,7 @@ class CRUDPrivateFlavor(
         FlavorReadExtended,
         FlavorReadExtendedPublic,
     ],
-    ResourceWithProjectsBase[PrivateFlavor, PrivateFlavorCreateExtended],
+    ResourceMultiProjectsBase[PrivateFlavor, PrivateFlavorCreateExtended],
 ):
     """Private Flavor Create, Read, Update and Delete operations."""
 
@@ -46,6 +46,7 @@ class CRUDPrivateFlavor(
         project.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
+
         db_obj = self.get(uuid=obj_in.uuid)
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
@@ -65,32 +66,13 @@ class CRUDPrivateFlavor(
                 )
 
         db_obj.services.connect(service)
-
-        filtered_projects = list(
-            filter(lambda x: x.uuid in obj_in.projects, provider_projects)
+        super()._connect_projects(
+            db_obj=db_obj,
+            input_uuids=obj_in.projects,
+            provider_projects=provider_projects,
         )
-        if len(filtered_projects) == 0:
-            db_region = service.region.single()
-            db_provider = db_region.provider.single()
-            raise ValueError(
-                f"None of the input projects {[i for i in obj_in.projects]} "
-                f"belongs to provider {db_provider.name}"
-            )
-        else:
-            for project in filtered_projects:
-                db_obj.projects.connect(project)
 
         return db_obj
-
-    def patch(
-        self, *, db_obj: PrivateFlavor, obj_in: FlavorUpdate
-    ) -> PrivateFlavor | None:
-        """Update Flavor attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked projects and apply default values when explicit.
-        """
-        return super().update(db_obj=db_obj, obj_in=obj_in)
 
     def update(
         self,
@@ -158,16 +140,6 @@ class CRUDSharedFlavor(
         db_obj.services.connect(service)
 
         return db_obj
-
-    def patch(
-        self, *, db_obj: SharedFlavor, obj_in: FlavorUpdate
-    ) -> SharedFlavor | None:
-        """Update Flavor attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked projects and apply default values when explicit.
-        """
-        return super().update(db_obj=db_obj, obj_in=obj_in)
 
     def update(
         self, *, db_obj: SharedFlavor, obj_in: SharedFlavorCreate
