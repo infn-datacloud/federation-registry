@@ -26,7 +26,7 @@ class CRUDPrivateFlavor(
         FlavorReadExtended,
         FlavorReadExtendedPublic,
     ],
-    ResourceMultiProjectsBase[PrivateFlavor, PrivateFlavorCreateExtended],
+    ResourceMultiProjectsBase[PrivateFlavor],
 ):
     """Private Flavor Create, Read, Update and Delete operations."""
 
@@ -87,12 +87,14 @@ class CRUDPrivateFlavor(
         update linked projects and apply default values when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = super()._update_projects(
-            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+        casted_obj_in = FlavorUpdate.parse_obj(obj_in)
+        edited_obj1 = super()._update_projects(
+            db_obj=db_obj,
+            input_uuids=obj_in.projects,
+            provider_projects=provider_projects,
         )
-        obj_in = FlavorUpdate.parse_obj(obj_in)
-        db_obj = super().update(db_obj=db_obj, obj_in=obj_in, force=True)
-        return db_obj
+        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 class CRUDSharedFlavor(
@@ -150,7 +152,7 @@ class CRUDSharedFlavor(
         update linked projects and apply default values when explicit.
         """
         obj_in = FlavorUpdate.parse_obj(obj_in)
-        return super().update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
 
 private_flavor_mng = CRUDPrivateFlavor(

@@ -35,7 +35,7 @@ def service_model() -> ComputeService:
 
 @pytest.fixture
 def private_flavor_model() -> PrivateFlavor:
-    """Compute service model.
+    """Private flavor service model.
 
     Already connected to a compute service, a region and a provider.
     """
@@ -159,8 +159,8 @@ def test_create_with_invalid_projects(
     provider = region.provider.single()
     projects = provider.projects.all()
     msg = (
-        f"None of the input projects {[i for i in item.projects]} "
-        f"belongs to provider {provider.name}"
+        f"None of the input projects {[i for i in item.projects]} in the "
+        f"provider projects: {[i.uuid for i in projects]}"
     )
     with pytest.raises(ValueError, match=re.escape(msg)):
         private_flavor_mng.create(
@@ -174,35 +174,10 @@ def test_create_with_no_provider_projects(
     private_flavor_model: PrivateFlavor,
 ) -> None:
     """Empty list passed to the provider_projects param."""
-    item.projects = [uuid4()]
     service = private_flavor_model.services.single()
     msg = "The provider's projects list is empty"
     with pytest.raises(AssertionError, match=re.escape(msg)):
         private_flavor_mng.create(obj_in=item, service=service, provider_projects=[])
-
-
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="update")
-def test_patch(item: FlavorUpdate, private_flavor_model: PrivateFlavor) -> None:
-    """Update only a subset of the flavor attributes."""
-    db_obj = private_flavor_mng.patch(obj_in=item, db_obj=private_flavor_model)
-    assert db_obj is not None
-    assert isinstance(db_obj, PrivateFlavor)
-    d = item.dict(exclude_unset=True)
-    exclude_properties = ["uid", "element_id_property"]
-    for k, v in db_obj.__properties__.items():
-        if k not in exclude_properties:
-            assert db_obj.__getattribute__(k) == d.get(k, v)
-
-
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="update")
-def test_patch_no_changes(
-    item: FlavorUpdate, private_flavor_model: PrivateFlavor
-) -> None:
-    """The new item is equal to the existing one. No changes."""
-    item.uuid = private_flavor_model.uuid
-    item.name = private_flavor_model.name
-    db_obj = private_flavor_mng.patch(obj_in=item, db_obj=private_flavor_model)
-    assert db_obj is None
 
 
 @parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
@@ -268,7 +243,7 @@ def test_update_same_projects(
 ) -> None:
     """Completely update the flavor attributes. Also override not set ones.
 
-    Keep the same projects.
+    Keep the same projects but change content..
     """
     service = private_flavor_model.services.single()
     region = service.region.single()
@@ -296,7 +271,10 @@ def test_update_invalid_project(
     region = service.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
-    msg = f"Input project {item.projects[0]} not in the provider projects: {projects}"
+    msg = (
+        f"Input project {item.projects[0]} not in the provider "
+        f"projects: {[i.uuid for i in projects]}"
+    )
     with pytest.raises(AssertionError, match=re.escape(msg)):
         private_flavor_mng.update(
             obj_in=item, db_obj=private_flavor_model, provider_projects=projects

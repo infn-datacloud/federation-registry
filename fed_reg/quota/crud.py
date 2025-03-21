@@ -61,7 +61,7 @@ class CRUDBlockStorageQuota(
         BlockStorageQuotaReadExtended,
         BlockStorageQuotaReadExtendedPublic,
     ],
-    ResourceSingleProjectBase[BlockStorageQuota, BlockStorageQuotaCreate],
+    ResourceSingleProjectBase[BlockStorageQuota],
 ):
     """Block Storage Quota Create, Read, Update and Delete operations."""
 
@@ -100,12 +100,14 @@ class CRUDBlockStorageQuota(
         when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = super()._update_project(
-            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+        casted_obj_in = BlockStorageQuotaUpdate.parse_obj(obj_in)
+        edited_obj1 = super()._update_project(
+            db_obj=db_obj,
+            input_uuid=obj_in.project,
+            provider_projects=provider_projects,
         )
-        obj_in = BlockStorageQuotaUpdate.parse_obj(obj_in)
-        db_obj = super().update(db_obj=db_obj, obj_in=obj_in, force=True)
-        return db_obj
+        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 class CRUDComputeQuota(
@@ -118,7 +120,7 @@ class CRUDComputeQuota(
         ComputeQuotaReadExtended,
         ComputeQuotaReadExtendedPublic,
     ],
-    ResourceSingleProjectBase[ComputeQuota, ComputeQuotaCreate],
+    ResourceSingleProjectBase[ComputeQuota],
 ):
     """Compute Quota Create, Read, Update and Delete operations."""
 
@@ -147,7 +149,7 @@ class CRUDComputeQuota(
         self,
         *,
         db_obj: ComputeQuota,
-        obj_in: ComputeQuotaCreateExtended | ComputeQuotaUpdate,
+        obj_in: ComputeQuotaCreateExtended,
         provider_projects: list[Project],
     ) -> ComputeQuota | None:
         """Update Quota attributes.
@@ -157,12 +159,14 @@ class CRUDComputeQuota(
         when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = super()._update_project(
-            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+        casted_obj_in = ComputeQuotaUpdate.parse_obj(obj_in)
+        edited_obj1 = super()._update_project(
+            db_obj=db_obj,
+            input_uuid=obj_in.project,
+            provider_projects=provider_projects,
         )
-        obj_in = ComputeQuotaUpdate.parse_obj(obj_in)
-        db_obj = super().update(db_obj=db_obj, obj_in=obj_in, force=True)
-        return db_obj
+        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 class CRUDNetworkQuota(
@@ -175,7 +179,7 @@ class CRUDNetworkQuota(
         NetworkQuotaReadExtended,
         NetworkQuotaReadExtendedPublic,
     ],
-    ResourceSingleProjectBase[NetworkQuota, NetworkQuotaCreate],
+    ResourceSingleProjectBase[NetworkQuota],
 ):
     """Network Quota Create, Read, Update and Delete operations."""
 
@@ -214,12 +218,14 @@ class CRUDNetworkQuota(
         when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = super()._update_project(
-            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+        casted_obj_in = NetworkQuotaUpdate.parse_obj(obj_in)
+        edited_obj1 = super()._update_project(
+            db_obj=db_obj,
+            input_uuid=obj_in.project,
+            provider_projects=provider_projects,
         )
-        obj_in = NetworkQuotaUpdate.parse_obj(obj_in)
-        db_obj = super().update(db_obj=db_obj, obj_in=obj_in, force=True)
-        return db_obj
+        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 class CRUDObjectStoreQuota(
@@ -232,7 +238,7 @@ class CRUDObjectStoreQuota(
         ObjectStoreQuotaReadExtended,
         ObjectStoreQuotaReadExtendedPublic,
     ],
-    ResourceSingleProjectBase[ObjectStoreQuota, ObjectStoreQuotaCreate],
+    ResourceSingleProjectBase[ObjectStoreQuota],
 ):
     """Object Storage Quota Create, Read, Update and Delete operations."""
 
@@ -261,7 +267,7 @@ class CRUDObjectStoreQuota(
         self,
         *,
         db_obj: ObjectStoreQuota,
-        obj_in: ObjectStoreQuotaCreateExtended | ObjectStoreQuotaUpdate,
+        obj_in: ObjectStoreQuotaCreateExtended,
         provider_projects: list[Project],
     ) -> ObjectStoreQuota | None:
         """Update Quota attributes.
@@ -271,12 +277,14 @@ class CRUDObjectStoreQuota(
         when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = super()._update_project(
-            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+        casted_obj_in = ObjectStoreQuotaUpdate.parse_obj(obj_in)
+        edited_obj1 = super()._update_project(
+            db_obj=db_obj,
+            input_uuid=obj_in.project,
+            provider_projects=provider_projects,
         )
-        obj_in = ObjectStoreQuotaUpdate.parse_obj(obj_in)
-        db_obj = super().update(db_obj=db_obj, obj_in=obj_in, force=True)
-        return db_obj
+        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 block_storage_quota_mng = CRUDBlockStorageQuota(

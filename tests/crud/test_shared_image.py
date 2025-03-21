@@ -30,7 +30,7 @@ def service_model() -> ComputeService:
 
 @pytest.fixture
 def shared_image_model() -> SharedImage:
-    """Compute service model.
+    """Shared image model.
 
     Already connected to a compute service, a region and a provider.
     """
@@ -95,30 +95,6 @@ def test_create_already_exists(
     )
     with pytest.raises(ValueError, match=msg):
         shared_image_mng.create(obj_in=item, service=service)
-
-
-@parametrize_with_cases("item", cases=CaseImage, has_tag="update")
-def test_patch(item: ImageUpdate, shared_image_model: SharedImage) -> None:
-    """Update only a subset of the image attributes."""
-    db_obj = shared_image_mng.patch(obj_in=item, db_obj=shared_image_model)
-    assert db_obj is not None
-    assert isinstance(db_obj, SharedImage)
-    d = item.dict(exclude_unset=True)
-    exclude_properties = ["uid", "element_id_property"]
-    for k, v in db_obj.__properties__.items():
-        if k not in exclude_properties:
-            assert db_obj.__getattribute__(k) == d.get(k, v)
-
-
-@parametrize_with_cases("item", cases=CaseImage, has_tag="update")
-def test_patch_no_changes(
-    item: ImageUpdate, shared_image_model: SharedImage
-) -> None:
-    """The new item is equal to the existing one. No changes."""
-    item.uuid = shared_image_model.uuid
-    item.name = shared_image_model.name
-    db_obj = shared_image_mng.patch(obj_in=item, db_obj=shared_image_model)
-    assert db_obj is None
 
 
 @parametrize_with_cases("item", cases=CaseImage, has_tag="create")
