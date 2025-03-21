@@ -1,42 +1,42 @@
 """Module with Create, Read, Update and Delete operations for a Flavor."""
 
-from typing import Optional
-
-from fedreg.flavor.models import Flavor
+from fedreg.flavor.models import PrivateFlavor, SharedFlavor
 from fedreg.flavor.schemas import (
-    FlavorCreate,
     FlavorRead,
     FlavorReadPublic,
     FlavorUpdate,
+    PrivateFlavorCreate,
+    SharedFlavorCreate,
 )
 from fedreg.flavor.schemas_extended import FlavorReadExtended, FlavorReadExtendedPublic
 from fedreg.project.models import Project
-from fedreg.provider.schemas_extended import FlavorCreateExtended
+from fedreg.provider.schemas_extended import PrivateFlavorCreateExtended
 from fedreg.service.models import ComputeService
 
-from fed_reg.crud import CRUDBase
+from fed_reg.crud import CRUDBase, ResourceWithProjectsBase
 
 
-class CRUDFlavor(
+class CRUDPrivateFlavor(
     CRUDBase[
-        Flavor,
-        FlavorCreate,
+        PrivateFlavor,
+        PrivateFlavorCreate,
         FlavorUpdate,
         FlavorRead,
         FlavorReadPublic,
         FlavorReadExtended,
         FlavorReadExtendedPublic,
-    ]
+    ],
+    ResourceWithProjectsBase[PrivateFlavor, PrivateFlavorCreateExtended],
 ):
-    """Flavor Create, Read, Update and Delete operations."""
+    """Private Flavor Create, Read, Update and Delete operations."""
 
     def create(
         self,
         *,
-        obj_in: FlavorCreateExtended,
+        obj_in: PrivateFlavorCreateExtended,
         service: ComputeService,
-        projects: Optional[list[Project]] = None,
-    ) -> Flavor:
+        provider_projects: list[Project],
+    ) -> PrivateFlavor:
         """Create a new Flavor.
 
         At first check that a flavor with the given UUID does not already exist. If it
@@ -45,8 +45,7 @@ class CRUDFlavor(
         flavor. In any case connect the flavor to the given service and to any received
         project.
         """
-        if projects is None:
-            projects = []
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
         db_obj = self.get(uuid=obj_in.uuid)
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
@@ -59,70 +58,141 @@ class CRUDFlavor(
             db_provider2 = db_region.provider.single()
             if db_provider1 != db_provider2:
                 db_obj = super().create(obj_in=obj_in)
+            else:
+                raise ValueError(
+                    f"A private flavor with uuid {obj_in.uuid} belonging to provider "
+                    f"{db_provider1.name} already exists"
+                )
 
         db_obj.services.connect(service)
 
-        for project in filter(lambda x: x.uuid in obj_in.projects, projects):
-            db_obj.projects.connect(project)
+        filtered_projects = list(
+            filter(lambda x: x.uuid in obj_in.projects, provider_projects)
+        )
+        if len(filtered_projects) == 0:
+            db_region = service.region.single()
+            db_provider = db_region.provider.single()
+            raise ValueError(
+                f"None of the input projects {[i for i in obj_in.projects]} "
+                f"belongs to provider {db_provider.name}"
+            )
+        else:
+            for project in filtered_projects:
+                db_obj.projects.connect(project)
+
         return db_obj
 
-    def update(
-        self,
-        *,
-        db_obj: Flavor,
-        obj_in: FlavorUpdate | FlavorCreateExtended,
-        projects: Optional[list[Project]] = None,
-        force: bool = False,
-    ) -> Optional[Flavor]:
+    def patch(
+        self, *, db_obj: PrivateFlavor, obj_in: FlavorUpdate
+    ) -> PrivateFlavor | None:
         """Update Flavor attributes.
 
         By default do not update relationships or default values. If force is True,
         update linked projects and apply default values when explicit.
         """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            edit = self.__update_projects(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
+        return super().update(db_obj=db_obj, obj_in=obj_in)
 
-        if isinstance(obj_in, FlavorCreateExtended):
-            obj_in = FlavorUpdate.parse_obj(obj_in)
-
-        updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else updated_data
-
-    def __update_projects(
+    def update(
         self,
         *,
-        obj_in: FlavorCreateExtended,
-        db_obj: Flavor,
+        db_obj: PrivateFlavor,
+        obj_in: PrivateFlavorCreateExtended,
         provider_projects: list[Project],
-    ) -> bool:
-        """Update flavor linked projects.
+    ) -> PrivateFlavor | None:
+        """Update Flavor attributes.
 
-        Connect new projects not already connect, leave untouched already linked ones
-        and delete old ones no more connected to the flavor.
+        By default do not update relationships or default values. If force is True,
+        update linked projects and apply default values when explicit.
         """
-        edit = False
-        db_items = {db_item.uuid: db_item for db_item in db_obj.projects}
-        db_projects = {db_item.uuid: db_item for db_item in provider_projects}
-        for proj in obj_in.projects:
-            db_item = db_items.pop(proj, None)
-            if not db_item:
-                db_item = db_projects.get(proj)
-                db_obj.projects.connect(db_item)
-                edit = True
-        for db_item in db_items.values():
-            db_obj.projects.disconnect(db_item)
-            edit = True
-        return edit
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
+        db_obj = super()._update_projects(
+            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+        )
+        obj_in = FlavorUpdate.parse_obj(obj_in)
+        db_obj = super().update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return db_obj
 
 
-flavor_mng = CRUDFlavor(
-    model=Flavor,
-    create_schema=FlavorCreate,
+class CRUDSharedFlavor(
+    CRUDBase[
+        SharedFlavor,
+        SharedFlavorCreate,
+        FlavorUpdate,
+        FlavorRead,
+        FlavorReadPublic,
+        FlavorReadExtended,
+        FlavorReadExtendedPublic,
+    ]
+):
+    """Flavor Create, Read, Update and Delete operations."""
+
+    def create(
+        self, *, obj_in: SharedFlavorCreate, service: ComputeService
+    ) -> SharedFlavor:
+        """Create a new Flavor.
+
+        At first check that a flavor with the given UUID does not already exist. If it
+        does not exist create it. Otherwise check the provider of the existing one. If
+        it is the same of the received service, do nothing, otherwise create a new
+        flavor. In any case connect the flavor to the given service and to any received
+        project.
+        """
+        db_obj = self.get(uuid=obj_in.uuid)
+        if not db_obj:
+            db_obj = super().create(obj_in=obj_in)
+        else:
+            # It's indifferent which service, we want to reach the provider
+            db_service = db_obj.services.single()
+            db_region = db_service.region.single()
+            db_provider1 = db_region.provider.single()
+            db_region = service.region.single()
+            db_provider2 = db_region.provider.single()
+            if db_provider1 != db_provider2:
+                db_obj = super().create(obj_in=obj_in)
+            else:
+                raise ValueError(
+                    f"A shared flavor with uuid {obj_in.uuid} belonging to provider "
+                    f"{db_provider1.name} already exists"
+                )
+
+        db_obj.services.connect(service)
+
+        return db_obj
+
+    def patch(
+        self, *, db_obj: SharedFlavor, obj_in: FlavorUpdate
+    ) -> SharedFlavor | None:
+        """Update Flavor attributes.
+
+        By default do not update relationships or default values. If force is True,
+        update linked projects and apply default values when explicit.
+        """
+        return super().update(db_obj=db_obj, obj_in=obj_in)
+
+    def update(
+        self, *, db_obj: SharedFlavor, obj_in: SharedFlavorCreate
+    ) -> SharedFlavor | None:
+        """Update Flavor attributes.
+
+        By default do not update relationships or default values. If force is True,
+        update linked projects and apply default values when explicit.
+        """
+        obj_in = FlavorUpdate.parse_obj(obj_in)
+        return super().update(db_obj=db_obj, obj_in=obj_in, force=True)
+
+
+private_flavor_mng = CRUDPrivateFlavor(
+    model=PrivateFlavor,
+    create_schema=PrivateFlavorCreate,
+    read_schema=FlavorRead,
+    read_public_schema=FlavorReadPublic,
+    read_extended_schema=FlavorReadExtended,
+    read_extended_public_schema=FlavorReadExtendedPublic,
+)
+
+shared_flavor_mng = CRUDSharedFlavor(
+    model=SharedFlavor,
+    create_schema=SharedFlavorCreate,
     read_schema=FlavorRead,
     read_public_schema=FlavorReadPublic,
     read_extended_schema=FlavorReadExtended,

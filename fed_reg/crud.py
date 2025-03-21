@@ -1,8 +1,9 @@
 """Module with common Create, Read, Update and delete operations."""
 
-from typing import Generic, Literal, Optional, TypeVar
+from typing import Generic, Literal, TypeVar
 
 from fedreg.core import BaseNodeCreate, BaseNodeRead, BaseReadPrivate, BaseReadPublic
+from fedreg.project.models import Project
 from neomodel import StructuredNode
 
 ModelType = TypeVar("ModelType", bound=StructuredNode)
@@ -64,7 +65,7 @@ class CRUDBase(
         self.read_extended_schema = read_extended_schema
         self.read_extended_public_schema = read_extended_public_schema
 
-    def get(self, **kwargs) -> Optional[ModelType]:
+    def get(self, **kwargs) -> ModelType | None:
         """Try to retrieve from DB an object with the given attributes.
 
         Args:
@@ -81,8 +82,8 @@ class CRUDBase(
         self,
         *,
         skip: int = 0,
-        limit: Optional[int] = None,
-        sort: Optional[str] = None,
+        limit: int | None = None,
+        sort: str | None = None,
         **kwargs,
     ) -> list[ModelType]:
         """Try to retrieve from DB a list of objects with the given attributes.
@@ -133,7 +134,7 @@ class CRUDBase(
         db_obj: ModelType,
         obj_in: UpdateSchemaType,
         force: bool = False,
-    ) -> Optional[ModelType]:
+    ) -> ModelType | None:
         """Update and existing database object.
 
         Args:
@@ -174,7 +175,7 @@ class CRUDBase(
         return db_obj.delete()
 
     def paginate(
-        self, *, items: list[ModelType], page: int, size: Optional[int]
+        self, *, items: list[ModelType], page: int, size: int | None
     ) -> list[ModelType]:
         """Divide the list in chunks.
 
@@ -233,7 +234,7 @@ class CRUDBase(
         return [self.read_public_schema.from_orm(i) for i in items]
 
     def __apply_limit_and_skip(
-        self, *, items: list[ModelType], skip: int = 0, limit: Optional[int] = None
+        self, *, items: list[ModelType], skip: int = 0, limit: int | None = None
     ) -> list[ModelType]:
         """Function to apply the limit and skip attributes on the list of values.
 
@@ -252,3 +253,36 @@ class CRUDBase(
         start = skip
         end = skip + limit
         return items[start:end]
+
+
+class ResourceWithProjectsBase(Generic[ModelType, CreateSchemaType]):
+    """Class with the function to merge new projects into current ones."""
+
+    def _update_projects(
+        self,
+        *,
+        obj_in: CreateSchemaType,
+        db_obj: ModelType,
+        provider_projects: list[Project],
+    ) -> ModelType:
+        """Update resource linked projects.
+
+        Connect new projects not already connect, leave untouched already linked ones
+        and delete old ones no more connected to the flavor.
+        """
+        db_items = {db_item.uuid: db_item for db_item in db_obj.projects}
+        db_projects = {db_item.uuid: db_item for db_item in provider_projects}
+        for proj in obj_in.projects:
+            db_item = db_items.pop(proj, None)
+            if not db_item:
+                db_item = db_projects.get(proj)
+                assert db_item is not None, (
+                    f"Input project {proj} not in the provider "
+                    f"projects: {provider_projects}"
+                )
+                db_obj.projects.connect(db_item)
+                return db_obj
+        for db_item in db_items.values():
+            db_obj.projects.disconnect(db_item)
+            return db_obj
+        return db_obj
