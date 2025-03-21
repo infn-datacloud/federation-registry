@@ -1,29 +1,125 @@
 """Module with Create, Read, Update and Delete operations for a Network."""
 
-from typing import Optional
-
-from fedreg.network.models import Network
+from fedreg.network.models import PrivateNetwork, SharedNetwork
 from fedreg.network.schemas import (
-    NetworkCreate,
     NetworkRead,
     NetworkReadPublic,
     NetworkUpdate,
+    PrivateNetworkCreate,
+    SharedNetworkCreate,
 )
 from fedreg.network.schemas_extended import (
     NetworkReadExtended,
     NetworkReadExtendedPublic,
 )
 from fedreg.project.models import Project
-from fedreg.provider.schemas_extended import NetworkCreateExtended
+from fedreg.provider.schemas_extended import PrivateNetworkCreateExtended
 from fedreg.service.models import NetworkService
 
-from fed_reg.crud import CRUDBase
+from fed_reg.crud import CRUDBase, ResourceWithProjectsBase
 
 
-class CRUDNetwork(
+class CRUDPrivateNetwork(
     CRUDBase[
-        Network,
-        NetworkCreate,
+        PrivateNetwork,
+        PrivateNetworkCreate,
+        NetworkUpdate,
+        NetworkRead,
+        NetworkReadPublic,
+        NetworkReadExtended,
+        NetworkReadExtendedPublic,
+    ],
+    ResourceWithProjectsBase[PrivateNetwork, PrivateNetworkCreateExtended],
+):
+    """Private Network Create, Read, Update and Delete operations."""
+
+    def create(
+        self,
+        *,
+        obj_in: PrivateNetworkCreateExtended,
+        service: NetworkService,
+        provider_projects: list[Project],
+    ) -> PrivateNetwork:
+        """Create a new Network.
+
+        At first check that a network with the given UUID does not already exist. If it
+        does not exist create it. Otherwise check the provider of the existing one. If
+        it is the same of the received service, do nothing, otherwise create a new
+        network. In any case connect the network to the given service and to any
+        received project.
+        """
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
+        db_obj = self.get(uuid=obj_in.uuid)
+        if not db_obj:
+            db_obj = super().create(obj_in=obj_in)
+        else:
+            # It's indifferent which service, we want to reach the provider
+            db_service = db_obj.service.single()
+            db_region = db_service.region.single()
+            db_provider1 = db_region.provider.single()
+            db_region = service.region.single()
+            db_provider2 = db_region.provider.single()
+            if db_provider1 != db_provider2:
+                db_obj = super().create(obj_in=obj_in)
+            else:
+                raise ValueError(
+                    f"A private network with uuid {obj_in.uuid} belonging to provider "
+                    f"{db_provider1.name} already exists"
+                )
+
+        db_obj.service.connect(service)
+
+        filtered_projects = list(
+            filter(lambda x: x.uuid in obj_in.projects, provider_projects)
+        )
+        if len(filtered_projects) == 0:
+            db_region = service.region.single()
+            db_provider = db_region.provider.single()
+            raise ValueError(
+                f"None of the input projects {[i for i in obj_in.projects]} "
+                f"belongs to provider {db_provider.name}"
+            )
+        else:
+            for project in filtered_projects:
+                db_obj.projects.connect(project)
+
+        return db_obj
+
+    def patch(
+        self, *, db_obj: PrivateNetwork, obj_in: NetworkUpdate
+    ) -> PrivateNetwork | None:
+        """Update Network attributes.
+
+        By default do not update relationships or default values. If force is True,
+        update linked projects and apply default values when explicit.
+        """
+        return super().update(db_obj=db_obj, obj_in=obj_in)
+
+    def update(
+        self,
+        *,
+        db_obj: PrivateNetwork,
+        obj_in: PrivateNetworkCreateExtended,
+        provider_projects: list[Project],
+    ) -> PrivateNetwork | None:
+        """Update Network attributes.
+
+        By default do not update relationships or default values. If force is True,
+        update linked projects and apply default values when explicit.
+        """
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
+        db_obj = super()._update_projects(
+            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+        )
+        obj_in = NetworkUpdate.parse_obj(obj_in)
+        db_obj = super().update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return db_obj
+
+
+class CRUDSharedNetwork(
+    CRUDBase[
+        SharedNetwork,
+        SharedNetworkCreate,
         NetworkUpdate,
         NetworkRead,
         NetworkReadPublic,
@@ -34,59 +130,72 @@ class CRUDNetwork(
     """Network Create, Read, Update and Delete operations."""
 
     def create(
-        self,
-        *,
-        obj_in: NetworkCreate,
-        service: NetworkService,
-        project: Optional[Project] = None,
-    ) -> Network:
+        self, *, obj_in: SharedNetworkCreate, service: NetworkService
+    ) -> SharedNetwork:
         """Create a new Network.
 
-        Connect the network to the given service and to the optional received project.
+        At first check that a network with the given UUID does not already exist. If it
+        does not exist create it. Otherwise check the provider of the existing one. If
+        it is the same of the received service, do nothing, otherwise create a new
+        network. In any case connect the network to the given service and to any
+        received project.
         """
-        db_obj = super().create(obj_in=obj_in)
+        db_obj = self.get(uuid=obj_in.uuid)
+        if not db_obj:
+            db_obj = super().create(obj_in=obj_in)
+        else:
+            # It's indifferent which service, we want to reach the provider
+            db_service = db_obj.service.single()
+            db_region = db_service.region.single()
+            db_provider1 = db_region.provider.single()
+            db_region = service.region.single()
+            db_provider2 = db_region.provider.single()
+            if db_provider1 != db_provider2:
+                db_obj = super().create(obj_in=obj_in)
+            else:
+                raise ValueError(
+                    f"A shared network with uuid {obj_in.uuid} belonging to provider "
+                    f"{db_provider1.name} already exists"
+                )
+
         db_obj.service.connect(service)
-        if project is not None:
-            db_obj.project.connect(project)
+
         return db_obj
 
-    def update(
-        self,
-        *,
-        db_obj: Network,
-        obj_in: NetworkUpdate | NetworkCreateExtended,
-        projects: Optional[list[Project]] = None,
-        force: bool = False,
-    ) -> Optional[Network]:
+    def patch(
+        self, *, db_obj: SharedNetwork, obj_in: NetworkUpdate
+    ) -> SharedNetwork | None:
         """Update Network attributes.
 
         By default do not update relationships or default values. If force is True,
-        update linked project and apply default values when explicit.
+        update linked projects and apply default values when explicit.
         """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            db_projects = {db_item.uuid: db_item for db_item in projects}
-            db_proj = db_obj.project.single()
-            if not obj_in.project and db_proj:
-                db_obj.project.disconnect(db_proj)
-                edit = True
-            elif not db_proj or (db_proj and obj_in.project != db_proj.uuid):
-                db_item = db_projects.get(obj_in.project)
-                db_obj.project.replace(db_item)
-                edit = True
+        return super().update(db_obj=db_obj, obj_in=obj_in)
 
-        if isinstance(obj_in, NetworkCreateExtended):
-            obj_in = NetworkUpdate.parse_obj(obj_in)
+    def update(
+        self, *, db_obj: SharedNetwork, obj_in: SharedNetworkCreate
+    ) -> SharedNetwork | None:
+        """Update Network attributes.
 
-        updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else updated_data
+        By default do not update relationships or default values. If force is True,
+        update linked projects and apply default values when explicit.
+        """
+        obj_in = NetworkUpdate.parse_obj(obj_in)
+        return super().update(db_obj=db_obj, obj_in=obj_in, force=True)
 
 
-network_mng = CRUDNetwork(
-    model=Network,
-    create_schema=NetworkCreate,
+private_network_mng = CRUDPrivateNetwork(
+    model=PrivateNetwork,
+    create_schema=PrivateNetworkCreate,
+    read_schema=NetworkRead,
+    read_public_schema=NetworkReadPublic,
+    read_extended_schema=NetworkReadExtended,
+    read_extended_public_schema=NetworkReadExtendedPublic,
+)
+
+shared_network_mng = CRUDSharedNetwork(
+    model=SharedNetwork,
+    create_schema=SharedNetworkCreate,
     read_schema=NetworkRead,
     read_public_schema=NetworkReadPublic,
     read_extended_schema=NetworkReadExtended,
