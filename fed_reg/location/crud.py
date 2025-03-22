@@ -29,22 +29,29 @@ class CRUDLocation(
 ):
     """Location Create, Read, Update and Delete operations."""
 
-    def create(self, *, obj_in: LocationCreate, region: Region) -> Location:
+    def create(
+        self, *, obj_in: LocationCreate, region: Region | None = None
+    ) -> Location:
         """Create a new Location.
 
         At first check that a location with the given site name does not already exist.
         If it does not exist create it. Otherwise update its values without forcing
         default ones (some configuration may add new information to a location). In any
-        case connect the location to the given region.
+        case connect the location to the given region. Eventually replace old location.
+
+        A Location can exist without being connected to a region.
         """
         db_obj = self.get(site=obj_in.site)
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
         else:
-            updated_data = self.update(db_obj=db_obj, obj_in=obj_in)
-            if updated_data:
-                db_obj = updated_data
-        db_obj.regions.connect(region)
+            raise ValueError(f"A location with site {obj_in.site} already exists")
+        if region:
+            region_curr_location = region.location.single()
+            if region_curr_location:
+                region.location.reconnect(region_curr_location, db_obj)
+            else:
+                db_obj.regions.connect(region)
         return db_obj
 
 
