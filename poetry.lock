@@ -487,8 +487,8 @@ all = ["email-validator (>=2.0.0)", "httpx (>=0.23.0)", "itsdangerous (>=1.1.0)"
 
 [[package]]
 name = "fedreg"
-version = "0.1.0"
-description = "Python web application providing public REST API to inspect the configurations of the providers registered into the DataCloud project"
+version = "1.0.1"
+description = "Python library with the Object Models used in the federation-registry app."
 optional = false
 python-versions = ">=3.9,<4.0.0"
 files = []
@@ -502,8 +502,8 @@ pydantic = {version = ">=1.10.9,<2.0.0", extras = ["email"]}
 [package.source]
 type = "git"
 url = "https://github.com/infn-datacloud/federation-registry-lib.git"
-reference = "v1.0.0"
-resolved_reference = "5d347399688f0f76529597b4c6e3f757c44c19ab"
+reference = "networks-multi-projects"
+resolved_reference = "17a031f95f38d36b2a820d57f3238ac34d99e2da"
 
 [[package]]
 name = "filelock"
@@ -1307,4 +1307,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9.2,<4.0.0"
-content-hash = "a28170d43c167c15486f29b1ba289b822248ee4e1d648b1a930456c909b5e8b2"
+content-hash = "7b9fec9a94b74ac4318f74b86b9cc82b80633cbecb383e8db19c69ed416063dd"
