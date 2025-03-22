@@ -2,14 +2,15 @@ from uuid import uuid4
 
 import pytest
 from fedreg.flavor.models import SharedFlavor
-from fedreg.flavor.schemas import FlavorUpdate, SharedFlavorCreate
+from fedreg.flavor.schemas import SharedFlavorCreate
 from fedreg.provider.models import Provider
 from fedreg.region.models import Region
+from fedreg.service.enum import ServiceType
 from fedreg.service.models import ComputeService
-from pytest_cases import case, parametrize_with_cases
+from pytest_cases import parametrize_with_cases
 
 from fed_reg.flavor.crud import shared_flavor_mng
-from tests.utils import random_lower_string
+from tests.utils import random_lower_string, random_service_name, random_url
 
 
 @pytest.fixture
@@ -21,7 +22,7 @@ def service_model() -> ComputeService:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = ComputeService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
     ).save()
     provider.regions.connect(region)
     region.services.connect(service)
@@ -37,7 +38,7 @@ def shared_flavor_model() -> SharedFlavor:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = ComputeService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
     ).save()
     flavor = SharedFlavor(name=random_lower_string(), uuid=str(uuid4())).save()
     provider.regions.connect(region)
@@ -47,16 +48,11 @@ def shared_flavor_model() -> SharedFlavor:
 
 
 class CaseFlavor:
-    @case(tags="create")
     def case_shared_flavor_create(self) -> SharedFlavorCreate:
         return SharedFlavorCreate(name=random_lower_string(), uuid=uuid4())
 
-    @case(tags="update")
-    def case_flavor_update(self) -> FlavorUpdate:
-        return FlavorUpdate(name=random_lower_string(), uuid=uuid4())
 
-
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="create")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_create(item: SharedFlavorCreate, service_model: ComputeService) -> None:
     """Create a new istance"""
     db_obj = shared_flavor_mng.create(obj_in=item, service=service_model)
@@ -65,7 +61,7 @@ def test_create(item: SharedFlavorCreate, service_model: ComputeService) -> None
     assert db_obj.services.is_connected(service_model)
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="create")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_create_same_uuid_diff_provider(
     item: SharedFlavorCreate,
     service_model: ComputeService,
@@ -79,7 +75,7 @@ def test_create_same_uuid_diff_provider(
     assert db_obj.services.is_connected(service_model)
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="create")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_create_already_exists(
     item: SharedFlavorCreate,
     shared_flavor_model: SharedFlavor,
@@ -97,7 +93,7 @@ def test_create_already_exists(
         shared_flavor_mng.create(obj_in=item, service=service)
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="create")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_update(item: SharedFlavorCreate, shared_flavor_model: SharedFlavor) -> None:
     """Completely update the flavor attributes. Also override not set ones."""
     db_obj = shared_flavor_mng.update(obj_in=item, db_obj=shared_flavor_model)
@@ -110,7 +106,7 @@ def test_update(item: SharedFlavorCreate, shared_flavor_model: SharedFlavor) -> 
             assert db_obj.__getattribute__(k) == d.get(k)
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="create")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_update_no_changes(
     item: SharedFlavorCreate, shared_flavor_model: SharedFlavor
 ) -> None:

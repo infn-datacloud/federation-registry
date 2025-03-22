@@ -3,16 +3,16 @@ from uuid import uuid4
 
 import pytest
 from fedreg.flavor.models import PrivateFlavor
-from fedreg.flavor.schemas import FlavorUpdate, PrivateFlavorCreate
 from fedreg.project.models import Project
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import PrivateFlavorCreateExtended
 from fedreg.region.models import Region
+from fedreg.service.enum import ServiceType
 from fedreg.service.models import ComputeService
-from pytest_cases import case, parametrize_with_cases
+from pytest_cases import parametrize_with_cases
 
 from fed_reg.flavor.crud import private_flavor_mng
-from tests.utils import random_lower_string
+from tests.utils import random_lower_string, random_service_name, random_url
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def service_model() -> ComputeService:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = ComputeService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
     ).save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
     provider.regions.connect(region)
@@ -42,7 +42,7 @@ def private_flavor_model() -> PrivateFlavor:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = ComputeService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
     ).save()
     flavor = PrivateFlavor(name=random_lower_string(), uuid=str(uuid4())).save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
@@ -69,15 +69,6 @@ def project_model(private_flavor_model: PrivateFlavor) -> Project:
 
 
 class CaseFlavor:
-    @case(tags="create")
-    def case_private_flavor_create(self) -> PrivateFlavorCreate:
-        return PrivateFlavorCreate(name=random_lower_string(), uuid=uuid4())
-
-    @case(tags="update")
-    def case_flavor_update(self) -> FlavorUpdate:
-        return FlavorUpdate(name=random_lower_string(), uuid=uuid4())
-
-    @case(tags="extended")
     def case_private_flavor_create_extended(
         self, service_model: ComputeService
     ) -> PrivateFlavorCreateExtended:
@@ -89,7 +80,7 @@ class CaseFlavor:
         )
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_create(
     item: PrivateFlavorCreateExtended, service_model: ComputeService
 ) -> None:
@@ -106,7 +97,7 @@ def test_create(
     assert db_obj.projects.is_connected(projects[0])
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_create_same_uuid_diff_provider(
     item: PrivateFlavorCreateExtended,
     service_model: ComputeService,
@@ -126,9 +117,9 @@ def test_create_same_uuid_diff_provider(
     assert db_obj.projects.is_connected(projects[0])
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_create_already_exists(
-    item: PrivateFlavorCreate,
+    item: PrivateFlavorCreateExtended,
     private_flavor_model: PrivateFlavor,
 ) -> None:
     """A flavor with the given uuid already exists"""
@@ -147,7 +138,7 @@ def test_create_already_exists(
         )
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_create_with_invalid_projects(
     item: PrivateFlavorCreateExtended,
     private_flavor_model: PrivateFlavor,
@@ -168,19 +159,19 @@ def test_create_with_invalid_projects(
         )
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_create_with_no_provider_projects(
-    item: PrivateFlavorCreateExtended,
-    private_flavor_model: PrivateFlavor,
+    item: PrivateFlavorCreateExtended, service_model: ComputeService
 ) -> None:
     """Empty list passed to the provider_projects param."""
-    service = private_flavor_model.services.single()
     msg = "The provider's projects list is empty"
     with pytest.raises(AssertionError, match=re.escape(msg)):
-        private_flavor_mng.create(obj_in=item, service=service, provider_projects=[])
+        private_flavor_mng.create(
+            obj_in=item, service=service_model, provider_projects=[]
+        )
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_update(
     item: PrivateFlavorCreateExtended,
     private_flavor_model: PrivateFlavor,
@@ -205,9 +196,11 @@ def test_update(
     for k in db_obj.__properties__.keys():
         if k not in exclude_properties:
             assert db_obj.__getattribute__(k) == d.get(k)
+    assert len(db_obj.projects) == len(item.projects)
+    assert set([x.uuid for x in db_obj.projects]) == set(item.projects)
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_update_no_changes(
     item: PrivateFlavorCreateExtended, private_flavor_model: PrivateFlavor
 ) -> None:
@@ -225,7 +218,7 @@ def test_update_no_changes(
     assert db_obj is None
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_update_empy_provider_projects_list(
     item: PrivateFlavorCreateExtended, private_flavor_model: PrivateFlavor
 ) -> None:
@@ -237,7 +230,7 @@ def test_update_empy_provider_projects_list(
         )
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_update_same_projects(
     item: PrivateFlavorCreateExtended, private_flavor_model: PrivateFlavor
 ) -> None:
@@ -260,9 +253,11 @@ def test_update_same_projects(
     for k in db_obj.__properties__.keys():
         if k not in exclude_properties:
             assert db_obj.__getattribute__(k) == d.get(k)
+    assert len(db_obj.projects) == len(item.projects)
+    assert set([x.uuid for x in db_obj.projects]) == set(item.projects)
 
 
-@parametrize_with_cases("item", cases=CaseFlavor, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseFlavor)
 def test_update_invalid_project(
     item: PrivateFlavorCreateExtended, private_flavor_model: PrivateFlavor
 ) -> None:

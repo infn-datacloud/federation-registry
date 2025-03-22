@@ -1,9 +1,13 @@
 """Module with Create, Read, Update and Delete operations for a Services."""
 
-from typing import Any, Optional
+from typing import Generic, Optional, TypeVar
 
+from fedreg.core import BaseNodeCreate
+from fedreg.flavor.schemas import SharedFlavorCreate
+from fedreg.image.schemas import SharedImageCreate
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import (
+    BlockStorageQuotaCreateExtended,
     BlockStorageServiceCreateExtended,
     ComputeServiceCreateExtended,
     NetworkServiceCreateExtended,
@@ -51,34 +55,81 @@ from fedreg.service.schemas_extended import (
     ObjectStoreServiceReadExtended,
     ObjectStoreServiceReadExtendedPublic,
 )
+from neomodel import StructuredNode
 
 from fed_reg.crud import CRUDBase
-from fed_reg.flavor.crud import flavor_mng
-from fed_reg.image.crud import image_mng
-from fed_reg.network.crud import network_mng
+from fed_reg.flavor.crud import private_flavor_mng, shared_flavor_mng
+from fed_reg.image.crud import private_image_mng, shared_image_mng
+from fed_reg.network.crud import private_network_mng, shared_network_mng
 from fed_reg.quota.crud import (
+    CRUDBlockStorageQuota,
     block_storage_quota_mng,
     compute_quota_mng,
     network_quota_mng,
     object_store_quota_mng,
 )
 
+ModelType = TypeVar("ModelType", bound=StructuredNode)
+QuotaCreateExtendedSchemaType = TypeVar(
+    "QuotaCreateExtendedSchemaType", bound=BaseNodeCreate
+)
+QuotaCRUDType = TypeVar("QuotaCRUDType", bound=CRUDBlockStorageQuota)
 
-def split_quota(quotas: list[Any]) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Split quotas in usage, per-user, per-project."""
-    db_items_usage = {
-        db_item.project.single().uuid: db_item
-        for db_item in filter(lambda x: x.usage, quotas)
-    }
-    db_items_per_user = {
-        db_item.project.single().uuid: db_item
-        for db_item in filter(lambda x: x.per_user and not x.usage, quotas)
-    }
-    db_items_per_project = {
-        db_item.project.single().uuid: db_item
-        for db_item in filter(lambda x: not x.per_user and not x.usage, quotas)
-    }
-    return (db_items_usage, db_items_per_user, db_items_per_project)
+
+class ResourceMultiQuotasBase(
+    Generic[ModelType, QuotaCreateExtendedSchemaType, QuotaCRUDType]
+):
+    """Class with the function to merge new projects into current ones."""
+
+    def __init__(self, *, quota_mgr: QuotaCRUDType):
+        self.quota_mgr = quota_mgr
+
+    def _update_quotas(
+        self,
+        *,
+        db_obj: ModelType,
+        input_quotas: list[QuotaCreateExtendedSchemaType],
+        provider_projects: list[Project],
+    ) -> ModelType | None:
+        """Update service linked quotas.
+
+        Connect new quotas not already connect and delete old ones no more connected to
+        the service. If the project already has a quota of that type, update that quota
+        with the new received values.
+        """
+        edit = False
+        seen_items = []
+        for item in input_quotas:
+            db_quotas = db_obj.quotas.filter(usage=item.usage, per_user=item.per_user)
+            db_item = next(
+                filter(lambda q: q.project.single().uuid == item.project, db_quotas),
+                None,
+            )
+
+            if not db_item:
+                updated_db_item = self.quota_mgr.create(
+                    obj_in=item,
+                    service=db_obj,
+                    provider_projects=provider_projects,
+                )
+                seen_items.append(updated_db_item)
+                edit = True
+            else:
+                updated_db_item = self.quota_mgr.update(
+                    db_obj=db_item,
+                    obj_in=item,
+                    provider_projects=provider_projects,
+                )
+                seen_items.append(updated_db_item)
+                if updated_db_item:
+                    edit = True
+
+        for db_item in db_obj.quotas:
+            if db_item not in seen_items:
+                self.quota_mgr.remove(db_obj=db_item)
+                edit = True
+
+        return db_obj.save() if edit else None
 
 
 class CRUDBlockStorageService(
@@ -90,162 +141,82 @@ class CRUDBlockStorageService(
         BlockStorageServiceReadPublic,
         BlockStorageServiceReadExtended,
         BlockStorageServiceReadExtendedPublic,
-    ]
+    ],
+    ResourceMultiQuotasBase[
+        BlockStorageService, BlockStorageQuotaCreateExtended, CRUDBlockStorageQuota
+    ],
 ):
     """Block Storage Service Create, Read, Update and Delete operations."""
+
+    def __init__(
+        self,
+        *,
+        model,
+        create_schema,
+        read_schema,
+        read_public_schema,
+        read_extended_schema,
+        read_extended_public_schema,
+        quota_mgr,
+    ):
+        CRUDBase.__init__(
+            self,
+            model=model,
+            create_schema=create_schema,
+            read_schema=read_schema,
+            read_public_schema=read_public_schema,
+            read_extended_schema=read_extended_schema,
+            read_extended_public_schema=read_extended_public_schema,
+        )
+        ResourceMultiQuotasBase.__init__(self, quota_mgr=quota_mgr)
 
     def create(
         self,
         *,
         obj_in: BlockStorageServiceCreateExtended,
         region: Region,
-        projects: Optional[list[Project]] = None,
+        provider_projects: list[Project] | None = None,
     ) -> BlockStorageService:
         """Create a new Block Storage Service.
 
-        Connect the service to the given region and create all relative quotas. Filter
-        projects based on received ones and target one. It must be exactly one.
+        Connect the service to the given region and create all relative quotas.
         """
-        if projects is None:
-            projects = []
-        db_obj = region.services.filter(endpoint=obj_in.endpoint, type=obj_in.type)
+        if provider_projects is None:
+            provider_projects = []
+        db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
             db_obj.region.connect(region)
-        for item in obj_in.quotas:
-            db_projects = list(filter(lambda x: x.uuid == item.project, projects))
-            if len(db_projects) == 1:
-                block_storage_quota_mng.create(
-                    obj_in=item, service=db_obj, project=db_projects[0]
-                )
+        else:
+            db_provider = region.provider.single()
+            raise ValueError(
+                f"A block storage service with endpoint {obj_in.endpoint} "
+                f"belonging to provider {db_provider.name} already exists"
+            )
+        for quota in obj_in.quotas:
+            block_storage_quota_mng.create(
+                obj_in=quota, service=db_obj, provider_projects=provider_projects
+            )
         return db_obj
-
-    def remove(self, *, db_obj: BlockStorageService) -> bool:
-        """Delete an existing service and all its relationships.
-
-        At first delete its quotas. Finally delete the service.
-        """
-        for item in db_obj.quotas:
-            block_storage_quota_mng.remove(db_obj=item)
-        return super().remove(db_obj=db_obj)
 
     def update(
         self,
         *,
         db_obj: BlockStorageService,
-        obj_in: BlockStorageServiceCreateExtended | BlockStorageServiceUpdate,
-        projects: Optional[list[Project]] = None,
-        force: bool = False,
-    ) -> Optional[BlockStorageService]:
-        """Update Block Storage Service attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked quotas and apply default values when explicit.
-        """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            edit = self.__update_quotas(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-
-        if isinstance(obj_in, BlockStorageServiceCreateExtended):
-            obj_in = BlockStorageServiceUpdate.parse_obj(obj_in)
-
-        update_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else update_data
-
-    def __update_quotas(  # noqa: C901
-        self,
-        *,
-        db_obj: BlockStorageService,
         obj_in: BlockStorageServiceCreateExtended,
-        provider_projects: list[Project],
-    ) -> bool:
-        """Update service linked quotas.
-
-        Connect new quotas not already connect, leave untouched already linked ones and
-        delete old ones no more connected to the service.
-
-        Split quotas in usage, per_user and per_project. For each one of them, check the
-        linked project. If the project already has a quota of that type, update that
-        quota with the new received values.
-        """
-        edit = False
-
-        db_items_usage, db_items_per_user, db_items_per_project = split_quota(
-            db_obj.quotas
+        provider_projects: list[Project] | None,
+    ) -> BlockStorageService | None:
+        """Update Block Storage Service attributes. Update linked quotas."""
+        if provider_projects is None:
+            provider_projects = []
+        casted_obj_in = BlockStorageServiceUpdate.parse_obj(obj_in)
+        edited_obj1 = self._update_quotas(
+            db_obj=db_obj,
+            input_quotas=obj_in.quotas,
+            provider_projects=provider_projects,
         )
-        db_projects = {db_item.uuid: db_item for db_item in provider_projects}
-
-        for item in obj_in.quotas:
-            if item.usage:
-                db_item = db_items_usage.pop(item.project, None)
-                if not db_item:
-                    block_storage_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = block_storage_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            elif item.per_user:
-                db_item = db_items_per_user.pop(item.project, None)
-                if not db_item:
-                    block_storage_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = block_storage_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            else:
-                db_item = db_items_per_project.pop(item.project, None)
-                if not db_item:
-                    block_storage_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = block_storage_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-
-        for db_item in db_items_usage.values():
-            block_storage_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_user.values():
-            block_storage_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_project.values():
-            block_storage_quota_mng.remove(db_obj=db_item)
-            edit = True
-
-        return edit
+        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 class CRUDComputeService(
@@ -281,11 +252,17 @@ class CRUDComputeService(
             db_obj = super().create(obj_in=obj_in)
             db_obj.region.connect(region)
         for item in obj_in.flavors:
-            db_projects = list(filter(lambda x: x.uuid in item.projects, projects))
-            flavor_mng.create(obj_in=item, service=db_obj, projects=db_projects)
+            if isinstance(item, SharedFlavorCreate):
+                flavor_mng.create(obj_in=item, service=db_obj)
+            else:
+                db_projects = list(filter(lambda x: x.uuid in item.projects, projects))
+                flavor_mng.create(obj_in=item, service=db_obj, projects=db_projects)
         for item in obj_in.images:
-            db_projects = list(filter(lambda x: x.uuid in item.projects, projects))
-            image_mng.create(obj_in=item, service=db_obj, projects=db_projects)
+            if isinstance(item, SharedImageCreate):
+                image_mng.create(obj_in=item, service=db_obj)
+            else:
+                db_projects = list(filter(lambda x: x.uuid in item.projects, projects))
+                image_mng.create(obj_in=item, service=db_obj, projects=db_projects)
         for item in obj_in.quotas:
             db_projects = list(filter(lambda x: x.uuid == item.project, projects))
             if len(db_projects) == 1:
@@ -937,6 +914,7 @@ block_storage_service_mng = CRUDBlockStorageService(
     read_public_schema=BlockStorageServiceReadPublic,
     read_extended_schema=BlockStorageServiceReadExtended,
     read_extended_public_schema=BlockStorageServiceReadExtendedPublic,
+    quota_mgr=block_storage_quota_mng,
 )
 identity_service_mng = CRUDIdentityService(
     model=IdentityService,

@@ -2,14 +2,15 @@ from uuid import uuid4
 
 import pytest
 from fedreg.image.models import SharedImage
-from fedreg.image.schemas import ImageUpdate, SharedImageCreate
+from fedreg.image.schemas import SharedImageCreate
 from fedreg.provider.models import Provider
 from fedreg.region.models import Region
+from fedreg.service.enum import ServiceType
 from fedreg.service.models import ComputeService
-from pytest_cases import case, parametrize_with_cases
+from pytest_cases import parametrize_with_cases
 
 from fed_reg.image.crud import shared_image_mng
-from tests.utils import random_lower_string
+from tests.utils import random_lower_string, random_service_name, random_url
 
 
 @pytest.fixture
@@ -21,7 +22,7 @@ def service_model() -> ComputeService:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = ComputeService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
     ).save()
     provider.regions.connect(region)
     region.services.connect(service)
@@ -37,7 +38,7 @@ def shared_image_model() -> SharedImage:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = ComputeService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
     ).save()
     image = SharedImage(name=random_lower_string(), uuid=str(uuid4())).save()
     provider.regions.connect(region)
@@ -47,16 +48,11 @@ def shared_image_model() -> SharedImage:
 
 
 class CaseImage:
-    @case(tags="create")
     def case_shared_image_create(self) -> SharedImageCreate:
         return SharedImageCreate(name=random_lower_string(), uuid=uuid4())
 
-    @case(tags="update")
-    def case_image_update(self) -> ImageUpdate:
-        return ImageUpdate(name=random_lower_string(), uuid=uuid4())
 
-
-@parametrize_with_cases("item", cases=CaseImage, has_tag="create")
+@parametrize_with_cases("item", cases=CaseImage)
 def test_create(item: SharedImageCreate, service_model: ComputeService) -> None:
     """Create a new istance"""
     db_obj = shared_image_mng.create(obj_in=item, service=service_model)
@@ -65,7 +61,7 @@ def test_create(item: SharedImageCreate, service_model: ComputeService) -> None:
     assert db_obj.services.is_connected(service_model)
 
 
-@parametrize_with_cases("item", cases=CaseImage, has_tag="create")
+@parametrize_with_cases("item", cases=CaseImage)
 def test_create_same_uuid_diff_provider(
     item: SharedImageCreate,
     service_model: ComputeService,
@@ -79,7 +75,7 @@ def test_create_same_uuid_diff_provider(
     assert db_obj.services.is_connected(service_model)
 
 
-@parametrize_with_cases("item", cases=CaseImage, has_tag="create")
+@parametrize_with_cases("item", cases=CaseImage)
 def test_create_already_exists(
     item: SharedImageCreate,
     shared_image_model: SharedImage,
@@ -97,7 +93,7 @@ def test_create_already_exists(
         shared_image_mng.create(obj_in=item, service=service)
 
 
-@parametrize_with_cases("item", cases=CaseImage, has_tag="create")
+@parametrize_with_cases("item", cases=CaseImage)
 def test_update(item: SharedImageCreate, shared_image_model: SharedImage) -> None:
     """Completely update the image attributes. Also override not set ones."""
     db_obj = shared_image_mng.update(obj_in=item, db_obj=shared_image_model)
@@ -110,7 +106,7 @@ def test_update(item: SharedImageCreate, shared_image_model: SharedImage) -> Non
             assert db_obj.__getattribute__(k) == d.get(k)
 
 
-@parametrize_with_cases("item", cases=CaseImage, has_tag="create")
+@parametrize_with_cases("item", cases=CaseImage)
 def test_update_no_changes(
     item: SharedImageCreate, shared_image_model: SharedImage
 ) -> None:

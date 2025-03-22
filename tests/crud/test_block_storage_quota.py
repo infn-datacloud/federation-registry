@@ -6,13 +6,13 @@ from fedreg.project.models import Project
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import BlockStorageQuotaCreateExtended
 from fedreg.quota.models import BlockStorageQuota
-from fedreg.quota.schemas import BlockStorageQuotaCreate, BlockStorageQuotaUpdate
 from fedreg.region.models import Region
+from fedreg.service.enum import ServiceType
 from fedreg.service.models import BlockStorageService
-from pytest_cases import case, parametrize_with_cases
+from pytest_cases import parametrize_with_cases
 
 from fed_reg.quota.crud import block_storage_quota_mng
-from tests.utils import random_lower_string
+from tests.utils import random_lower_string, random_service_name, random_url
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def service_model() -> BlockStorageService:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = BlockStorageService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.BLOCK_STORAGE)
     ).save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
     provider.regions.connect(region)
@@ -42,7 +42,7 @@ def block_storage_quota_model() -> BlockStorageQuota:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = BlockStorageService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.BLOCK_STORAGE)
     ).save()
     quota = BlockStorageQuota().save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
@@ -69,15 +69,6 @@ def project_model(block_storage_quota_model: BlockStorageQuota) -> Project:
 
 
 class CaseQuota:
-    @case(tags="create")
-    def case_block_storage_quota_create(self) -> BlockStorageQuotaCreate:
-        return BlockStorageQuotaCreate(name=random_lower_string(), uuid=uuid4())
-
-    @case(tags="update")
-    def case_block_storage_update(self) -> BlockStorageQuotaUpdate:
-        return BlockStorageQuotaUpdate(name=random_lower_string(), uuid=uuid4())
-
-    @case(tags="extended")
     def case_block_storage_quota_create_extended(
         self, service_model: BlockStorageService
     ) -> BlockStorageQuotaCreateExtended:
@@ -89,7 +80,7 @@ class CaseQuota:
         )
 
 
-@parametrize_with_cases("item", cases=CaseQuota, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseQuota)
 def test_create(
     item: BlockStorageQuotaCreateExtended, service_model: BlockStorageService
 ) -> None:
@@ -106,7 +97,7 @@ def test_create(
     assert db_obj.project.is_connected(projects[0])
 
 
-@parametrize_with_cases("item", cases=CaseQuota, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseQuota)
 def test_create_with_invalid_project(
     item: BlockStorageQuotaCreateExtended,
     block_storage_quota_model: BlockStorageQuota,
@@ -127,21 +118,20 @@ def test_create_with_invalid_project(
         )
 
 
-@parametrize_with_cases("item", cases=CaseQuota, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseQuota)
 def test_create_with_no_provider_projects(
     item: BlockStorageQuotaCreateExtended,
-    block_storage_quota_model: BlockStorageQuota,
+    service_model: BlockStorageService,
 ) -> None:
     """Empty list passed to the provider_projects param."""
-    service = block_storage_quota_model.service.single()
     msg = "The provider's projects list is empty"
     with pytest.raises(AssertionError, match=re.escape(msg)):
         block_storage_quota_mng.create(
-            obj_in=item, service=service, provider_projects=[]
+            obj_in=item, service=service_model, provider_projects=[]
         )
 
 
-@parametrize_with_cases("item", cases=CaseQuota, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseQuota)
 def test_update(
     item: BlockStorageQuotaCreateExtended,
     block_storage_quota_model: BlockStorageQuota,
@@ -166,9 +156,10 @@ def test_update(
     for k in db_obj.__properties__.keys():
         if k not in exclude_properties:
             assert db_obj.__getattribute__(k) == d.get(k)
+    assert db_obj.project.single().uuid == item.project
 
 
-@parametrize_with_cases("item", cases=CaseQuota, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseQuota)
 def test_update_no_changes(
     item: BlockStorageQuotaCreateExtended, block_storage_quota_model: BlockStorageQuota
 ) -> None:
@@ -184,7 +175,7 @@ def test_update_no_changes(
     assert db_obj is None
 
 
-@parametrize_with_cases("item", cases=CaseQuota, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseQuota)
 def test_update_empy_provider_projects_list(
     item: BlockStorageQuotaCreateExtended, block_storage_quota_model: BlockStorageQuota
 ) -> None:
@@ -196,7 +187,7 @@ def test_update_empy_provider_projects_list(
         )
 
 
-@parametrize_with_cases("item", cases=CaseQuota, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseQuota)
 def test_update_same_projects(
     item: BlockStorageQuotaCreateExtended, block_storage_quota_model: BlockStorageQuota
 ) -> None:
@@ -220,9 +211,10 @@ def test_update_same_projects(
     for k in db_obj.__properties__.keys():
         if k not in exclude_properties:
             assert db_obj.__getattribute__(k) == d.get(k)
+    assert db_obj.project.single().uuid == item.project
 
 
-@parametrize_with_cases("item", cases=CaseQuota, has_tag="extended")
+@parametrize_with_cases("item", cases=CaseQuota)
 def test_update_invalid_project(
     item: BlockStorageQuotaCreateExtended, block_storage_quota_model: BlockStorageQuota
 ) -> None:

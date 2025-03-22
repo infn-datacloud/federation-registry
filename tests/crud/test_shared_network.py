@@ -2,14 +2,15 @@ from uuid import uuid4
 
 import pytest
 from fedreg.network.models import SharedNetwork
-from fedreg.network.schemas import NetworkUpdate, SharedNetworkCreate
+from fedreg.network.schemas import SharedNetworkCreate
 from fedreg.provider.models import Provider
 from fedreg.region.models import Region
+from fedreg.service.enum import ServiceType
 from fedreg.service.models import NetworkService
-from pytest_cases import case, parametrize_with_cases
+from pytest_cases import parametrize_with_cases
 
 from fed_reg.network.crud import shared_network_mng
-from tests.utils import random_lower_string
+from tests.utils import random_lower_string, random_service_name, random_url
 
 
 @pytest.fixture
@@ -21,7 +22,7 @@ def service_model() -> NetworkService:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = NetworkService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.NETWORK)
     ).save()
     provider.regions.connect(region)
     region.services.connect(service)
@@ -37,7 +38,7 @@ def shared_network_model() -> SharedNetwork:
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()
     service = NetworkService(
-        endpoint=random_lower_string(), name=random_lower_string()
+        endpoint=str(random_url()), name=random_service_name(ServiceType.NETWORK)
     ).save()
     network = SharedNetwork(name=random_lower_string(), uuid=str(uuid4())).save()
     provider.regions.connect(region)
@@ -47,16 +48,11 @@ def shared_network_model() -> SharedNetwork:
 
 
 class CaseNetwork:
-    @case(tags="create")
     def case_shared_network_create(self) -> SharedNetworkCreate:
         return SharedNetworkCreate(name=random_lower_string(), uuid=uuid4())
 
-    @case(tags="update")
-    def case_network_update(self) -> NetworkUpdate:
-        return NetworkUpdate(name=random_lower_string(), uuid=uuid4())
 
-
-@parametrize_with_cases("item", cases=CaseNetwork, has_tag="create")
+@parametrize_with_cases("item", cases=CaseNetwork)
 def test_create(item: SharedNetworkCreate, service_model: NetworkService) -> None:
     """Create a new istance"""
     db_obj = shared_network_mng.create(obj_in=item, service=service_model)
@@ -65,7 +61,7 @@ def test_create(item: SharedNetworkCreate, service_model: NetworkService) -> Non
     assert db_obj.service.is_connected(service_model)
 
 
-@parametrize_with_cases("item", cases=CaseNetwork, has_tag="create")
+@parametrize_with_cases("item", cases=CaseNetwork)
 def test_create_same_uuid_diff_provider(
     item: SharedNetworkCreate,
     service_model: NetworkService,
@@ -79,7 +75,7 @@ def test_create_same_uuid_diff_provider(
     assert db_obj.service.is_connected(service_model)
 
 
-@parametrize_with_cases("item", cases=CaseNetwork, has_tag="create")
+@parametrize_with_cases("item", cases=CaseNetwork)
 def test_create_already_exists(
     item: SharedNetworkCreate,
     shared_network_model: SharedNetwork,
@@ -97,7 +93,7 @@ def test_create_already_exists(
         shared_network_mng.create(obj_in=item, service=service)
 
 
-@parametrize_with_cases("item", cases=CaseNetwork, has_tag="create")
+@parametrize_with_cases("item", cases=CaseNetwork)
 def test_update(item: SharedNetworkCreate, shared_network_model: SharedNetwork) -> None:
     """Completely update the network attributes. Also override not set ones."""
     db_obj = shared_network_mng.update(obj_in=item, db_obj=shared_network_model)
@@ -110,7 +106,7 @@ def test_update(item: SharedNetworkCreate, shared_network_model: SharedNetwork) 
             assert db_obj.__getattribute__(k) == d.get(k)
 
 
-@parametrize_with_cases("item", cases=CaseNetwork, has_tag="create")
+@parametrize_with_cases("item", cases=CaseNetwork)
 def test_update_no_changes(
     item: SharedNetworkCreate, shared_network_model: SharedNetwork
 ) -> None:

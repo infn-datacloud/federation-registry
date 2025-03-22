@@ -141,9 +141,9 @@ class CRUDBase(
             ModelType | None. The updated DB object or None if there are no changes to
                 apply.
         """
-        return self.update(db_obj=db_obj, obj_in=obj_in)
+        return self._update(db_obj=db_obj, obj_in=obj_in)
 
-    def update(
+    def _update(
         self,
         *,
         db_obj: ModelType,
@@ -270,37 +270,38 @@ class CRUDBase(
         return items[start:end]
 
 
-class ResourceMultiProjectsBase(Generic[ModelType, CreateSchemaType]):
+class ResourceMultiProjectsBase(Generic[ModelType]):
     """Class with the function to merge new projects into current ones."""
 
     def _update_projects(
         self,
         *,
-        obj_in: CreateSchemaType,
         db_obj: ModelType,
+        input_uuids: list[str],
         provider_projects: list[Project],
-    ) -> ModelType:
+    ) -> ModelType | None:
         """Update resource linked projects.
 
         Connect new projects not already connect, leave untouched already linked ones
         and delete old ones no more connected to the flavor.
         """
+        edit = False
         db_items = {db_item.uuid: db_item for db_item in db_obj.projects}
         db_projects = {db_item.uuid: db_item for db_item in provider_projects}
-        for proj in obj_in.projects:
+        for proj in input_uuids:
             db_item = db_items.pop(proj, None)
             if not db_item:
                 db_item = db_projects.get(proj)
                 assert db_item is not None, (
                     f"Input project {proj} not in the provider "
-                    f"projects: {provider_projects}"
+                    f"projects: {[i.uuid for i in provider_projects]}"
                 )
                 db_obj.projects.connect(db_item)
-                return db_obj
+                edit = True
         for db_item in db_items.values():
             db_obj.projects.disconnect(db_item)
-            return db_obj
-        return db_obj
+            edit = True
+        return db_obj.save() if edit else None
 
     def _connect_projects(
         self,
@@ -319,38 +320,39 @@ class ResourceMultiProjectsBase(Generic[ModelType, CreateSchemaType]):
         )
         if len(filtered_projects) == 0:
             raise ValueError(
-                f"None of the input projects {[i for i in input_uuids]} "
-                "belongs to this provider."
+                f"None of the input projects {[i for i in input_uuids]} in the "
+                f"provider projects: {[i.uuid for i in provider_projects]}"
             )
         else:
             for project in filtered_projects:
                 db_obj.projects.connect(project)
 
 
-class ResourceSingleProjectBase(Generic[ModelType, CreateSchemaType]):
+class ResourceSingleProjectBase(Generic[ModelType]):
     """Class with the function to merge new projects into current ones."""
 
     def _update_project(
         self,
         *,
-        obj_in: CreateSchemaType,
         db_obj: ModelType,
+        input_uuid: str,
         provider_projects: list[Project],
-    ) -> ModelType:
+    ) -> ModelType | None:
         """Update resource linked project.
 
         If the new project differs from the current one, reconnect new one.
         """
         db_projects = {db_item.uuid: db_item for db_item in provider_projects}
         db_proj = db_obj.project.single()
-        if obj_in.project != db_proj.uuid:
-            db_item = db_projects.get(obj_in.project)
+        if input_uuid != db_proj.uuid:
+            db_item = db_projects.get(input_uuid)
             assert db_item is not None, (
-                f"Input project {obj_in.project} not in the provider "
-                f"projects: {provider_projects}"
+                f"Input project {input_uuid} not in the provider "
+                f"projects: {[i.uuid for i in provider_projects]}"
             )
             db_obj.project.reconnect(db_proj, db_item)
-        return db_obj
+            return db_obj.save()
+        return None
 
     def _connect_project(
         self,
@@ -369,8 +371,11 @@ class ResourceSingleProjectBase(Generic[ModelType, CreateSchemaType]):
         )
         if len(filtered_projects) == 0:
             raise ValueError(
-                f"Input project {input_uuid} does not belong to this provider."
+                f"Input project {input_uuid} not in the provider "
+                f"projects: {[i.uuid for i in provider_projects]}"
             )
         else:
             for project in filtered_projects:
                 db_obj.project.connect(project)
+
+
