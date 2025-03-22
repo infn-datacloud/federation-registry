@@ -427,9 +427,18 @@ class CRUDPrivateSharedDispatcher(
 ):
     """Flavor (both shared and private) Create, Read, Update and Delete operations."""
 
-    def __init__(self, *, private_mgr: PrivateCRUDType, shared_mgr: SharedCRUDType):
+    def __init__(
+        self,
+        *,
+        private_mgr: PrivateCRUDType,
+        shared_mgr: SharedCRUDType,
+        shared_model: type[SharedModelType],
+        shared_create_schema: type[SharedCreateSchemaType],
+    ):
         self.__private_mgr = private_mgr
         self.__shared_mgr = shared_mgr
+        self.__shared_model = shared_model
+        self.__shared_create_schema = shared_create_schema
 
     def get(self, **kwargs) -> PrivateModelType | SharedModelType | None:
         """Get a single resource. Return None if the resource is not found."""
@@ -475,7 +484,7 @@ class CRUDPrivateSharedDispatcher(
         **kwargs,
     ) -> PrivateModelType | SharedModelType:
         """Create a new resource."""
-        if isinstance(obj_in, SharedCreateSchemaType):
+        if isinstance(obj_in, self.__shared_create_schema):
             return self.__shared_mgr.create(obj_in=obj_in, **kwargs)
         return self.__private_mgr.create(
             obj_in=obj_in, provider_projects=provider_projects, **kwargs
@@ -489,7 +498,7 @@ class CRUDPrivateSharedDispatcher(
         provider_projects: list[Project] | None = None,
     ) -> PrivateModelType | SharedModelType | None:
         """Update and existing resource."""
-        if isinstance(db_obj, SharedModelType):
+        if isinstance(db_obj, self.__shared_model):
             return self.__shared_mgr.update(obj_in=obj_in, db_obj=db_obj)
         return self.__private_mgr.update(
             obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
@@ -499,12 +508,12 @@ class CRUDPrivateSharedDispatcher(
         self, *, db_obj: PrivateModelType | SharedModelType, obj_in: UpdateSchemaType
     ) -> PrivateModelType | SharedModelType | None:
         """Patch an existing resource."""
-        if isinstance(db_obj, SharedModelType):
+        if isinstance(db_obj, self.__shared_model):
             return self.__shared_mgr.patch(obj_in=obj_in, db_obj=db_obj)
         return self.__private_mgr.patch(obj_in=obj_in, db_obj=db_obj)
 
     def remove(self, *, db_obj: PrivateModelType | SharedModelType) -> Literal[True]:
         """Remove an existing resource."""
-        if isinstance(db_obj, SharedModelType):
+        if isinstance(db_obj, self.__shared_model):
             return self.__shared_mgr.remove(db_obj=db_obj)
         return self.__private_mgr.remove(db_obj=db_obj)

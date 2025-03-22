@@ -188,5 +188,8 @@ shared_network_mng = CRUDSharedNetwork(
     read_extended_public_schema=NetworkReadExtendedPublic,
 )
 network_mgr = CRUDNetwork(
-    private_mgr=private_network_mng, shared_mgr=shared_network_mng
+    private_mgr=private_network_mng,
+    shared_mgr=shared_network_mng,
+    shared_model=SharedNetwork,
+    shared_create_schema=SharedNetworkCreate,
 )

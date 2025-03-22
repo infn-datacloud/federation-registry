@@ -184,4 +184,9 @@ shared_image_mng = CRUDSharedImage(
     read_extended_schema=ImageReadExtended,
     read_extended_public_schema=ImageReadExtendedPublic,
 )
-image_mgr = CRUDImage(private_mgr=private_image_mng, shared_mgr=shared_image_mng)
+image_mgr = CRUDImage(
+    private_mgr=private_image_mng,
+    shared_mgr=shared_image_mng,
+    shared_model=SharedImage,
+    shared_create_schema=SharedImageCreate,
+)

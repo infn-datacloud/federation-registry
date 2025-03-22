@@ -184,4 +184,9 @@ shared_flavor_mng = CRUDSharedFlavor(
     read_extended_schema=FlavorReadExtended,
     read_extended_public_schema=FlavorReadExtendedPublic,
 )
-flavor_mgr = CRUDFlavor(private_mgr=private_flavor_mng, shared_mgr=shared_flavor_mng)
+flavor_mgr = CRUDFlavor(
+    private_mgr=private_flavor_mng,
+    shared_mgr=shared_flavor_mng,
+    shared_model=SharedFlavor,
+    shared_create_schema=SharedFlavorCreate,
+)
