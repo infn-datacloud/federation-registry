@@ -341,10 +341,14 @@ class CRUDComputeService(
             provider_projects = []
         casted_obj_in = ComputeServiceUpdate.parse_obj(obj_in)
         edited_obj1 = self._update_flavors(
-            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+            db_obj=db_obj,
+            input_flavors=obj_in.flavors,
+            provider_projects=provider_projects,
         )
         edited_obj2 = self._update_images(
-            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+            db_obj=db_obj,
+            input_images=obj_in.images,
+            provider_projects=provider_projects,
         )
         edited_obj3 = self._update_quotas(
             db_obj=db_obj,
@@ -537,7 +541,9 @@ class CRUDNetworkService(
             provider_projects=provider_projects,
         )
         edited_obj2 = self._update_networks(
-            db_obj=db_obj, obj_in=obj_in, provider_projects=provider_projects
+            db_obj=db_obj,
+            input_networks=obj_in.networks,
+            provider_projects=provider_projects,
         )
         edited_obj3 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
 
@@ -551,7 +557,7 @@ class CRUDNetworkService(
         self,
         *,
         db_obj: NetworkService,
-        obj_in: NetworkServiceCreateExtended,
+        input_networks: list[SharedNetworkCreate | PrivateNetworkCreateExtended],
         provider_projects: list[Project],
     ) -> NetworkService | None:
         """Update service linked networks.
@@ -561,7 +567,7 @@ class CRUDNetworkService(
         """
         edit = False
         db_items = {db_item.uuid: db_item for db_item in db_obj.networks}
-        for item in obj_in.networks:
+        for item in input_networks:
             db_item = db_items.pop(item.uuid, None)
 
             if not db_item:

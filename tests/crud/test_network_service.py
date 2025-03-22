@@ -80,7 +80,7 @@ class CaseService:
         )
 
     @case(tags="networks")
-    def case_network_service_with_private_networks(
+    def case_network_service_with_networks(
         self, region_model: Region
     ) -> NetworkServiceCreateExtended:
         provider = region_model.provider.single()
@@ -228,7 +228,7 @@ def test_update_only_service_details(
 
 
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
-def test_update_same_quotas(
+def test_update_only_networks(
     item: NetworkServiceCreateExtended,
     network_service_model: NetworkService,
 ) -> None:
@@ -253,7 +253,7 @@ def test_update_same_quotas(
 
 
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
-def test_update_same_networks(
+def test_update_only_quotas(
     item: NetworkServiceCreateExtended,
     network_service_model: NetworkService,
 ) -> None:
