@@ -48,11 +48,11 @@ from fedreg.service.models import (
     ObjectStoreService,
 )
 
-from fed_reg.crud import CRUDBase, ResourceSingleProjectBase
+from fed_reg.crud import CRUDSingleProject
 
 
 class CRUDBlockStorageQuota(
-    CRUDBase[
+    CRUDSingleProject[
         BlockStorageQuota,
         BlockStorageQuotaCreate,
         BlockStorageQuotaUpdate,
@@ -60,8 +60,7 @@ class CRUDBlockStorageQuota(
         BlockStorageQuotaReadPublic,
         BlockStorageQuotaReadExtended,
         BlockStorageQuotaReadExtendedPublic,
-    ],
-    ResourceSingleProjectBase[BlockStorageQuota],
+    ]
 ):
     """Block Storage Quota Create, Read, Update and Delete operations."""
 
@@ -111,7 +110,7 @@ class CRUDBlockStorageQuota(
 
 
 class CRUDComputeQuota(
-    CRUDBase[
+    CRUDSingleProject[
         ComputeQuota,
         ComputeQuotaCreate,
         ComputeQuotaUpdate,
@@ -119,8 +118,7 @@ class CRUDComputeQuota(
         ComputeQuotaReadPublic,
         ComputeQuotaReadExtended,
         ComputeQuotaReadExtendedPublic,
-    ],
-    ResourceSingleProjectBase[ComputeQuota],
+    ]
 ):
     """Compute Quota Create, Read, Update and Delete operations."""
 
@@ -170,7 +168,7 @@ class CRUDComputeQuota(
 
 
 class CRUDNetworkQuota(
-    CRUDBase[
+    CRUDSingleProject[
         NetworkQuota,
         NetworkQuotaCreate,
         NetworkQuotaUpdate,
@@ -178,8 +176,7 @@ class CRUDNetworkQuota(
         NetworkQuotaReadPublic,
         NetworkQuotaReadExtended,
         NetworkQuotaReadExtendedPublic,
-    ],
-    ResourceSingleProjectBase[NetworkQuota],
+    ]
 ):
     """Network Quota Create, Read, Update and Delete operations."""
 
@@ -229,7 +226,7 @@ class CRUDNetworkQuota(
 
 
 class CRUDObjectStoreQuota(
-    CRUDBase[
+    CRUDSingleProject[
         ObjectStoreQuota,
         ObjectStoreQuotaCreate,
         ObjectStoreQuotaUpdate,
@@ -237,8 +234,7 @@ class CRUDObjectStoreQuota(
         ObjectStoreQuotaReadPublic,
         ObjectStoreQuotaReadExtended,
         ObjectStoreQuotaReadExtendedPublic,
-    ],
-    ResourceSingleProjectBase[ObjectStoreQuota],
+    ]
 ):
     """Object Storage Quota Create, Read, Update and Delete operations."""
 

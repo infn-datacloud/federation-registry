@@ -13,11 +13,11 @@ from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateFlavorCreateExtended
 from fedreg.service.models import ComputeService
 
-from fed_reg.crud import CRUDBase, ResourceMultiProjectsBase
+from fed_reg.crud import CRUDBase, CRUDMultiProject, CRUDPrivateSharedDispatcher
 
 
 class CRUDPrivateFlavor(
-    CRUDBase[
+    CRUDMultiProject[
         PrivateFlavor,
         PrivateFlavorCreate,
         FlavorUpdate,
@@ -25,8 +25,7 @@ class CRUDPrivateFlavor(
         FlavorReadPublic,
         FlavorReadExtended,
         FlavorReadExtendedPublic,
-    ],
-    ResourceMultiProjectsBase[PrivateFlavor],
+    ]
 ):
     """Private Flavor Create, Read, Update and Delete operations."""
 
@@ -155,6 +154,20 @@ class CRUDSharedFlavor(
         return super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
 
+class CRUDFlavor(
+    CRUDPrivateSharedDispatcher[
+        PrivateFlavor,
+        SharedFlavor,
+        CRUDPrivateFlavor,
+        CRUDSharedFlavor,
+        PrivateFlavorCreateExtended,
+        SharedFlavorCreate,
+        FlavorUpdate,
+    ]
+):
+    """Private and Shared Flavor Create, Read, Update and Delete operations."""
+
+
 private_flavor_mng = CRUDPrivateFlavor(
     model=PrivateFlavor,
     create_schema=PrivateFlavorCreate,
@@ -163,7 +176,6 @@ private_flavor_mng = CRUDPrivateFlavor(
     read_extended_schema=FlavorReadExtended,
     read_extended_public_schema=FlavorReadExtendedPublic,
 )
-
 shared_flavor_mng = CRUDSharedFlavor(
     model=SharedFlavor,
     create_schema=SharedFlavorCreate,
@@ -172,3 +184,4 @@ shared_flavor_mng = CRUDSharedFlavor(
     read_extended_schema=FlavorReadExtended,
     read_extended_public_schema=FlavorReadExtendedPublic,
 )
+flavor_mgr = CRUDFlavor(private_mgr=private_flavor_mng, shared_mgr=shared_flavor_mng)

@@ -19,7 +19,33 @@ ReadExtendedPublicSchemaType = TypeVar(
 )
 
 
+class SkipLimit(Generic[ModelType]):
+    """Class with a basic function to skip lists' initial values and trunk lists."""
+
+    def _apply_limit_and_skip(
+        self, *, items: list[ModelType], skip: int = 0, limit: int | None = None
+    ) -> list[ModelType]:
+        """Function to apply the limit and skip attributes on the list of values.
+
+        Args:
+        ----
+            items (list[ModelType]): list to filter.
+            skip (int): Number of items to skip from the first one received.
+            limit (int | None): Maximum number of items to return.
+
+        Returns:
+        -------
+            list[ModelType]. Restricted list
+        """
+        if limit is None:
+            return items[skip:]
+        start = skip
+        end = skip + limit
+        return items[start:end]
+
+
 class CRUDBase(
+    SkipLimit[ModelType],
     Generic[
         ModelType,
         CreateSchemaType,
@@ -28,7 +54,7 @@ class CRUDBase(
         ReadPublicSchemaType,
         ReadExtendedSchemaType,
         ReadExtendedPublicSchemaType,
-    ]
+    ],
 ):
     """Class with common Create, Read, Update and delete operations."""
 
@@ -58,6 +84,7 @@ class CRUDBase(
             read_extended_public_schema (Type[ReadExtendedPublicSchemaType]): A pydantic
                 model to return to users only public data.
         """
+        super().__init__()
         self.model = model
         self.create_schema = create_schema
         self.read_schema = read_schema
@@ -110,7 +137,7 @@ class CRUDBase(
         else:
             items = self.model.nodes.order_by(*sorting).all()
 
-        return self.__apply_limit_and_skip(items=items, skip=skip, limit=limit)
+        return self._apply_limit_and_skip(items=items, skip=skip, limit=limit)
 
     def create(self, *, obj_in: CreateSchemaType) -> ModelType:
         """Create a new node in the graph.
@@ -248,29 +275,18 @@ class CRUDBase(
             return [self.read_extended_public_schema.from_orm(i) for i in items]
         return [self.read_public_schema.from_orm(i) for i in items]
 
-    def __apply_limit_and_skip(
-        self, *, items: list[ModelType], skip: int = 0, limit: int | None = None
-    ) -> list[ModelType]:
-        """Function to apply the limit and skip attributes on the list of values.
 
-        Args:
-        ----
-            items (list[ModelType]): list to filter.
-            skip (int): Number of items to skip from the first one received.
-            limit (int | None): Maximum number of items to return.
-
-        Returns:
-        -------
-            list[ModelType]. Restricted list
-        """
-        if limit is None:
-            return items[skip:]
-        start = skip
-        end = skip + limit
-        return items[start:end]
-
-
-class ResourceMultiProjectsBase(Generic[ModelType]):
+class CRUDMultiProject(
+    CRUDBase[
+        ModelType,
+        CreateSchemaType,
+        UpdateSchemaType,
+        ReadSchemaType,
+        ReadPublicSchemaType,
+        ReadExtendedSchemaType,
+        ReadExtendedPublicSchemaType,
+    ]
+):
     """Class with the function to merge new projects into current ones."""
 
     def _update_projects(
@@ -328,7 +344,17 @@ class ResourceMultiProjectsBase(Generic[ModelType]):
                 db_obj.projects.connect(project)
 
 
-class ResourceSingleProjectBase(Generic[ModelType]):
+class CRUDSingleProject(
+    CRUDBase[
+        ModelType,
+        CreateSchemaType,
+        UpdateSchemaType,
+        ReadSchemaType,
+        ReadPublicSchemaType,
+        ReadExtendedSchemaType,
+        ReadExtendedPublicSchemaType,
+    ]
+):
     """Class with the function to merge new projects into current ones."""
 
     def _update_project(
@@ -379,3 +405,106 @@ class ResourceSingleProjectBase(Generic[ModelType]):
                 db_obj.project.connect(project)
 
 
+PrivateModelType = TypeVar("PrivateModelType", bound=StructuredNode)
+SharedModelType = TypeVar("SharedModelType", bound=StructuredNode)
+PrivateCRUDType = TypeVar("PrivateModelType", bound=CRUDBase)
+SharedCRUDType = TypeVar("SharedModelType", bound=CRUDBase)
+PrivateCreateSchemaType = TypeVar("PrivateCreateSchemaType", bound=BaseNodeCreate)
+SharedCreateSchemaType = TypeVar("SharedCreateSchemaType", bound=BaseNodeCreate)
+
+
+class CRUDPrivateSharedDispatcher(
+    SkipLimit[PrivateModelType | SharedModelType],
+    Generic[
+        PrivateModelType,
+        SharedModelType,
+        PrivateCRUDType,
+        SharedCRUDType,
+        PrivateCreateSchemaType,
+        SharedCreateSchemaType,
+        UpdateSchemaType,
+    ],
+):
+    """Flavor (both shared and private) Create, Read, Update and Delete operations."""
+
+    def __init__(self, *, private_mgr: PrivateCRUDType, shared_mgr: SharedCRUDType):
+        self.__private_mgr = private_mgr
+        self.__shared_mgr = shared_mgr
+
+    def get(self, **kwargs) -> PrivateModelType | SharedModelType | None:
+        """Get a single resource. Return None if the resource is not found."""
+        flavor = self.__shared_mgr.get(**kwargs)
+        if flavor:
+            return flavor
+        return self.__private_mgr.get(**kwargs)
+
+    def get_multi(
+        self, skip: int = 0, limit: int | None = None, sort: str | None = None, **kwargs
+    ) -> list[PrivateModelType | SharedModelType]:
+        """Get list of resources."""
+        req_is_shared = kwargs.get("is_shared", None)
+
+        if req_is_shared is None:
+            shared_flavors = self.__shared_mgr.get_multi(**kwargs)
+            private_flavors = self.__private_mgr.get_multi(**kwargs)
+
+            if sort:
+                if sort.startswith("-"):
+                    sort = sort[1:]
+                    reverse = True
+                sorting = [sort, "uid"]
+                flavors = sorted(
+                    [*shared_flavors, *private_flavors],
+                    key=lambda x: (x.__getattribute__(k) for k in sorting),
+                    reverse=reverse,
+                )
+
+            return self._apply_limit_and_skip(items=flavors, skip=skip, limit=limit)
+
+        if req_is_shared:
+            return self.__shared_mgr.get_multi(
+                skip=skip, limit=limit, sort=sort, **kwargs
+            )
+        return self.__private_mgr.get_multi(skip=skip, limit=limit, sort=sort, **kwargs)
+
+    def create(
+        self,
+        *,
+        obj_in: PrivateCreateSchemaType | SharedCreateSchemaType,
+        provider_projects: list[Project] | None = None,
+        **kwargs,
+    ) -> PrivateModelType | SharedModelType:
+        """Create a new resource."""
+        if isinstance(obj_in, SharedCreateSchemaType):
+            return self.__shared_mgr.create(obj_in=obj_in, **kwargs)
+        return self.__private_mgr.create(
+            obj_in=obj_in, provider_projects=provider_projects, **kwargs
+        )
+
+    def update(
+        self,
+        *,
+        db_obj: PrivateModelType | SharedModelType,
+        obj_in: PrivateCreateSchemaType | SharedCreateSchemaType,
+        provider_projects: list[Project] | None = None,
+    ) -> PrivateModelType | SharedModelType | None:
+        """Update and existing resource."""
+        if isinstance(db_obj, SharedModelType):
+            return self.__shared_mgr.update(obj_in=obj_in, db_obj=db_obj)
+        return self.__private_mgr.update(
+            obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
+        )
+
+    def patch(
+        self, *, db_obj: PrivateModelType | SharedModelType, obj_in: UpdateSchemaType
+    ) -> PrivateModelType | SharedModelType | None:
+        """Patch an existing resource."""
+        if isinstance(db_obj, SharedModelType):
+            return self.__shared_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        return self.__private_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+
+    def remove(self, *, db_obj: PrivateModelType | SharedModelType) -> Literal[True]:
+        """Remove an existing resource."""
+        if isinstance(db_obj, SharedModelType):
+            return self.__shared_mgr.remove(db_obj=db_obj)
+        return self.__private_mgr.remove(db_obj=db_obj)

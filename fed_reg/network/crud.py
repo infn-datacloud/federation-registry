@@ -16,11 +16,11 @@ from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateNetworkCreateExtended
 from fedreg.service.models import NetworkService
 
-from fed_reg.crud import CRUDBase, ResourceMultiProjectsBase
+from fed_reg.crud import CRUDBase, CRUDMultiProject, CRUDPrivateSharedDispatcher
 
 
 class CRUDPrivateNetwork(
-    CRUDBase[
+    CRUDMultiProject[
         PrivateNetwork,
         PrivateNetworkCreate,
         NetworkUpdate,
@@ -28,8 +28,7 @@ class CRUDPrivateNetwork(
         NetworkReadPublic,
         NetworkReadExtended,
         NetworkReadExtendedPublic,
-    ],
-    ResourceMultiProjectsBase[PrivateNetwork],
+    ]
 ):
     """Private Network Create, Read, Update and Delete operations."""
 
@@ -157,6 +156,20 @@ class CRUDSharedNetwork(
         return super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
 
+class CRUDNetwork(
+    CRUDPrivateSharedDispatcher[
+        PrivateNetwork,
+        SharedNetwork,
+        CRUDPrivateNetwork,
+        CRUDSharedNetwork,
+        PrivateNetworkCreateExtended,
+        SharedNetworkCreate,
+        NetworkUpdate,
+    ]
+):
+    """Private and Shared Network Create, Read, Update and Delete operations."""
+
+
 private_network_mng = CRUDPrivateNetwork(
     model=PrivateNetwork,
     create_schema=PrivateNetworkCreate,
@@ -173,4 +186,7 @@ shared_network_mng = CRUDSharedNetwork(
     read_public_schema=NetworkReadPublic,
     read_extended_schema=NetworkReadExtended,
     read_extended_public_schema=NetworkReadExtendedPublic,
+)
+network_mgr = CRUDNetwork(
+    private_mgr=private_network_mng, shared_mgr=shared_network_mng
 )

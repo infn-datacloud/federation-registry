@@ -13,11 +13,11 @@ from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateImageCreateExtended
 from fedreg.service.models import ComputeService
 
-from fed_reg.crud import CRUDBase, ResourceMultiProjectsBase
+from fed_reg.crud import CRUDBase, CRUDMultiProject, CRUDPrivateSharedDispatcher
 
 
 class CRUDPrivateImage(
-    CRUDBase[
+    CRUDMultiProject[
         PrivateImage,
         PrivateImageCreate,
         ImageUpdate,
@@ -25,8 +25,7 @@ class CRUDPrivateImage(
         ImageReadPublic,
         ImageReadExtended,
         ImageReadExtendedPublic,
-    ],
-    ResourceMultiProjectsBase[PrivateImage],
+    ]
 ):
     """Private Image Create, Read, Update and Delete operations."""
 
@@ -154,6 +153,20 @@ class CRUDSharedImage(
         return super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
 
+class CRUDImage(
+    CRUDPrivateSharedDispatcher[
+        PrivateImage,
+        SharedImage,
+        CRUDPrivateImage,
+        CRUDSharedImage,
+        PrivateImageCreateExtended,
+        SharedImageCreate,
+        ImageUpdate,
+    ]
+):
+    """Private and Shared Image Create, Read, Update and Delete operations."""
+
+
 private_image_mng = CRUDPrivateImage(
     model=PrivateImage,
     create_schema=PrivateImageCreate,
@@ -171,3 +184,4 @@ shared_image_mng = CRUDSharedImage(
     read_extended_schema=ImageReadExtended,
     read_extended_public_schema=ImageReadExtendedPublic,
 )
+image_mgr = CRUDImage(private_mgr=private_image_mng, shared_mgr=shared_image_mng)
