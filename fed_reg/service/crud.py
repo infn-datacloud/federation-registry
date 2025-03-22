@@ -262,13 +262,12 @@ class CRUDBlockStorageService(
         """Update Block Storage Service attributes. Update linked quotas."""
         if provider_projects is None:
             provider_projects = []
-        casted_obj_in = BlockStorageServiceUpdate.parse_obj(obj_in)
         edited_obj1 = self._update_quotas(
             db_obj=db_obj,
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj2 = super()._update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
@@ -339,7 +338,6 @@ class CRUDComputeService(
         """
         if provider_projects is None:
             provider_projects = []
-        casted_obj_in = ComputeServiceUpdate.parse_obj(obj_in)
         edited_obj1 = self._update_flavors(
             db_obj=db_obj,
             input_flavors=obj_in.flavors,
@@ -355,7 +353,7 @@ class CRUDComputeService(
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edited_obj4 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj4 = super().update(db_obj=db_obj, obj_in=obj_in)
 
         if edited_obj4:
             return edited_obj4
@@ -534,7 +532,6 @@ class CRUDNetworkService(
         if provider_projects is None:
             provider_projects = []
 
-        casted_obj_in = NetworkServiceUpdate.parse_obj(obj_in)
         edited_obj1 = self._update_quotas(
             db_obj=db_obj,
             input_quotas=obj_in.quotas,
@@ -545,7 +542,7 @@ class CRUDNetworkService(
             input_networks=obj_in.networks,
             provider_projects=provider_projects,
         )
-        edited_obj3 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj3 = super()._update(db_obj=db_obj, obj_in=obj_in)
 
         if edited_obj3:
             return edited_obj3
@@ -647,19 +644,19 @@ class CRUDObjectStoreService(
         """
         if provider_projects is None:
             provider_projects = []
-        casted_obj_in = ObjectStoreServiceUpdate.parse_obj(obj_in)
         edited_obj1 = self._update_quotas(
             db_obj=db_obj,
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj2 = super()._update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 block_storage_service_mng = CRUDBlockStorageService(
     model=BlockStorageService,
     create_schema=BlockStorageServiceCreate,
+    update_schema=BlockStorageServiceUpdate,
     read_schema=BlockStorageServiceRead,
     read_public_schema=BlockStorageServiceReadPublic,
     read_extended_schema=BlockStorageServiceReadExtended,
@@ -669,6 +666,7 @@ block_storage_service_mng = CRUDBlockStorageService(
 compute_service_mng = CRUDComputeService(
     model=ComputeService,
     create_schema=ComputeServiceCreate,
+    update_schema=ComputeServiceUpdate,
     read_schema=ComputeServiceRead,
     read_public_schema=ComputeServiceReadPublic,
     read_extended_schema=ComputeServiceReadExtended,
@@ -678,6 +676,7 @@ compute_service_mng = CRUDComputeService(
 identity_service_mng = CRUDIdentityService(
     model=IdentityService,
     create_schema=IdentityServiceCreate,
+    update_schema=IdentityServiceUpdate,
     read_schema=IdentityServiceRead,
     read_public_schema=IdentityServiceReadPublic,
     read_extended_schema=IdentityServiceReadExtended,
@@ -686,6 +685,7 @@ identity_service_mng = CRUDIdentityService(
 network_service_mng = CRUDNetworkService(
     model=NetworkService,
     create_schema=NetworkServiceCreate,
+    update_schema=NetworkServiceUpdate,
     read_schema=NetworkServiceRead,
     read_public_schema=NetworkServiceReadPublic,
     read_extended_schema=NetworkServiceReadExtended,
@@ -695,6 +695,7 @@ network_service_mng = CRUDNetworkService(
 object_store_service_mng = CRUDObjectStoreService(
     model=ObjectStoreService,
     create_schema=ObjectStoreServiceCreate,
+    update_schema=ObjectStoreServiceUpdate,
     read_schema=ObjectStoreServiceRead,
     read_public_schema=ObjectStoreServiceReadPublic,
     read_extended_schema=ObjectStoreServiceReadExtended,

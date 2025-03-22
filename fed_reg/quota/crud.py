@@ -99,13 +99,12 @@ class CRUDBlockStorageQuota(
         when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        casted_obj_in = BlockStorageQuotaUpdate.parse_obj(obj_in)
         edited_obj1 = super()._update_project(
             db_obj=db_obj,
             input_uuid=obj_in.project,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
@@ -157,13 +156,12 @@ class CRUDComputeQuota(
         when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        casted_obj_in = ComputeQuotaUpdate.parse_obj(obj_in)
         edited_obj1 = super()._update_project(
             db_obj=db_obj,
             input_uuid=obj_in.project,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
@@ -215,13 +213,12 @@ class CRUDNetworkQuota(
         when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        casted_obj_in = NetworkQuotaUpdate.parse_obj(obj_in)
         edited_obj1 = super()._update_project(
             db_obj=db_obj,
             input_uuid=obj_in.project,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
@@ -273,19 +270,19 @@ class CRUDObjectStoreQuota(
         when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        casted_obj_in = ObjectStoreQuotaUpdate.parse_obj(obj_in)
         edited_obj1 = super()._update_project(
             db_obj=db_obj,
             input_uuid=obj_in.project,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 block_storage_quota_mng = CRUDBlockStorageQuota(
     model=BlockStorageQuota,
     create_schema=BlockStorageQuotaCreate,
+    update_schema=BlockStorageQuotaUpdate,
     read_schema=BlockStorageQuotaRead,
     read_public_schema=BlockStorageQuotaReadPublic,
     read_extended_schema=BlockStorageQuotaReadExtended,
@@ -294,6 +291,7 @@ block_storage_quota_mng = CRUDBlockStorageQuota(
 compute_quota_mng = CRUDComputeQuota(
     model=ComputeQuota,
     create_schema=ComputeQuotaCreate,
+    update_schema=ComputeQuotaUpdate,
     read_schema=ComputeQuotaRead,
     read_public_schema=ComputeQuotaReadPublic,
     read_extended_schema=ComputeQuotaReadExtended,
@@ -302,6 +300,7 @@ compute_quota_mng = CRUDComputeQuota(
 network_quota_mng = CRUDNetworkQuota(
     model=NetworkQuota,
     create_schema=NetworkQuotaCreate,
+    update_schema=NetworkQuotaUpdate,
     read_schema=NetworkQuotaRead,
     read_public_schema=NetworkQuotaReadPublic,
     read_extended_schema=NetworkQuotaReadExtended,
@@ -310,6 +309,7 @@ network_quota_mng = CRUDNetworkQuota(
 object_store_quota_mng = CRUDObjectStoreQuota(
     model=ObjectStoreQuota,
     create_schema=ObjectStoreQuotaCreate,
+    update_schema=ObjectStoreQuotaUpdate,
     read_schema=ObjectStoreQuotaRead,
     read_public_schema=ObjectStoreQuotaReadPublic,
     read_extended_schema=ObjectStoreQuotaReadExtended,

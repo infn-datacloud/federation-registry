@@ -51,6 +51,7 @@ class CRUDLocation(
 location_mng = CRUDLocation(
     model=Location,
     create_schema=LocationCreate,
+    update_schema=LocationUpdate,
     read_schema=LocationRead,
     read_public_schema=LocationReadPublic,
     read_extended_schema=LocationReadExtended,

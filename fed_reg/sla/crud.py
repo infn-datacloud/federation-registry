@@ -88,6 +88,7 @@ class CRUDSLA(
 sla_mng = CRUDSLA(
     model=SLA,
     create_schema=SLACreate,
+    update_schema=SLAUpdate,
     read_schema=SLARead,
     read_public_schema=SLAReadPublic,
     read_extended_schema=SLAReadExtended,

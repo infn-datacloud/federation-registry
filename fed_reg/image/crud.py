@@ -85,13 +85,12 @@ class CRUDPrivateImage(
         update linked projects and apply default values when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        casted_obj_in = ImageUpdate.parse_obj(obj_in)
         edited_obj1 = super()._update_projects(
             db_obj=db_obj,
             input_uuids=obj_in.projects,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
@@ -141,17 +140,6 @@ class CRUDSharedImage(
 
         return db_obj
 
-    def update(
-        self, *, db_obj: SharedImage, obj_in: SharedImageCreate
-    ) -> SharedImage | None:
-        """Update Image attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked projects and apply default values when explicit.
-        """
-        obj_in = ImageUpdate.parse_obj(obj_in)
-        return super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
-
 
 class CRUDImage(
     CRUDPrivateSharedDispatcher[
@@ -170,6 +158,7 @@ class CRUDImage(
 private_image_mng = CRUDPrivateImage(
     model=PrivateImage,
     create_schema=PrivateImageCreate,
+    update_schema=ImageUpdate,
     read_schema=ImageRead,
     read_public_schema=ImageReadPublic,
     read_extended_schema=ImageReadExtended,
@@ -179,6 +168,7 @@ private_image_mng = CRUDPrivateImage(
 shared_image_mng = CRUDSharedImage(
     model=SharedImage,
     create_schema=SharedImageCreate,
+    update_schema=ImageUpdate,
     read_schema=ImageRead,
     read_public_schema=ImageReadPublic,
     read_extended_schema=ImageReadExtended,

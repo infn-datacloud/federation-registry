@@ -64,10 +64,7 @@ class CRUDIdentityProvider(
             db_user_group = db_obj.user_groups.get_or_none(name=item.name)
             if db_user_group:
                 user_group_mng.update(
-                    db_obj=db_user_group,
-                    obj_in=item,
-                    projects=provider.projects,
-                    force=True,
+                    db_obj=db_user_group, obj_in=item, projects=provider.projects
                 )
             else:
                 user_group_mng.create(
@@ -144,7 +141,7 @@ class CRUDIdentityProvider(
                 edit = True
             else:
                 updated_data = user_group_mng.update(
-                    db_obj=db_item, obj_in=item, projects=provider_projects, force=True
+                    db_obj=db_item, obj_in=item, projects=provider_projects
                 )
                 if not edit and updated_data is not None:
                     edit = True
@@ -159,6 +156,7 @@ class CRUDIdentityProvider(
 identity_provider_mng = CRUDIdentityProvider(
     model=IdentityProvider,
     create_schema=IdentityProviderCreate,
+    update_schema=IdentityProviderUpdate,
     read_schema=IdentityProviderRead,
     read_public_schema=IdentityProviderReadPublic,
     read_extended_schema=IdentityProviderReadExtended,

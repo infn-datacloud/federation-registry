@@ -151,6 +151,7 @@ class CRUDUserGroup(
 user_group_mng = CRUDUserGroup(
     model=UserGroup,
     create_schema=UserGroupCreate,
+    update_schema=UserGroupUpdate,
     read_schema=UserGroupRead,
     read_public_schema=UserGroupReadPublic,
     read_extended_schema=UserGroupReadExtended,

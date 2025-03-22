@@ -380,6 +380,7 @@ class CRUDRegion(
 region_mng = CRUDRegion(
     model=Region,
     create_schema=RegionCreate,
+    update_schema=RegionUpdate,
     read_schema=RegionRead,
     read_public_schema=RegionReadPublic,
     read_extended_schema=RegionReadExtended,

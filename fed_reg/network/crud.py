@@ -48,23 +48,17 @@ class CRUDPrivateNetwork(
         received project.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = self.get(uuid=obj_in.uuid)
+
+        db_obj = service.networks.get_or_none(uuid=obj_in.uuid)
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
         else:
-            # It's indifferent which service, we want to reach the provider
-            db_service = db_obj.service.single()
-            db_region = db_service.region.single()
-            db_provider1 = db_region.provider.single()
             db_region = service.region.single()
-            db_provider2 = db_region.provider.single()
-            if db_provider1 != db_provider2:
-                db_obj = super().create(obj_in=obj_in)
-            else:
-                raise ValueError(
-                    f"A private network with uuid {obj_in.uuid} belonging to provider "
-                    f"{db_provider1.name} already exists"
-                )
+            db_provider = db_region.provider.single()
+            raise ValueError(
+                f"A private network with uuid {obj_in.uuid} belonging to provider "
+                f"{db_provider.name} already exists"
+            )
 
         db_obj.service.connect(service)
         super()._connect_projects(
@@ -88,13 +82,12 @@ class CRUDPrivateNetwork(
         update linked projects and apply default values when explicit.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
-        casted_obj_in = NetworkUpdate.parse_obj(obj_in)
         edited_obj1 = super()._update_projects(
             db_obj=db_obj,
             input_uuids=obj_in.projects,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=casted_obj_in, force=True)
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
@@ -122,38 +115,20 @@ class CRUDSharedNetwork(
         network. In any case connect the network to the given service and to any
         received project.
         """
-        db_obj = self.get(uuid=obj_in.uuid)
+        db_obj = service.networks.get_or_none(uuid=obj_in.uuid)
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
         else:
-            # It's indifferent which service, we want to reach the provider
-            db_service = db_obj.service.single()
-            db_region = db_service.region.single()
-            db_provider1 = db_region.provider.single()
             db_region = service.region.single()
-            db_provider2 = db_region.provider.single()
-            if db_provider1 != db_provider2:
-                db_obj = super().create(obj_in=obj_in)
-            else:
-                raise ValueError(
-                    f"A shared network with uuid {obj_in.uuid} belonging to provider "
-                    f"{db_provider1.name} already exists"
-                )
+            db_provider = db_region.provider.single()
+            raise ValueError(
+                f"A shared network with uuid {obj_in.uuid} belonging to provider "
+                f"{db_provider.name} already exists"
+            )
 
         db_obj.service.connect(service)
 
         return db_obj
-
-    def update(
-        self, *, db_obj: SharedNetwork, obj_in: SharedNetworkCreate
-    ) -> SharedNetwork | None:
-        """Update Network attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked projects and apply default values when explicit.
-        """
-        obj_in = NetworkUpdate.parse_obj(obj_in)
-        return super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
 
 class CRUDNetwork(
@@ -173,6 +148,7 @@ class CRUDNetwork(
 private_network_mng = CRUDPrivateNetwork(
     model=PrivateNetwork,
     create_schema=PrivateNetworkCreate,
+    update_schema=NetworkUpdate,
     read_schema=NetworkRead,
     read_public_schema=NetworkReadPublic,
     read_extended_schema=NetworkReadExtended,
@@ -182,6 +158,7 @@ private_network_mng = CRUDPrivateNetwork(
 shared_network_mng = CRUDSharedNetwork(
     model=SharedNetwork,
     create_schema=SharedNetworkCreate,
+    update_schema=NetworkUpdate,
     read_schema=NetworkRead,
     read_public_schema=NetworkReadPublic,
     read_extended_schema=NetworkReadExtended,

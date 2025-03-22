@@ -63,6 +63,7 @@ class CRUDBase(
         *,
         model: type[ModelType],
         create_schema: type[CreateSchemaType],
+        update_schema: type[UpdateSchemaType],
         read_schema: type[ReadSchemaType],
         read_public_schema: type[ReadPublicSchemaType],
         read_extended_schema: type[ReadExtendedSchemaType],
@@ -87,6 +88,7 @@ class CRUDBase(
         super().__init__()
         self.model = model
         self.create_schema = create_schema
+        self.update_schema = update_schema
         self.read_schema = read_schema
         self.read_public_schema = read_public_schema
         self.read_extended_schema = read_extended_schema
@@ -156,7 +158,7 @@ class CRUDBase(
         return db_obj.save()
 
     def patch(self, *, db_obj: ModelType, obj_in: UpdateSchemaType) -> ModelType | None:
-        """Patch and existing database object.
+        """Patch an existing database object.
 
         Args:
         ----
@@ -169,6 +171,39 @@ class CRUDBase(
                 apply.
         """
         return self._update(db_obj=db_obj, obj_in=obj_in)
+
+    def update(
+        self, *, db_obj: ModelType, obj_in: UpdateSchemaType
+    ) -> ModelType | None:
+        """Forcefully update an existing database object.
+
+        If the new data contains unset values (alias default values), they will override
+        the values written in the DB.
+
+        Args:
+        ----
+            db_obj (ModelType): DB object to update.
+            obj_in (UpdateSchemaType): Data to use to update the DB object.
+
+        Returns:
+        -------
+            ModelType | None. The updated DB object or None if there are no changes to
+                apply.
+        """
+        return self._update(db_obj=db_obj, obj_in=obj_in, force=True)
+
+    def remove(self, *, db_obj: ModelType) -> Literal[True]:
+        """Delete the target instance from the DB.
+
+        Args:
+        ----
+            db_obj (ModelType): DB object to delete.
+
+        Returns:
+        -------
+            bool. True if the operations succeeded. Raises exception otherwise.
+        """
+        return db_obj.delete()
 
     def _update(
         self,
@@ -193,6 +228,7 @@ class CRUDBase(
                 apply.
         """
         obj_data = db_obj.__dict__
+        obj_in = self.update_schema.parse_obj(obj_in)
         update_data = obj_in.dict(exclude_unset=not force)
 
         if all(obj_data.get(k) == v for k, v in update_data.items()):
@@ -202,19 +238,6 @@ class CRUDBase(
             if field in update_data:
                 setattr(db_obj, field, update_data[field])
         return db_obj.save()
-
-    def remove(self, *, db_obj: ModelType) -> Literal[True]:
-        """Delete the target instance from the DB.
-
-        Args:
-        ----
-            db_obj (ModelType): DB object to delete.
-
-        Returns:
-        -------
-            bool. True if the operations succeeded. Raises exception otherwise.
-        """
-        return db_obj.delete()
 
     def paginate(
         self, *, items: list[ModelType], page: int, size: int | None

@@ -109,9 +109,7 @@ class CRUDProvider(
                 project_mng.create(obj_in=item, provider=db_obj)
                 edit = True
             else:
-                updated_data = project_mng.update(
-                    db_obj=db_item, obj_in=item, force=True
-                )
+                updated_data = project_mng.update(db_obj=db_item, obj_in=item)
                 if not edit and updated_data is not None:
                     edit = True
         for db_item in db_items.values():
@@ -140,7 +138,6 @@ class CRUDProvider(
                     obj_in=item,
                     projects=db_obj.projects,
                     provider=db_obj,
-                    force=True,
                 )
                 if not edit and updated_data is not None:
                     edit = True
@@ -172,7 +169,6 @@ class CRUDProvider(
                     db_obj=db_item,
                     obj_in=item,
                     projects=db_obj.projects,
-                    force=True,
                 )
                 if not edit and updated_data is not None:
                     edit = True
@@ -185,6 +181,7 @@ class CRUDProvider(
 provider_mng = CRUDProvider(
     model=Provider,
     create_schema=ProviderCreate,
+    update_schema=ProviderUpdate,
     read_schema=ProviderRead,
     read_public_schema=ProviderReadPublic,
     read_extended_schema=ProviderReadExtended,
