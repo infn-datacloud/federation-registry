@@ -191,7 +191,12 @@ def test_update_no_changes(
     projects = provider.projects.all()
 
     item.endpoint = service_model.endpoint
-    item.quotas = [{"project": projects[0].uuid}]
+    item.name = service_model.name
+    quotas = []
+    for quota in service_model.quotas:
+        d = {"project": quota.project.single().uuid}
+        quotas.append(d)
+    item.quotas = quotas
 
     db_obj = block_storage_service_mng.update(
         obj_in=item, db_obj=service_model, provider_projects=projects
@@ -210,7 +215,11 @@ def test_update_only_service_details(
     provider = region.provider.single()
     projects = provider.projects.all()
 
-    item.quotas = [{"project": projects[0].uuid}]
+    quotas = []
+    for quota in service_model.quotas:
+        d = {"project": quota.project.single().uuid}
+        quotas.append(d)
+    item.quotas = quotas
 
     db_obj = block_storage_service_mng.update(
         obj_in=item, db_obj=service_model, provider_projects=projects
@@ -237,6 +246,7 @@ def test_update_only_quotas(
     projects = provider.projects.all()
 
     item.endpoint = service_model.endpoint
+    item.name = service_model.name
 
     db_obj = block_storage_service_mng.update(
         obj_in=item, db_obj=service_model, provider_projects=projects

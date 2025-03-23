@@ -245,7 +245,12 @@ def test_update_no_changes(
     projects = provider.projects.all()
 
     item.endpoint = service_model.endpoint
-    item.quotas = [{"project": projects[0].uuid}]
+    item.name = service_model.name
+    quotas = []
+    for quota in service_model.quotas:
+        d = {"project": quota.project.single().uuid}
+        quotas.append(d)
+    item.quotas = quotas
     flavors = []
     for flavor in service_model.flavors:
         d = {"name": flavor.name, "uuid": flavor.uuid}
@@ -278,7 +283,11 @@ def test_update_only_service_details(
     provider = region.provider.single()
     projects = provider.projects.all()
 
-    item.quotas = [{"project": projects[0].uuid}]
+    quotas = []
+    for quota in service_model.quotas:
+        d = {"project": quota.project.single().uuid}
+        quotas.append(d)
+    item.quotas = quotas
     flavors = []
     for flavor in service_model.flavors:
         d = {"name": flavor.name, "uuid": flavor.uuid}
@@ -321,7 +330,12 @@ def test_update_only_flavors(
     projects = provider.projects.all()
 
     item.endpoint = service_model.endpoint
-    item.quotas = [{"project": projects[0].uuid}]
+    item.name = service_model.name
+    quotas = []
+    for quota in service_model.quotas:
+        d = {"project": quota.project.single().uuid}
+        quotas.append(d)
+    item.quotas = quotas
     images = []
     for image in service_model.images:
         d = {"name": image.name, "uuid": image.uuid}
@@ -357,7 +371,12 @@ def test_update_only_images(
     projects = provider.projects.all()
 
     item.endpoint = service_model.endpoint
-    item.quotas = [{"project": projects[0].uuid}]
+    item.name = service_model.name
+    quotas = []
+    for quota in service_model.quotas:
+        d = {"project": quota.project.single().uuid}
+        quotas.append(d)
+    item.quotas = quotas
     flavors = []
     for flavor in service_model.flavors:
         d = {"name": flavor.name, "uuid": flavor.uuid}
@@ -393,6 +412,7 @@ def test_update_only_quotas(
     projects = provider.projects.all()
 
     item.endpoint = service_model.endpoint
+    item.name = service_model.name
     flavors = []
     for flavor in service_model.flavors:
         d = {"name": flavor.name, "uuid": flavor.uuid}
