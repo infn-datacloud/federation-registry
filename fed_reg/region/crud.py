@@ -44,7 +44,7 @@ class CRUDRegion(
         Connect the region to the given provider. For each received location and
         service, create the corresponding entity.
         """
-        db_obj = self.get(name=obj_in.name)
+        db_obj = provider.regions.get_or_none(name=obj_in.name)
         assert db_obj is None, (
             f"Provider {provider.name} already has a region with name {obj_in.name}"
         )
@@ -64,7 +64,9 @@ class CRUDRegion(
             + obj_in.network_services
             + obj_in.object_store_services
         ):
-            service_mgr.create(obj_in=item, region=db_obj, projects=provider.projects)
+            service_mgr.create(
+                obj_in=item, region=db_obj, provider_projects=provider.projects
+            )
 
         return db_obj
 
@@ -109,11 +111,12 @@ class CRUDRegion(
 
         Otherwise, if the old location match the new location, forcefully update it.
         """
+        edit = False
         curr_location = db_obj.location.single()
 
         if curr_location and (location is None or curr_location.site != location.site):
             db_obj.location.disconnect(curr_location)
-            return True
+            edit = True
 
         if (curr_location is None and location) or (
             curr_location and location and curr_location.site != location.site
@@ -129,7 +132,7 @@ class CRUDRegion(
             updated_data = location_mng.update(db_obj=curr_location, obj_in=location)
             return updated_data is not None
 
-        return False
+        return edit
 
     def _update_services(
         self,
