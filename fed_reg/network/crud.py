@@ -23,6 +23,7 @@ class CRUDPrivateNetwork(
     CRUDMultiProject[
         PrivateNetwork,
         PrivateNetworkCreate,
+        PrivateNetworkCreateExtended,
         NetworkUpdate,
         NetworkRead,
         NetworkReadPublic,
@@ -50,15 +51,13 @@ class CRUDPrivateNetwork(
         assert len(provider_projects) > 0, "The provider's projects list is empty"
 
         db_obj = service.networks.get_or_none(uuid=obj_in.uuid)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-        else:
-            db_region = service.region.single()
-            db_provider = db_region.provider.single()
-            raise ValueError(
-                f"A private network with uuid {obj_in.uuid} belonging to provider "
-                f"{db_provider.name} already exists"
-            )
+        db_region = service.region.single()
+        db_provider = db_region.provider.single()
+        assert db_obj is None, (
+            f"A private network with uuid {obj_in.uuid} belonging to provider "
+            f"{db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
 
         db_obj.service.connect(service)
         super()._connect_projects(
@@ -68,27 +67,6 @@ class CRUDPrivateNetwork(
         )
 
         return db_obj
-
-    def update(
-        self,
-        *,
-        db_obj: PrivateNetwork,
-        obj_in: PrivateNetworkCreateExtended,
-        provider_projects: list[Project],
-    ) -> PrivateNetwork | None:
-        """Update Network attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked projects and apply default values when explicit.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        edited_obj1 = super()._update_projects(
-            db_obj=db_obj,
-            input_uuids=obj_in.projects,
-            provider_projects=provider_projects,
-        )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 class CRUDSharedNetwork(
@@ -116,15 +94,13 @@ class CRUDSharedNetwork(
         received project.
         """
         db_obj = service.networks.get_or_none(uuid=obj_in.uuid)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-        else:
-            db_region = service.region.single()
-            db_provider = db_region.provider.single()
-            raise ValueError(
-                f"A shared network with uuid {obj_in.uuid} belonging to provider "
-                f"{db_provider.name} already exists"
-            )
+        db_region = service.region.single()
+        db_provider = db_region.provider.single()
+        assert db_obj is None, (
+            f"A shared network with uuid {obj_in.uuid} belonging to provider "
+            f"{db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
 
         db_obj.service.connect(service)
 

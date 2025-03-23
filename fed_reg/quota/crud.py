@@ -104,11 +104,10 @@ class CRUDQuota(
         project = next(
             filter(lambda x: x.uuid == obj_in.project, provider_projects), None
         )
-        if project is None:
-            raise ValueError(
-                f"Input project {obj_in.project} not in the provider "
-                f"projects: {[i.uuid for i in provider_projects]}"
-            )
+        assert project is not None, (
+            f"Input project {obj_in.project} not in the provider "
+            f"projects: {[i.uuid for i in provider_projects]}"
+        )
         service_quotas = service.quotas.filter(
             usage=obj_in.usage, per_user=obj_in.per_user
         )
@@ -116,7 +115,7 @@ class CRUDQuota(
             filter(lambda x: x.project.single().uuid == obj_in.project, service_quotas),
             None,
         )
-        assert not quota, (
+        assert quota is None, (
             f"Target project {obj_in.project} already has a quota with usage="
             f"{obj_in.usage} and per_user={obj_in.per_user} on service "
             f"{service.endpoint}"
@@ -139,7 +138,6 @@ class CRUDQuota(
         different from the current one, replace linked project and apply default values
         when explicit.
         """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
         edited_obj1 = self._update_project(
             db_obj=db_obj,
             input_uuid=obj_in.project,
@@ -159,8 +157,11 @@ class CRUDQuota(
 
         If the new project differs from the current one, reconnect new one.
         """
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
+
         db_projects = {db_item.uuid: db_item for db_item in provider_projects}
         db_proj = db_obj.project.single()
+
         if input_uuid != db_proj.uuid:
             db_item = db_projects.get(input_uuid)
             assert db_item is not None, (
@@ -169,6 +170,7 @@ class CRUDQuota(
             )
             db_obj.project.reconnect(db_proj, db_item)
             return db_obj.save()
+
         return None
 
 

@@ -170,7 +170,9 @@ class CRUDBase(
             ModelType | None. The updated DB object or None if there are no changes to
                 apply.
         """
-        return self._update(db_obj=db_obj, obj_in=obj_in)
+        if self._update(db_obj=db_obj, obj_in=obj_in):
+            return db_obj.save()
+        return None
 
     def update(
         self, *, db_obj: ModelType, obj_in: UpdateSchemaType
@@ -190,7 +192,9 @@ class CRUDBase(
             ModelType | None. The updated DB object or None if there are no changes to
                 apply.
         """
-        return self._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        if self._update(db_obj=db_obj, obj_in=obj_in, force=True):
+            return db_obj.save()
+        return None
 
     def remove(self, *, db_obj: ModelType) -> Literal[True]:
         """Delete the target instance from the DB.
@@ -211,7 +215,7 @@ class CRUDBase(
         db_obj: ModelType,
         obj_in: UpdateSchemaType,
         force: bool = False,
-    ) -> ModelType | None:
+    ) -> bool:
         """Update and existing database object.
 
         Args:
@@ -232,12 +236,12 @@ class CRUDBase(
         update_data = obj_in.dict(exclude_unset=not force)
 
         if all(obj_data.get(k) == v for k, v in update_data.items()):
-            return None
+            return False
 
         for field in obj_data:
             if field in update_data:
                 setattr(db_obj, field, update_data[field])
-        return db_obj.save()
+        return True
 
     def paginate(
         self, *, items: list[ModelType], page: int, size: int | None
@@ -299,6 +303,9 @@ class CRUDBase(
         return [self.read_public_schema.from_orm(i) for i in items]
 
 
+CreateExtendedSchemaType = TypeVar("CreateExtendedSchemaType", bound=BaseNodeCreate)
+
+
 class CRUDMultiProject(
     CRUDBase[
         ModelType,
@@ -308,15 +315,25 @@ class CRUDMultiProject(
         ReadPublicSchemaType,
         ReadExtendedSchemaType,
         ReadExtendedPublicSchemaType,
-    ]
+    ],
+    Generic[
+        ModelType,
+        CreateSchemaType,
+        CreateExtendedSchemaType,
+        UpdateSchemaType,
+        ReadSchemaType,
+        ReadPublicSchemaType,
+        ReadExtendedSchemaType,
+        ReadExtendedPublicSchemaType,
+    ],
 ):
     """Class with the function to merge new projects into current ones."""
 
-    def _update_projects(
+    def update(
         self,
         *,
         db_obj: ModelType,
-        input_uuids: list[str],
+        obj_in: CreateExtendedSchemaType,
         provider_projects: list[Project],
     ) -> ModelType | None:
         """Update resource linked projects.
@@ -324,10 +341,13 @@ class CRUDMultiProject(
         Connect new projects not already connect, leave untouched already linked ones
         and delete old ones no more connected to the flavor.
         """
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
+
         edit = False
         db_items = {db_item.uuid: db_item for db_item in db_obj.projects}
         db_projects = {db_item.uuid: db_item for db_item in provider_projects}
-        for proj in input_uuids:
+
+        for proj in obj_in.projects:
             db_item = db_items.pop(proj, None)
             if not db_item:
                 db_item = db_projects.get(proj)
@@ -337,10 +357,14 @@ class CRUDMultiProject(
                 )
                 db_obj.projects.connect(db_item)
                 edit = True
+
         for db_item in db_items.values():
             db_obj.projects.disconnect(db_item)
             edit = True
-        return db_obj.save() if edit else None
+
+        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+
+        return db_obj.save() if edit or edit_content else None
 
     def _connect_projects(
         self,
@@ -357,14 +381,12 @@ class CRUDMultiProject(
         filtered_projects = list(
             filter(lambda x: x.uuid in input_uuids, provider_projects)
         )
-        if len(filtered_projects) == 0:
-            raise ValueError(
-                f"None of the input projects {[i for i in input_uuids]} in the "
-                f"provider projects: {[i.uuid for i in provider_projects]}"
-            )
-        else:
-            for project in filtered_projects:
-                db_obj.projects.connect(project)
+        assert len(filtered_projects) > 0, (
+            f"None of the input projects {[i for i in input_uuids]} in the "
+            f"provider projects: {[i.uuid for i in provider_projects]}"
+        )
+        for project in filtered_projects:
+            db_obj.projects.connect(project)
 
 
 PrivateModelType = TypeVar("PrivateModelType", bound=StructuredNode)

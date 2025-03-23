@@ -73,7 +73,7 @@ def test_create_already_exists(
         f"A project with uuid {item.uuid} belonging to provider "
         f"{provider.name} already exists"
     )
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(AssertionError, match=msg):
         project_mng.create(obj_in=item, provider=provider)
 
 

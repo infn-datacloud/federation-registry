@@ -99,7 +99,7 @@ def test_create_already_exists(
         f"An identity service with endpoint {item.endpoint} "
         f"belonging to region {region.name} already exists"
     )
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(AssertionError, match=msg):
         identity_service_mng.create(obj_in=item, region=region)
 
 

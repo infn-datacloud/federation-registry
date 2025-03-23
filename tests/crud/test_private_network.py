@@ -155,7 +155,7 @@ def test_create_already_exists(
         f"A private network with uuid {item.uuid} belonging to provider "
         f"{provider.name} already exists"
     )
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(AssertionError, match=msg):
         private_network_mng.create(
             obj_in=item, service=service, provider_projects=projects
         )
@@ -178,7 +178,7 @@ def test_create_with_invalid_projects(
         f"None of the input projects {[i for i in item.projects]} in the "
         f"provider projects: {[i.uuid for i in projects]}"
     )
-    with pytest.raises(ValueError, match=re.escape(msg)):
+    with pytest.raises(AssertionError, match=re.escape(msg)):
         private_network_mng.create(
             obj_in=item, service=service, provider_projects=projects
         )

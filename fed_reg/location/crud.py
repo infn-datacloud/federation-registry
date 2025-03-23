@@ -42,10 +42,8 @@ class CRUDLocation(
         A Location can exist without being connected to a region.
         """
         db_obj = self.get(site=obj_in.site)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-        else:
-            raise ValueError(f"A location with site name {obj_in.site} already exists")
+        assert db_obj is None, f"A location with site name {obj_in.site} already exists"
+        db_obj = super().create(obj_in=obj_in)
         if region:
             region_curr_location = region.location.single()
             if region_curr_location:

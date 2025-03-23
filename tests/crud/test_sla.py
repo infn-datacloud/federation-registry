@@ -96,7 +96,7 @@ def test_create_already_exists(
     user_group = sla_model.user_group.single()
     project = sla_model.projects.single()
     msg = f"An SLA with document uuid {item.doc_uuid} already exists"
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(AssertionError, match=msg):
         sla_mng.create(obj_in=item, project=project, user_group=user_group)
 
 

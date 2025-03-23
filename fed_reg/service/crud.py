@@ -237,15 +237,14 @@ class CRUDBlockStorageService(
         if provider_projects is None:
             provider_projects = []
         db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        else:
-            db_provider = region.provider.single()
-            raise ValueError(
-                f"A block storage service with endpoint {obj_in.endpoint} "
-                f"belonging to provider {db_provider.name} already exists"
-            )
+        db_provider = region.provider.single()
+        assert db_obj is None, (
+            f"A block storage service with endpoint {obj_in.endpoint} "
+            f"belonging to provider {db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
+
         for quota in obj_in.quotas:
             self.quota_mgr.create(
                 obj_in=quota, service=db_obj, provider_projects=provider_projects
@@ -301,15 +300,14 @@ class CRUDComputeService(
         if provider_projects is None:
             provider_projects = []
         db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        else:
-            db_provider = region.provider.single()
-            raise ValueError(
-                f"A compute service with endpoint {obj_in.endpoint} "
-                f"belonging to provider {db_provider.name} already exists"
-            )
+        db_provider = region.provider.single()
+        assert db_obj is None, (
+            f"A compute service with endpoint {obj_in.endpoint} "
+            f"belonging to provider {db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
+
         for quota in obj_in.quotas:
             self.quota_mgr.create(
                 obj_in=quota, service=db_obj, provider_projects=provider_projects
@@ -462,12 +460,11 @@ class CRUDIdentityService(
 
         Connect the service to the given region.
         """
-        db_obj = region.services.filter(endpoint=obj_in.endpoint, type=obj_in.type)
-        if db_obj:
-            raise ValueError(
-                f"An identity service with endpoint {obj_in.endpoint} "
-                f"belonging to region {region.name} already exists"
-            )
+        db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
+        assert db_obj is None, (
+            f"An identity service with endpoint {obj_in.endpoint} "
+            f"belonging to region {region.name} already exists"
+        )
         db_obj = super().create(obj_in=obj_in)
         db_obj.region.connect(region)
         return db_obj
@@ -502,15 +499,14 @@ class CRUDNetworkService(
         if provider_projects is None:
             provider_projects = []
         db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        else:
-            db_provider = region.provider.single()
-            raise ValueError(
-                f"A network service with endpoint {obj_in.endpoint} "
-                f"belonging to provider {db_provider.name} already exists"
-            )
+        db_provider = region.provider.single()
+        assert db_obj is None, (
+            f"A network service with endpoint {obj_in.endpoint} "
+            f"belonging to provider {db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
+
         for quota in obj_in.quotas:
             self.quota_mgr.create(
                 obj_in=quota, service=db_obj, provider_projects=provider_projects
@@ -615,15 +611,14 @@ class CRUDObjectStoreService(
         if provider_projects is None:
             provider_projects = []
         db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        else:
-            db_provider = region.provider.single()
-            raise ValueError(
-                f"An object store service with endpoint {obj_in.endpoint} "
-                f"belonging to provider {db_provider.name} already exists"
-            )
+        db_provider = region.provider.single()
+        assert db_obj is None, (
+            f"An object store service with endpoint {obj_in.endpoint} "
+            f"belonging to provider {db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
+
         for quota in obj_in.quotas:
             self.quota_mgr.create(
                 obj_in=quota, service=db_obj, provider_projects=provider_projects

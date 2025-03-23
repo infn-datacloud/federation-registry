@@ -110,7 +110,7 @@ def test_create_already_exists(
         f"A shared flavor with uuid {item.uuid} belonging to provider "
         f"{provider.name} already exists"
     )
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(AssertionError, match=msg):
         shared_flavor_mng.create(obj_in=item, service=service)
 
 

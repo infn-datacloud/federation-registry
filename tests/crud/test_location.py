@@ -73,7 +73,7 @@ def test_create_already_exists(
     item.site = location_model.site
 
     msg = f"A location with site name {item.site} already exists"
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(AssertionError, match=msg):
         location_mng.create(obj_in=item)
 
 

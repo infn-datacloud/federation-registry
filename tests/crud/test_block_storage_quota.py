@@ -142,7 +142,7 @@ def test_create_with_invalid_project(
         f"Input project {item.project} not in the provider "
         f"projects: {[i.uuid for i in projects]}"
     )
-    with pytest.raises(ValueError, match=re.escape(msg)):
+    with pytest.raises(AssertionError, match=re.escape(msg)):
         block_storage_quota_mng.create(
             obj_in=item, service=service, provider_projects=projects
         )

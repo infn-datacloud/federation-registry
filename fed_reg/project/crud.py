@@ -32,13 +32,11 @@ class CRUDProject(
     def create(self, *, obj_in: ProjectCreate, provider: Provider) -> Project:
         """Create a new Project. Connect the project to the given provider."""
         db_obj = provider.projects.get_or_none(uuid=obj_in.uuid)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-        else:
-            raise ValueError(
-                f"A project with uuid {obj_in.uuid} belonging to provider "
-                f"{provider.name} already exists"
-            )
+        assert db_obj is None, (
+            f"A project with uuid {obj_in.uuid} belonging to provider "
+            f"{provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
         db_obj.provider.connect(provider)
         return db_obj
 

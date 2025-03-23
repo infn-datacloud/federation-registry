@@ -200,7 +200,7 @@ def test_create_already_exists(
         f"A compute service with endpoint {item.endpoint} "
         f"belonging to provider {provider.name} already exists"
     )
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(AssertionError, match=msg):
         compute_service_mng.create(obj_in=item, region=region)
 
 

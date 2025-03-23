@@ -174,7 +174,7 @@ def test_delete(provider_model: Provider) -> None:
 
 def test_delete_not_existing(provider_model: Provider) -> None:
     assert provider_mng.remove(db_obj=provider_model)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         provider_mng.remove(db_obj=provider_model)
 
 

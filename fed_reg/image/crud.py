@@ -20,6 +20,7 @@ class CRUDPrivateImage(
     CRUDMultiProject[
         PrivateImage,
         PrivateImageCreate,
+        PrivateImageCreateExtended,
         ImageUpdate,
         ImageRead,
         ImageReadPublic,
@@ -55,13 +56,11 @@ class CRUDPrivateImage(
             db_provider1 = db_region.provider.single()
             db_region = service.region.single()
             db_provider2 = db_region.provider.single()
-            if db_provider1 != db_provider2:
-                db_obj = super().create(obj_in=obj_in)
-            else:
-                raise ValueError(
-                    f"A private image with uuid {obj_in.uuid} belonging to provider "
-                    f"{db_provider1.name} already exists"
-                )
+            assert db_provider1 != db_provider2, (
+                f"A private image with uuid {obj_in.uuid} belonging to provider "
+                f"{db_provider1.name} already exists"
+            )
+            db_obj = super().create(obj_in=obj_in)
 
         db_obj.services.connect(service)
         super()._connect_projects(
@@ -71,27 +70,6 @@ class CRUDPrivateImage(
         )
 
         return db_obj
-
-    def update(
-        self,
-        *,
-        db_obj: PrivateImage,
-        obj_in: PrivateImageCreateExtended,
-        provider_projects: list[Project],
-    ) -> PrivateImage | None:
-        """Update Image attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked projects and apply default values when explicit.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        edited_obj1 = super()._update_projects(
-            db_obj=db_obj,
-            input_uuids=obj_in.projects,
-            provider_projects=provider_projects,
-        )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 class CRUDSharedImage(
@@ -128,13 +106,11 @@ class CRUDSharedImage(
             db_provider1 = db_region.provider.single()
             db_region = service.region.single()
             db_provider2 = db_region.provider.single()
-            if db_provider1 != db_provider2:
-                db_obj = super().create(obj_in=obj_in)
-            else:
-                raise ValueError(
-                    f"A shared image with uuid {obj_in.uuid} belonging to provider "
-                    f"{db_provider1.name} already exists"
-                )
+            assert db_provider1 != db_provider2, (
+                f"A shared image with uuid {obj_in.uuid} belonging to provider "
+                f"{db_provider1.name} already exists"
+            )
+            db_obj = super().create(obj_in=obj_in)
 
         db_obj.services.connect(service)
 
