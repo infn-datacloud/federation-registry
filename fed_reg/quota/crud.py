@@ -138,40 +138,24 @@ class CRUDQuota(
         different from the current one, replace linked project and apply default values
         when explicit.
         """
-        edited_obj1 = self._update_project(
-            db_obj=db_obj,
-            input_uuid=obj_in.project,
-            provider_projects=provider_projects,
-        )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
-
-    def _update_project(
-        self,
-        *,
-        db_obj: ModelType,
-        input_uuid: str,
-        provider_projects: list[Project],
-    ) -> ModelType | None:
-        """Update resource linked project.
-
-        If the new project differs from the current one, reconnect new one.
-        """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
 
+        edit = False
         db_projects = {db_item.uuid: db_item for db_item in provider_projects}
         db_proj = db_obj.project.single()
 
-        if input_uuid != db_proj.uuid:
-            db_item = db_projects.get(input_uuid)
+        if obj_in.project != db_proj.uuid:
+            db_item = db_projects.get(obj_in.project)
             assert db_item is not None, (
-                f"Input project {input_uuid} not in the provider "
+                f"Input project {obj_in.project} not in the provider "
                 f"projects: {[i.uuid for i in provider_projects]}"
             )
             db_obj.project.reconnect(db_proj, db_item)
-            return db_obj.save()
+            edit = True
 
-        return None
+        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+
+        return db_obj.save() if edit or edit_content else None
 
 
 class CRUDBlockStorageQuota(

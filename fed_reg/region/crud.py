@@ -1,5 +1,6 @@
 """Module with Create, Read, Update and Delete operations for a Region."""
 
+from fedreg.location.schemas import LocationCreate
 from fedreg.project.models import Project
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import RegionCreateExtended
@@ -21,13 +22,7 @@ from fedreg.service.models import (
 
 from fed_reg.crud import CRUDBase
 from fed_reg.location.crud import location_mng
-from fed_reg.service.crud import (
-    block_storage_service_mng,
-    compute_service_mng,
-    identity_service_mng,
-    network_service_mng,
-    object_store_service_mng,
-)
+from fed_reg.service.crud import service_mgr
 
 
 class CRUDRegion(
@@ -49,147 +44,104 @@ class CRUDRegion(
         Connect the region to the given provider. For each received location and
         service, create the corresponding entity.
         """
+        db_obj = self.get(name=obj_in.name)
+        assert db_obj is None, (
+            f"Provider {provider.name} already has a region with name {obj_in.name}"
+        )
+
         db_obj = super().create(obj_in=obj_in)
         db_obj.provider.connect(provider)
         if obj_in.location is not None:
-            location_mng.create(obj_in=obj_in.location, region=db_obj)
-        for item in obj_in.block_storage_services:
-            block_storage_service_mng.create(
-                obj_in=item, region=db_obj, projects=provider.projects
-            )
-        for item in obj_in.compute_services:
-            compute_service_mng.create(
-                obj_in=item, region=db_obj, projects=provider.projects
-            )
-        for item in obj_in.identity_services:
-            identity_service_mng.create(obj_in=item, region=db_obj)
-        for item in obj_in.network_services:
-            network_service_mng.create(
-                obj_in=item, region=db_obj, projects=provider.projects
-            )
-        for item in obj_in.object_store_services:
-            object_store_service_mng.create(
-                obj_in=item, region=db_obj, projects=provider.projects
-            )
+            db_loc = location_mng.get(site=obj_in.location.site)
+            if db_loc is None:
+                location_mng.create(obj_in=obj_in.location, region=db_obj)
+            else:
+                db_obj.location.connect(db_loc)
+        for item in (
+            obj_in.block_storage_services
+            + obj_in.compute_services
+            + obj_in.identity_services
+            + obj_in.network_services
+            + obj_in.object_store_services
+        ):
+            service_mgr.create(obj_in=item, region=db_obj, projects=provider.projects)
+
         return db_obj
-
-    def remove(self, *, db_obj: Region) -> bool:
-        """Delete an existing region and all its relationships.
-
-        If the corresponding provider has no other regions, abort region deletion in
-        favor of provider deletion.
-
-        At first delete its services. Then, if the location points only to this
-        provider, delete it. Finally delete the region.
-        """
-        for db_serv in db_obj.services:
-            if isinstance(db_serv, BlockStorageService):
-                block_storage_service_mng.remove(db_obj=db_serv)
-            elif isinstance(db_serv, ComputeService):
-                compute_service_mng.remove(db_obj=db_serv)
-            elif isinstance(db_serv, IdentityService):
-                identity_service_mng.remove(db_obj=db_serv)
-            elif isinstance(db_serv, NetworkService):
-                network_service_mng.remove(db_obj=db_serv)
-            elif isinstance(db_serv, ObjectStoreService):
-                object_store_service_mng.remove(db_obj=db_serv)
-
-        item = db_obj.location.single()
-        if item and len(item.regions) == 1:
-            location_mng.remove(db_obj=item)
-
-        result = super().remove(db_obj=db_obj)
-        return result
 
     def update(
         self,
         *,
         db_obj: Region,
-        obj_in: RegionCreateExtended | RegionUpdate,
-        projects: list[Project] | None = None,
-        force: bool = False,
+        obj_in: RegionCreateExtended,
+        provider_projects: list[Project] | None = None,
     ) -> Region | None:
         """Update Region attributes.
 
         By default do not update relationships or default values. If force is True,
         update linked projects and apply default values when explicit.
         """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            locations_updated = self.__update_location(db_obj=db_obj, obj_in=obj_in)
-            bsto_serv_updated = self.__update_block_storage_services(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            comp_serv_updated = self.__update_compute_services(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            idp_serv_updated = self.__update_identity_services(
-                db_obj=db_obj, obj_in=obj_in
-            )
-            net_serv_updated = self.__update_network_services(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            osto_serv_updated = self.__update_object_store_services(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            edit = (
-                locations_updated
-                or bsto_serv_updated
-                or comp_serv_updated
-                or idp_serv_updated
-                or net_serv_updated
-                or osto_serv_updated
-            )
+        if provider_projects is None:
+            provider_projects = []
+        services = (
+            obj_in.block_storage_services
+            + obj_in.compute_services
+            + obj_in.identity_services
+            + obj_in.network_services
+            + obj_in.object_store_services
+        )
+        edit1 = self._update_location(db_obj=db_obj, location=obj_in.location)
+        edit2 = self._update_services(
+            db_obj=db_obj, input_services=services, provider_projects=provider_projects
+        )
+        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return db_obj.save() if edit1 or edit2 or edit_content else None
 
-        if isinstance(obj_in, RegionCreateExtended):
-            obj_in = RegionUpdate.parse_obj(obj_in)
-
-        update_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else update_data
-
-    def __update_location(
-        self, *, db_obj: Region, obj_in: RegionCreateExtended
+    def _update_location(
+        self, *, db_obj: Region, location: LocationCreate | None
     ) -> bool:
         """Update region linked location.
 
         If no new location is given or the new location differs from the current one,
-        delete linked location if it points only to this region, or disconnect it.
+        disconnect current location if present.
 
         If there wasn't a location and and a new one is given, or the new location
-        differs from the current one, create the new location. Otherwise, if the old
-        location match the new location, forcefully update it.
+        differs from the current one, create the new location.
+
+        Otherwise, if the old location match the new location, forcefully update it.
         """
-        edit = False
-        loc_in = obj_in.location
-        db_loc = db_obj.location.single()
+        curr_location = db_obj.location.single()
 
-        if db_loc and (not loc_in or db_loc.site != loc_in.site):
-            if len(db_loc.regions) == 1:
-                location_mng.remove(db_obj=db_loc)
-            else:
-                db_obj.location.disconnect(db_loc)
-            edit = True
+        if curr_location and (location is None or curr_location.site != location.site):
+            db_obj.location.disconnect(curr_location)
+            return True
 
-        # No previous and new location received
-        # or new location differs from existing one
-        if (not db_loc and loc_in) or (
-            db_loc and loc_in and db_loc.site != loc_in.site
+        if (curr_location is None and location) or (
+            curr_location and location and curr_location.site != location.site
         ):
-            location_mng.create(obj_in=loc_in, region=db_obj)
-            edit = True
-        elif db_loc and loc_in and db_loc.site == loc_in.site:
-            updated_data = location_mng.update(db_obj=db_loc, obj_in=loc_in, force=True)
-            edit = updated_data is not None
+            db_location = location_mng.get(site=location.site)
+            if db_location is None:
+                location_mng.create(obj_in=location, region=db_obj)
+            else:
+                db_obj.location.connect(db_location)
+            return True
 
-        return edit
+        if curr_location and location and curr_location.site == location.site:
+            updated_data = location_mng.update(db_obj=curr_location, obj_in=location)
+            return updated_data is not None
 
-    def __update_block_storage_services(
+        return False
+
+    def _update_services(
         self,
         *,
         db_obj: Region,
-        obj_in: RegionCreateExtended,
+        input_services: list[
+            BlockStorageService
+            | ComputeService
+            | IdentityService
+            | NetworkService
+            | ObjectStoreService
+        ],
         provider_projects: list[Project],
     ) -> bool:
         """Update region linked block storage services.
@@ -198,180 +150,27 @@ class CRUDRegion(
         linked ones and delete old ones no more connected to the region.
         """
         edit = False
-        db_items = {
-            db_item.endpoint: db_item
-            for db_item in db_obj.services
-            if isinstance(db_item, BlockStorageService)
-        }
-        for item in obj_in.block_storage_services:
+        db_items = {db_item.endpoint: db_item for db_item in db_obj.services}
+
+        for item in input_services:
             db_item = db_items.pop(item.endpoint, None)
-            if not db_item:
-                block_storage_service_mng.create(
-                    obj_in=item, region=db_obj, projects=provider_projects
+            if db_item is None:
+                service_mgr.create(
+                    obj_in=item, region=db_obj, provider_projects=provider_projects
                 )
                 edit = True
             else:
-                updated_data = block_storage_service_mng.update(
+                updated_data = service_mgr.update(
                     db_obj=db_item,
                     obj_in=item,
-                    projects=provider_projects,
-                    force=True,
+                    provider_projects=provider_projects,
                 )
-                if not edit and updated_data is not None:
-                    edit = True
+                edit = edit or updated_data is not None
+
         for db_item in db_items.values():
-            block_storage_service_mng.remove(db_obj=db_item)
+            service_mgr.remove(db_obj=db_item)
             edit = True
-        return edit
 
-    def __update_compute_services(
-        self,
-        *,
-        db_obj: Region,
-        obj_in: RegionCreateExtended,
-        provider_projects: list[Project],
-    ) -> bool:
-        """Update region linked compute services.
-
-        Connect new compute services not already connect, leave untouched already linked
-        ones and delete old ones no more connected to the region.
-        """
-        edit = False
-        db_items = {
-            db_item.endpoint: db_item
-            for db_item in db_obj.services
-            if isinstance(db_item, ComputeService)
-        }
-        for item in obj_in.compute_services:
-            db_item = db_items.pop(item.endpoint, None)
-            if not db_item:
-                compute_service_mng.create(
-                    obj_in=item, region=db_obj, projects=provider_projects
-                )
-                edit = True
-            else:
-                updated_data = compute_service_mng.update(
-                    db_obj=db_item,
-                    obj_in=item,
-                    projects=provider_projects,
-                    force=True,
-                )
-                if not edit and updated_data is not None:
-                    edit = True
-        for db_item in db_items.values():
-            compute_service_mng.remove(db_obj=db_item)
-            edit = True
-        return edit
-
-    def __update_identity_services(
-        self,
-        *,
-        db_obj: Region,
-        obj_in: RegionCreateExtended,
-    ) -> bool:
-        """Update region linked identity services.
-
-        Connect new identity services not already connect, leave untouched already
-        linked ones and delete old ones no more connected to the region.
-        """
-        edit = False
-        db_items = {
-            db_item.endpoint: db_item
-            for db_item in db_obj.services
-            if isinstance(db_item, IdentityService)
-        }
-        for item in obj_in.identity_services:
-            db_item = db_items.pop(item.endpoint, None)
-            if not db_item:
-                identity_service_mng.create(obj_in=item, region=db_obj)
-                edit = True
-            else:
-                updated_data = identity_service_mng.update(
-                    db_obj=db_item, obj_in=item, force=True
-                )
-                if not edit and updated_data is not None:
-                    edit = True
-        for db_item in db_items.values():
-            identity_service_mng.remove(db_obj=db_item)
-            edit = True
-        return edit
-
-    def __update_network_services(
-        self,
-        *,
-        db_obj: Region,
-        obj_in: RegionCreateExtended,
-        provider_projects: list[Project],
-    ) -> bool:
-        """Update region linked network services.
-
-        Connect new network services not already connect, leave untouched already linked
-        ones and delete old ones no more connected to the region.
-        """
-        edit = False
-        db_items = {
-            db_item.endpoint: db_item
-            for db_item in db_obj.services
-            if isinstance(db_item, NetworkService)
-        }
-        for item in obj_in.network_services:
-            db_item = db_items.pop(item.endpoint, None)
-            if not db_item:
-                network_service_mng.create(
-                    obj_in=item, region=db_obj, projects=provider_projects
-                )
-                edit = True
-            else:
-                updated_data = network_service_mng.update(
-                    db_obj=db_item,
-                    obj_in=item,
-                    projects=provider_projects,
-                    force=True,
-                )
-                if not edit and updated_data is not None:
-                    edit = True
-        for db_item in db_items.values():
-            network_service_mng.remove(db_obj=db_item)
-        edit = True
-        return edit
-
-    def __update_object_store_services(
-        self,
-        *,
-        db_obj: Region,
-        obj_in: RegionCreateExtended,
-        provider_projects: list[Project],
-    ) -> bool:
-        """Update region linked object storage services.
-
-        Connect new object storage services not already connect, leave untouched already
-        linked ones and delete old ones no more connected to the region.
-        """
-        edit = False
-        db_items = {
-            db_item.endpoint: db_item
-            for db_item in db_obj.services
-            if isinstance(db_item, ObjectStoreService)
-        }
-        for item in obj_in.object_store_services:
-            db_item = db_items.pop(item.endpoint, None)
-            if not db_item:
-                object_store_service_mng.create(
-                    obj_in=item, region=db_obj, projects=provider_projects
-                )
-                edit = True
-            else:
-                updated_data = object_store_service_mng.update(
-                    db_obj=db_item,
-                    obj_in=item,
-                    projects=provider_projects,
-                    force=True,
-                )
-                if not edit and updated_data is not None:
-                    edit = True
-        for db_item in db_items.values():
-            object_store_service_mng.remove(db_obj=db_item)
-            edit = True
         return edit
 
 

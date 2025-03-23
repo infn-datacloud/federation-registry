@@ -1,6 +1,6 @@
 """Module with Create, Read, Update and Delete operations for a Services."""
 
-from typing import Generic, TypeVar
+from typing import Generic, Literal, TypeVar
 
 from fedreg.flavor.schemas import SharedFlavorCreate
 from fedreg.image.schemas import SharedImageCreate
@@ -69,6 +69,7 @@ from fed_reg.crud import (
     ReadExtendedSchemaType,
     ReadPublicSchemaType,
     ReadSchemaType,
+    SkipLimit,
     UpdateSchemaType,
 )
 from fed_reg.flavor.crud import CRUDPrivateFlavor, CRUDSharedFlavor, flavor_mgr
@@ -165,7 +166,7 @@ class CRUDMultiQuota(
         db_obj: ModelType,
         input_quotas: list[QuotaCreateExtendedSchemaType],
         provider_projects: list[Project],
-    ) -> ModelType | None:
+    ) -> bool:
         """Update service linked quotas.
 
         Connect new quotas not already connect and delete old ones no more connected to
@@ -205,7 +206,7 @@ class CRUDMultiQuota(
                 self.quota_mgr.remove(db_obj=db_item)
                 edit = True
 
-        return db_obj.save() if edit else None
+        return edit
 
 
 class CRUDBlockStorageService(
@@ -261,13 +262,13 @@ class CRUDBlockStorageService(
         """Update Block Storage Service attributes. Update linked quotas."""
         if provider_projects is None:
             provider_projects = []
-        edited_obj1 = self._update_quotas(
+        edit = self._update_quotas(
             db_obj=db_obj,
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
+        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return db_obj.save() if edit or edit_content else None
 
 
 class CRUDComputeService(
@@ -336,30 +337,24 @@ class CRUDComputeService(
         """
         if provider_projects is None:
             provider_projects = []
-        edited_obj1 = self._update_flavors(
+        edit1 = self._update_flavors(
             db_obj=db_obj,
             input_flavors=obj_in.flavors,
             provider_projects=provider_projects,
         )
-        edited_obj2 = self._update_images(
+        edit2 = self._update_images(
             db_obj=db_obj,
             input_images=obj_in.images,
             provider_projects=provider_projects,
         )
-        edited_obj3 = self._update_quotas(
+        edit3 = self._update_quotas(
             db_obj=db_obj,
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edited_obj4 = super().update(db_obj=db_obj, obj_in=obj_in)
+        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
-        if edited_obj4:
-            return edited_obj4
-        if edited_obj3:
-            return edited_obj3
-        if edited_obj2:
-            return edited_obj2
-        return edited_obj1
+        return db_obj.save() if edit1 or edit2 or edit3 or edit_content else None
 
     def _update_flavors(
         self,
@@ -367,7 +362,7 @@ class CRUDComputeService(
         db_obj: ComputeService,
         input_flavors: list[SharedFlavorCreate | PrivateFlavorCreateExtended],
         provider_projects: list[Project],
-    ) -> ComputeService | None:
+    ) -> bool:
         """Update service linked flavors.
 
         Connect new flavors not already connect, leave untouched already linked ones and
@@ -399,7 +394,7 @@ class CRUDComputeService(
                 db_obj.flavors.disconnect(db_item)
             edit = True
 
-        return db_obj.save() if edit else None
+        return edit
 
     def _update_images(
         self,
@@ -407,7 +402,7 @@ class CRUDComputeService(
         db_obj: ComputeService,
         input_images: list[SharedImageCreate | PrivateImageCreateExtended],
         provider_projects: list[Project],
-    ) -> ComputeService | None:
+    ) -> bool:
         """Update service linked images.
 
         Connect new images not already connect, leave untouched already linked ones and
@@ -437,7 +432,7 @@ class CRUDComputeService(
                 db_obj.images.disconnect(db_item)
             edit = True
 
-        return db_obj.save() if edit else None
+        return edit
 
 
 class CRUDIdentityService(
@@ -528,23 +523,19 @@ class CRUDNetworkService(
         if provider_projects is None:
             provider_projects = []
 
-        edited_obj1 = self._update_quotas(
+        edit1 = self._update_quotas(
             db_obj=db_obj,
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edited_obj2 = self._update_networks(
+        edit2 = self._update_networks(
             db_obj=db_obj,
             input_networks=obj_in.networks,
             provider_projects=provider_projects,
         )
-        edited_obj3 = super().update(db_obj=db_obj, obj_in=obj_in)
+        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
-        if edited_obj3:
-            return edited_obj3
-        if edited_obj2:
-            return edited_obj2
-        return edited_obj1
+        return db_obj.save() if edit1 or edit2 or edit_content else None
 
     def _update_networks(
         self,
@@ -552,7 +543,7 @@ class CRUDNetworkService(
         db_obj: NetworkService,
         input_networks: list[SharedNetworkCreate | PrivateNetworkCreateExtended],
         provider_projects: list[Project],
-    ) -> NetworkService | None:
+    ) -> bool:
         """Update service linked networks.
 
         Connect new networks not already connect, leave untouched already linked ones
@@ -579,7 +570,7 @@ class CRUDNetworkService(
             network_mgr.remove(db_obj=db_item)
             edit = True
 
-        return db_obj.save() if edit else None
+        return edit
 
 
 class CRUDObjectStoreService(
@@ -639,13 +630,238 @@ class CRUDObjectStoreService(
         """
         if provider_projects is None:
             provider_projects = []
-        edited_obj1 = self._update_quotas(
+        edit = self._update_quotas(
             db_obj=db_obj,
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
+        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return db_obj.save() if edit or edit_content else None
+
+
+class CRUDServiceDispatcher(
+    SkipLimit[
+        BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService
+    ],
+):
+    """Flavor (both shared and private) Create, Read, Update and Delete operations."""
+
+    def __init__(
+        self,
+        *,
+        block_storage_mgr: CRUDBlockStorageService,
+        compute_mgr: CRUDComputeService,
+        identity_mgr: CRUDIdentityService,
+        network_mgr: CRUDNetworkService,
+        object_store_mgr: CRUDObjectStoreService,
+    ):
+        self.__block_storage_mgr = block_storage_mgr
+        self.__compute_mgr = compute_mgr
+        self.__identity_mgr = identity_mgr
+        self.__network_mgr = network_mgr
+        self.__object_store_mgr = object_store_mgr
+
+    # def get(
+    #     self, **kwargs
+    # ) -> (
+    #     BlockStorageService
+    #     | ComputeService
+    #     | IdentityService
+    #     | NetworkService
+    #     | ObjectStoreService
+    #     | None
+    # ):
+    #     """Get a single resource. Return None if the resource is not found."""
+    #     item = self.__block_storage_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+    #     item = self.__compute_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+    #     item = self.__identity_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+    #     item = self.__network_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+    #     item = self.__object_store_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+
+    # def get_multi(
+    #     self, skip: int = 0, limit: int | None = None, sort: str | None = None,
+    # **kwargs
+    # ) -> list[
+    #     BlockStorageService
+    #     | ComputeService
+    #     | IdentityService
+    #     | NetworkService
+    #     | ObjectStoreService
+    # ]:
+    #     """Get list of resources."""
+    #     req_is_shared = kwargs.get("is_shared", None)
+
+    #     if req_is_shared is None:
+    #         shared_items = self.__compute_mgr.get_multi(**kwargs)
+    #         private_items = self.__block_storage_mgr.get_multi(**kwargs)
+
+    #         if sort:
+    #             if sort.startswith("-"):
+    #                 sort = sort[1:]
+    #                 reverse = True
+    #             sorting = [sort, "uid"]
+    #             items = sorted(
+    #                 [*shared_items, *private_items],
+    #                 key=lambda x: (x.__getattribute__(k) for k in sorting),
+    #                 reverse=reverse,
+    #             )
+
+    #         return self._apply_limit_and_skip(items=items, skip=skip, limit=limit)
+
+    #     if req_is_shared:
+    #         return self.__compute_mgr.get_multi(
+    #             skip=skip, limit=limit, sort=sort, **kwargs
+    #         )
+    #     return self.__block_storage_mgr.get_multi(
+    #         skip=skip, limit=limit, sort=sort, **kwargs
+    #     )
+
+    def create(
+        self,
+        *,
+        obj_in: BlockStorageServiceCreateExtended
+        | ComputeServiceCreateExtended
+        | IdentityServiceCreate
+        | NetworkServiceCreateExtended
+        | ObjectStoreServiceCreateExtended,
+        provider_projects: list[Project] | None = None,
+        **kwargs,
+    ) -> (
+        BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService
+    ):
+        """Create a new service."""
+        if isinstance(obj_in, BlockStorageServiceCreateExtended):
+            return self.__block_storage_mgr.create(
+                obj_in=obj_in, provider_projects=provider_projects, **kwargs
+            )
+        if isinstance(obj_in, ComputeServiceCreateExtended):
+            return self.__compute_mgr.create(
+                obj_in=obj_in, provider_projects=provider_projects, **kwargs
+            )
+        if isinstance(obj_in, IdentityServiceCreate):
+            return self.__identity_mgr.create(obj_in=obj_in, **kwargs)
+        if isinstance(obj_in, NetworkServiceCreateExtended):
+            return self.__network_mgr.create(
+                obj_in=obj_in, provider_projects=provider_projects, **kwargs
+            )
+        if isinstance(obj_in, ObjectStoreServiceCreateExtended):
+            return self.__object_store_mgr.create(
+                obj_in=obj_in, provider_projects=provider_projects, **kwargs
+            )
+        raise ValueError(f"Not supported service type {obj_in.type}")
+
+    def update(
+        self,
+        *,
+        db_obj: BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService,
+        obj_in: BlockStorageServiceCreateExtended
+        | ComputeServiceCreateExtended
+        | IdentityServiceCreate
+        | NetworkServiceCreateExtended
+        | ObjectStoreServiceCreateExtended,
+        provider_projects: list[Project] | None = None,
+    ) -> (
+        BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService
+        | None
+    ):
+        """Update and existing service."""
+        if isinstance(db_obj, BlockStorageService):
+            return self.__block_storage_mgr.update(
+                obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
+            )
+        if isinstance(db_obj, ComputeService):
+            return self.__compute_mgr.update(
+                obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
+            )
+        if isinstance(db_obj, IdentityService):
+            return self.__identity_mgr.update(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, NetworkService):
+            return self.__network_mgr.update(
+                obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
+            )
+        if isinstance(db_obj, ObjectStoreService):
+            return self.__object_store_mgr.update(
+                obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
+            )
+        raise ValueError(f"Not supported service type {db_obj.type}")
+
+    def patch(
+        self,
+        *,
+        db_obj: BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService,
+        obj_in: UpdateSchemaType,
+    ) -> (
+        BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService
+        | None
+    ):
+        """Patch an existing service."""
+        if isinstance(db_obj, BlockStorageService):
+            return self.__block_storage_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, ComputeService):
+            return self.__compute_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, IdentityService):
+            return self.__identity_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, NetworkService):
+            return self.__network_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, ObjectStoreService):
+            return self.__object_store_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        raise ValueError(f"Not supported service type {db_obj.type}")
+
+    def remove(
+        self,
+        *,
+        db_obj: BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService,
+    ) -> Literal[True]:
+        """Remove an existing service."""
+        if isinstance(db_obj, BlockStorageService):
+            return self.__block_storage_mgr.remove(db_obj=db_obj)
+        if isinstance(db_obj, ComputeService):
+            return self.__compute_mgr.remove(db_obj=db_obj)
+        if isinstance(db_obj, IdentityService):
+            return self.__identity_mgr.remove(db_obj=db_obj)
+        if isinstance(db_obj, NetworkService):
+            return self.__network_mgr.remove(db_obj=db_obj)
+        if isinstance(db_obj, ObjectStoreService):
+            return self.__object_store_mgr.remove(db_obj=db_obj)
+        raise ValueError(f"Not supported service type {db_obj.type}")
 
 
 block_storage_service_mng = CRUDBlockStorageService(
@@ -696,4 +912,11 @@ object_store_service_mng = CRUDObjectStoreService(
     read_extended_schema=ObjectStoreServiceReadExtended,
     read_extended_public_schema=ObjectStoreServiceReadExtendedPublic,
     quota_mgr=object_store_quota_mng,
+)
+service_mgr = CRUDServiceDispatcher(
+    block_storage_mgr=block_storage_service_mng,
+    compute_mgr=compute_service_mng,
+    identity_mgr=identity_service_mng,
+    network_mgr=network_service_mng,
+    object_store_mgr=object_store_service_mng,
 )

@@ -339,7 +339,7 @@ class CRUDMultiProject(
         """Update resource linked projects.
 
         Connect new projects not already connect, leave untouched already linked ones
-        and delete old ones no more connected to the flavor.
+        and delete old ones no more connected to the item.
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
 
@@ -398,7 +398,7 @@ SharedCreateSchemaType = TypeVar("SharedCreateSchemaType", bound=BaseNodeCreate)
 
 
 class CRUDPrivateSharedDispatcher(
-    SkipLimit[PrivateModelType | SharedModelType],
+    # SkipLimit[PrivateModelType | SharedModelType],
     Generic[
         PrivateModelType,
         SharedModelType,
@@ -424,41 +424,43 @@ class CRUDPrivateSharedDispatcher(
         self.__shared_model = shared_model
         self.__shared_create_schema = shared_create_schema
 
-    def get(self, **kwargs) -> PrivateModelType | SharedModelType | None:
-        """Get a single resource. Return None if the resource is not found."""
-        flavor = self.__shared_mgr.get(**kwargs)
-        if flavor:
-            return flavor
-        return self.__private_mgr.get(**kwargs)
+    # def get(self, **kwargs) -> PrivateModelType | SharedModelType | None:
+    #     """Get a single resource. Return None if the resource is not found."""
+    #     item = self.__shared_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+    #     return self.__private_mgr.get(**kwargs)
 
-    def get_multi(
-        self, skip: int = 0, limit: int | None = None, sort: str | None = None, **kwargs
-    ) -> list[PrivateModelType | SharedModelType]:
-        """Get list of resources."""
-        req_is_shared = kwargs.get("is_shared", None)
+    # def get_multi(
+    #     self, skip: int = 0, limit: int | None = None, sort: str | None = None,
+    # **kwargs
+    # ) -> list[PrivateModelType | SharedModelType]:
+    #     """Get list of resources."""
+    #     req_is_shared = kwargs.get("is_shared", None)
 
-        if req_is_shared is None:
-            shared_flavors = self.__shared_mgr.get_multi(**kwargs)
-            private_flavors = self.__private_mgr.get_multi(**kwargs)
+    #     if req_is_shared is None:
+    #         shared_items = self.__shared_mgr.get_multi(**kwargs)
+    #         private_items = self.__private_mgr.get_multi(**kwargs)
 
-            if sort:
-                if sort.startswith("-"):
-                    sort = sort[1:]
-                    reverse = True
-                sorting = [sort, "uid"]
-                flavors = sorted(
-                    [*shared_flavors, *private_flavors],
-                    key=lambda x: (x.__getattribute__(k) for k in sorting),
-                    reverse=reverse,
-                )
+    #         if sort:
+    #             if sort.startswith("-"):
+    #                 sort = sort[1:]
+    #                 reverse = True
+    #             sorting = [sort, "uid"]
+    #             items = sorted(
+    #                 [*shared_items, *private_items],
+    #                 key=lambda x: (x.__getattribute__(k) for k in sorting),
+    #                 reverse=reverse,
+    #             )
 
-            return self._apply_limit_and_skip(items=flavors, skip=skip, limit=limit)
+    #         return self._apply_limit_and_skip(items=items, skip=skip, limit=limit)
 
-        if req_is_shared:
-            return self.__shared_mgr.get_multi(
-                skip=skip, limit=limit, sort=sort, **kwargs
-            )
-        return self.__private_mgr.get_multi(skip=skip, limit=limit, sort=sort, **kwargs)
+    #     if req_is_shared:
+    #         return self.__shared_mgr.get_multi(
+    #             skip=skip, limit=limit, sort=sort, **kwargs
+    #         )
+    #     return self.__private_mgr.get_multi(skip=skip, limit=limit, sort=sort,
+    # **kwargs)
 
     def create(
         self,
