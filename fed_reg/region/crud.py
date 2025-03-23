@@ -1,7 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a Region."""
 
-from typing import Optional
-
 from fedreg.project.models import Project
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import RegionCreateExtended
@@ -108,9 +106,9 @@ class CRUDRegion(
         *,
         db_obj: Region,
         obj_in: RegionCreateExtended | RegionUpdate,
-        projects: Optional[list[Project]] = None,
+        projects: list[Project] | None = None,
         force: bool = False,
-    ) -> Optional[Region]:
+    ) -> Region | None:
         """Update Region attributes.
 
         By default do not update relationships or default values. If force is True,

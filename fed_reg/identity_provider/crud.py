@@ -1,7 +1,5 @@
 """Module with Create, Read, Update and Delete operations for an Identity Provider."""
 
-from typing import Optional
-
 from fedreg.identity_provider.models import IdentityProvider
 from fedreg.identity_provider.schemas import (
     IdentityProviderCreate,
@@ -87,10 +85,10 @@ class CRUDIdentityProvider(
         *,
         db_obj: IdentityProvider,
         obj_in: IdentityProviderUpdate | IdentityProviderCreateExtended,
-        projects: Optional[list[Project]] = None,
-        provider: Optional[Provider] = None,
+        projects: list[Project] | None = None,
+        provider: Provider | None = None,
         force: bool = False,
-    ) -> Optional[IdentityProvider]:
+    ) -> IdentityProvider | None:
         """Update Identity Provider attributes.
 
         By default do not update relationships or default values. If force is True,

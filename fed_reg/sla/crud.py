@@ -1,7 +1,5 @@
 """Module with Create, Read, Update and Delete operations for an SLA."""
 
-from typing import Optional
-
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import SLACreateExtended
 from fedreg.sla.models import SLA
@@ -32,57 +30,70 @@ class CRUDSLA(
 
         At first check an SLA pointing to the same document does not exist yet. If it
         does not exist, create it. In any case connect the SLA to the given user group
-        and project. If the project already has an attached SLA, disconnect it.
+        and project. If the project already has an attached SLA, replace it.
         """
-        db_obj = user_group.slas.get_or_none(doc_uuid=obj_in.doc_uuid)
+        db_obj = self.get(doc_uuid=obj_in.doc_uuid)
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
             db_obj.user_group.connect(user_group)
+        else:
+            raise ValueError(
+                f"An SLA with document uuid {obj_in.doc_uuid} already exists"
+            )
         old_sla = project.sla.single()
         if old_sla:
-            project.sla.disconnect(old_sla)
-        db_obj.projects.connect(project)
+            project.sla.reconnect(old_sla, db_obj)
+        else:
+            db_obj.projects.connect(project)
         return db_obj
 
     def update(
         self,
         *,
         db_obj: SLA,
-        obj_in: SLAUpdate | SLACreateExtended,
-        projects: Optional[list[Project]] = None,
-        force: bool = False,
-    ) -> Optional[SLA]:
-        """Update SLA attributes.
+        obj_in: SLACreateExtended,
+        provider_projects: list[Project],
+    ) -> SLA | None:
+        """Update SLA attributes and connected projects."""
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
+        edited_obj1 = self._update_project(
+            db_obj=db_obj,
+            input_uuid=obj_in.project,
+            provider_projects=provider_projects,
+        )
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
+        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
-        By default do not update relationships or default values. If force is True,
-        update linked projects and apply default values when explicit.
+    def _update_project(
+        self, *, db_obj: SLA, input_uuid: str, provider_projects: list[Project]
+    ) -> SLA | None:
+        """Update projects connections.
 
         To update projects, since the forced update happens when creating or updating a
         provider, we filter all the existing projects on this provider already connected
-        to this SLA, should be just one. If there is a project already connected we
+        to this SLA. It should be just one. If there is a project already connected we
         replace the old one with the new one, otherwise we immediately connect the new
         one.
         """
-        if projects is None:
-            projects = []
         edit = False
-        if force:
-            provider_projects = {db_item.uuid: db_item for db_item in projects}
-            new_project = provider_projects.get(obj_in.project)
-            old_project = next(filter(lambda x: x in db_obj.projects, projects), None)
-
-            if not old_project:
-                db_obj.projects.connect(new_project)
-                edit = True
-            elif old_project.uuid != obj_in.project:
-                db_obj.projects.reconnect(old_project, new_project)
-                edit = True
-
-        if isinstance(obj_in, SLACreateExtended):
-            obj_in = SLAUpdate.parse_obj(obj_in)
-
-        updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else updated_data
+        new_project = next(
+            filter(lambda x: x.uuid == input_uuid, provider_projects), None
+        )
+        assert new_project is not None, (
+            f"Input project {input_uuid} not in the provider "
+            f"projects: {[i.uuid for i in provider_projects]}"
+        )
+        # Detect if the SLA already has a linked project on this provider
+        old_project = next(
+            filter(lambda x: x in db_obj.projects, provider_projects), None
+        )
+        if not old_project:
+            db_obj.projects.connect(new_project)
+            edit = True
+        elif old_project.uuid != new_project.uuid:
+            db_obj.projects.reconnect(old_project, new_project)
+            edit = True
+        return db_obj.save() if edit else None
 
 
 sla_mng = CRUDSLA(

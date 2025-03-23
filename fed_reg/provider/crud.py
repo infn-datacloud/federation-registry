@@ -1,7 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a Provider."""
 
-from typing import Optional
-
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas import (
     ProviderCreate,
@@ -49,29 +47,13 @@ class CRUDProvider(
             region_mng.create(obj_in=item, provider=db_obj)
         return db_obj
 
-    def remove(self, *, db_obj: Provider) -> bool:
-        """Delete an existing provider and all its relationships.
-
-        At first delete its projects and regions. Then delete the identity providers who
-        point only to this provider. Finally delete the provider.
-        """
-        for item in db_obj.projects:
-            project_mng.remove(db_obj=item)
-        for item in db_obj.regions:
-            region_mng.remove(db_obj=item)
-        for item in db_obj.identity_providers:
-            if len(item.providers) == 1:
-                identity_provider_mng.remove(db_obj=item)
-        result = super().remove(db_obj=db_obj)
-        return result
-
     def update(
         self,
         *,
         db_obj: Provider,
         obj_in: ProviderUpdate | ProviderCreateExtended,
         force: bool = False,
-    ) -> Optional[Provider]:
+    ) -> Provider | None:
         """Update Provider attributes.
 
         By default do not update relationships or default values. If force is True,

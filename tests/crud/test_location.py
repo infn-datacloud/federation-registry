@@ -10,7 +10,7 @@ from tests.utils import random_country, random_lower_string
 
 
 @pytest.fixture
-def region_model() -> Provider:
+def region_model() -> Region:
     """Region model."""
     provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
     region = Region(name=random_lower_string()).save()

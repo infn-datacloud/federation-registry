@@ -203,7 +203,7 @@ class CRUDNetworkQuota(
         self,
         *,
         db_obj: NetworkQuota,
-        obj_in: NetworkQuotaCreateExtended | NetworkQuotaUpdate,
+        obj_in: NetworkQuotaCreateExtended,
         provider_projects: list[Project],
     ) -> NetworkQuota | None:
         """Update Quota attributes.

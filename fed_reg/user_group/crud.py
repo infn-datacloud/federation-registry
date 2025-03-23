@@ -1,7 +1,5 @@
 """Module with Create, Read, Update and Delete operations for a User Group."""
 
-from typing import Optional
-
 from fedreg.identity_provider.models import IdentityProvider
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import UserGroupCreateExtended
@@ -39,7 +37,7 @@ class CRUDUserGroup(
         *,
         obj_in: UserGroupCreateExtended,
         identity_provider: IdentityProvider,
-        projects: Optional[list[Project]] = None,
+        projects: list[Project] | None = None,
     ) -> UserGroup:
         """Create a new User Group.
 
@@ -64,23 +62,15 @@ class CRUDUserGroup(
             sla_mng.create(obj_in=obj_in.sla, user_group=db_obj, project=db_project)
         return db_obj
 
-    def remove(self, *, db_obj: UserGroup) -> bool:
-        """Delete an existing user group and all its relationships.
-
-        At first delete its SLAs. Finally delete the user group.
-        """
-        for item in db_obj.slas:
-            sla_mng.remove(db_obj=item)
-        return super().remove(db_obj=db_obj)
 
     def update(
         self,
         *,
         db_obj: UserGroup,
         obj_in: UserGroupUpdate | UserGroupCreateExtended,
-        projects: Optional[list[Project]] = None,
+        projects: list[Project] | None = None,
         force: bool = False,
-    ) -> Optional[UserGroup]:
+    ) -> UserGroup | None:
         """Update User Group attributes.
 
         By default do not update relationships or default values. If force is True,
