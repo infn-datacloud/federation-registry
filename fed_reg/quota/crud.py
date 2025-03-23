@@ -1,5 +1,7 @@
 """Module with Create, Read, Update and Delete operations for a Quotas."""
 
+from typing import Generic, TypeVar
+
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import (
     BlockStorageQuotaCreateExtended,
@@ -41,20 +43,141 @@ from fedreg.quota.schemas_extended import (
     ObjectStoreQuotaReadExtended,
     ObjectStoreQuotaReadExtendedPublic,
 )
-from fedreg.service.models import (
-    BlockStorageService,
-    ComputeService,
-    NetworkService,
-    ObjectStoreService,
+
+from fed_reg.crud import (
+    CreateSchemaType,
+    CRUDBase,
+    ModelType,
+    ReadExtendedPublicSchemaType,
+    ReadExtendedSchemaType,
+    ReadPublicSchemaType,
+    ReadSchemaType,
+    UpdateSchemaType,
 )
 
-from fed_reg.crud import CRUDSingleProject
+CreateExtendedSchemaType = TypeVar(
+    "CreateExtendedSchemaType",
+    bound=BlockStorageQuotaCreateExtended
+    | ComputeQuotaCreateExtended
+    | NetworkQuotaCreateExtended
+    | ObjectStoreQuotaCreateExtended,
+)
+
+
+class CRUDQuota(
+    CRUDBase[
+        ModelType,
+        CreateSchemaType,
+        UpdateSchemaType,
+        ReadSchemaType,
+        ReadPublicSchemaType,
+        ReadExtendedSchemaType,
+        ReadExtendedPublicSchemaType,
+    ],
+    Generic[
+        ModelType,
+        CreateSchemaType,
+        CreateExtendedSchemaType,
+        UpdateSchemaType,
+        ReadSchemaType,
+        ReadPublicSchemaType,
+        ReadExtendedSchemaType,
+        ReadExtendedPublicSchemaType,
+    ],
+):
+    """Class with the function to merge new projects into current ones."""
+
+    def create(
+        self,
+        *,
+        obj_in: CreateExtendedSchemaType,
+        service: ModelType,
+        provider_projects: list[Project],
+    ) -> ModelType:
+        """Create a new Block Storage Quota.
+
+        Connect the quota to the given service and project.
+        Before this, check projects list and verify that target project does already
+        have a quota with the same usage and per-user values on target service.
+        """
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
+        project = next(
+            filter(lambda x: x.uuid == obj_in.project, provider_projects), None
+        )
+        if project is None:
+            raise ValueError(
+                f"Input project {obj_in.project} not in the provider "
+                f"projects: {[i.uuid for i in provider_projects]}"
+            )
+        service_quotas = service.quotas.filter(
+            usage=obj_in.usage, per_user=obj_in.per_user
+        )
+        quota = next(
+            filter(lambda x: x.project.single().uuid == obj_in.project, service_quotas),
+            None,
+        )
+        if quota:
+            raise ValueError(
+                f"Target project {obj_in.project} already has a quota with usage="
+                f"{obj_in.usage} and per_user={obj_in.per_user} on service "
+                f"{service.endpoint}"
+            )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.service.connect(service)
+        db_obj.project.connect(project)
+        return db_obj
+
+    def update(
+        self,
+        *,
+        db_obj: ModelType,
+        obj_in: CreateExtendedSchemaType,
+        provider_projects: list[Project],
+    ) -> ModelType | None:
+        """Update Quota attributes.
+
+        By default do not update relationships or default values. If force is True, if
+        different from the current one, replace linked project and apply default values
+        when explicit.
+        """
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
+        edited_obj1 = self._update_project(
+            db_obj=db_obj,
+            input_uuid=obj_in.project,
+            provider_projects=provider_projects,
+        )
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
+        return edited_obj2 if edited_obj2 is not None else edited_obj1
+
+    def _update_project(
+        self,
+        *,
+        db_obj: ModelType,
+        input_uuid: str,
+        provider_projects: list[Project],
+    ) -> ModelType | None:
+        """Update resource linked project.
+
+        If the new project differs from the current one, reconnect new one.
+        """
+        db_projects = {db_item.uuid: db_item for db_item in provider_projects}
+        db_proj = db_obj.project.single()
+        if input_uuid != db_proj.uuid:
+            db_item = db_projects.get(input_uuid)
+            assert db_item is not None, (
+                f"Input project {input_uuid} not in the provider "
+                f"projects: {[i.uuid for i in provider_projects]}"
+            )
+            db_obj.project.reconnect(db_proj, db_item)
+            return db_obj.save()
+        return None
 
 
 class CRUDBlockStorageQuota(
-    CRUDSingleProject[
+    CRUDQuota[
         BlockStorageQuota,
         BlockStorageQuotaCreate,
+        BlockStorageQuotaCreateExtended,
         BlockStorageQuotaUpdate,
         BlockStorageQuotaRead,
         BlockStorageQuotaReadPublic,
@@ -64,54 +187,12 @@ class CRUDBlockStorageQuota(
 ):
     """Block Storage Quota Create, Read, Update and Delete operations."""
 
-    def create(
-        self,
-        *,
-        obj_in: BlockStorageQuotaCreateExtended,
-        service: BlockStorageService,
-        provider_projects: list[Project],
-    ) -> BlockStorageQuota:
-        """Create a new Block Storage Quota.
-
-        Connect the quota to the given service and project.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = super().create(obj_in=obj_in)
-        db_obj.service.connect(service)
-        super()._connect_project(
-            db_obj=db_obj,
-            input_uuid=obj_in.project,
-            provider_projects=provider_projects,
-        )
-        return db_obj
-
-    def update(
-        self,
-        *,
-        db_obj: BlockStorageQuota,
-        obj_in: BlockStorageQuotaCreateExtended,
-        provider_projects: list[Project],
-    ) -> BlockStorageQuota | None:
-        """Update Quota attributes.
-
-        By default do not update relationships or default values. If force is True, if
-        different from the current one, replace linked project and apply default values
-        when explicit.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        edited_obj1 = super()._update_project(
-            db_obj=db_obj,
-            input_uuid=obj_in.project,
-            provider_projects=provider_projects,
-        )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
-
 
 class CRUDComputeQuota(
-    CRUDSingleProject[
+    CRUDQuota[
         ComputeQuota,
         ComputeQuotaCreate,
+        ComputeQuotaCreateExtended,
         ComputeQuotaUpdate,
         ComputeQuotaRead,
         ComputeQuotaReadPublic,
@@ -121,54 +202,12 @@ class CRUDComputeQuota(
 ):
     """Compute Quota Create, Read, Update and Delete operations."""
 
-    def create(
-        self,
-        *,
-        obj_in: ComputeQuotaCreate,
-        service: ComputeService,
-        provider_projects: list[Project],
-    ) -> ComputeQuota:
-        """Create a new Compute Quota.
-
-        Connect the quota to the given service and project.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = super().create(obj_in=obj_in)
-        db_obj.service.connect(service)
-        super()._connect_project(
-            db_obj=db_obj,
-            input_uuid=obj_in.project,
-            provider_projects=provider_projects,
-        )
-        return db_obj
-
-    def update(
-        self,
-        *,
-        db_obj: ComputeQuota,
-        obj_in: ComputeQuotaCreateExtended,
-        provider_projects: list[Project],
-    ) -> ComputeQuota | None:
-        """Update Quota attributes.
-
-        By default do not update relationships or default values. If force is True, if
-        different from the current one, replace linked project and apply default values
-        when explicit.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        edited_obj1 = super()._update_project(
-            db_obj=db_obj,
-            input_uuid=obj_in.project,
-            provider_projects=provider_projects,
-        )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
-
 
 class CRUDNetworkQuota(
-    CRUDSingleProject[
+    CRUDQuota[
         NetworkQuota,
         NetworkQuotaCreate,
+        NetworkQuotaCreateExtended,
         NetworkQuotaUpdate,
         NetworkQuotaRead,
         NetworkQuotaReadPublic,
@@ -178,54 +217,12 @@ class CRUDNetworkQuota(
 ):
     """Network Quota Create, Read, Update and Delete operations."""
 
-    def create(
-        self,
-        *,
-        obj_in: NetworkQuotaCreate,
-        service: NetworkService,
-        provider_projects: list[Project],
-    ) -> NetworkQuota:
-        """Create a new Network Quota.
-
-        Connect the quota to the given service and project.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = super().create(obj_in=obj_in)
-        db_obj.service.connect(service)
-        super()._connect_project(
-            db_obj=db_obj,
-            input_uuid=obj_in.project,
-            provider_projects=provider_projects,
-        )
-        return db_obj
-
-    def update(
-        self,
-        *,
-        db_obj: NetworkQuota,
-        obj_in: NetworkQuotaCreateExtended,
-        provider_projects: list[Project],
-    ) -> NetworkQuota | None:
-        """Update Quota attributes.
-
-        By default do not update relationships or default values. If force is True, if
-        different from the current one, replace linked project and apply default values
-        when explicit.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        edited_obj1 = super()._update_project(
-            db_obj=db_obj,
-            input_uuid=obj_in.project,
-            provider_projects=provider_projects,
-        )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
-
 
 class CRUDObjectStoreQuota(
-    CRUDSingleProject[
+    CRUDQuota[
         ObjectStoreQuota,
         ObjectStoreQuotaCreate,
+        ObjectStoreQuotaCreateExtended,
         ObjectStoreQuotaUpdate,
         ObjectStoreQuotaRead,
         ObjectStoreQuotaReadPublic,
@@ -234,49 +231,6 @@ class CRUDObjectStoreQuota(
     ]
 ):
     """Object Storage Quota Create, Read, Update and Delete operations."""
-
-    def create(
-        self,
-        *,
-        obj_in: ObjectStoreQuotaCreate,
-        service: ObjectStoreService,
-        provider_projects: list[Project],
-    ) -> ObjectStoreQuota:
-        """Create a new Object Storage Quota.
-
-        Connect the quota to the given service and project.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        db_obj = super().create(obj_in=obj_in)
-        db_obj.service.connect(service)
-        super()._connect_project(
-            db_obj=db_obj,
-            input_uuid=obj_in.project,
-            provider_projects=provider_projects,
-        )
-        return db_obj
-
-    def update(
-        self,
-        *,
-        db_obj: ObjectStoreQuota,
-        obj_in: ObjectStoreQuotaCreateExtended,
-        provider_projects: list[Project],
-    ) -> ObjectStoreQuota | None:
-        """Update Quota attributes.
-
-        By default do not update relationships or default values. If force is True, if
-        different from the current one, replace linked project and apply default values
-        when explicit.
-        """
-        assert len(provider_projects) > 0, "The provider's projects list is empty"
-        edited_obj1 = super()._update_project(
-            db_obj=db_obj,
-            input_uuid=obj_in.project,
-            provider_projects=provider_projects,
-        )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
 block_storage_quota_mng = CRUDBlockStorageQuota(

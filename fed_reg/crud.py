@@ -367,67 +367,6 @@ class CRUDMultiProject(
                 db_obj.projects.connect(project)
 
 
-class CRUDSingleProject(
-    CRUDBase[
-        ModelType,
-        CreateSchemaType,
-        UpdateSchemaType,
-        ReadSchemaType,
-        ReadPublicSchemaType,
-        ReadExtendedSchemaType,
-        ReadExtendedPublicSchemaType,
-    ]
-):
-    """Class with the function to merge new projects into current ones."""
-
-    def _update_project(
-        self,
-        *,
-        db_obj: ModelType,
-        input_uuid: str,
-        provider_projects: list[Project],
-    ) -> ModelType | None:
-        """Update resource linked project.
-
-        If the new project differs from the current one, reconnect new one.
-        """
-        db_projects = {db_item.uuid: db_item for db_item in provider_projects}
-        db_proj = db_obj.project.single()
-        if input_uuid != db_proj.uuid:
-            db_item = db_projects.get(input_uuid)
-            assert db_item is not None, (
-                f"Input project {input_uuid} not in the provider "
-                f"projects: {[i.uuid for i in provider_projects]}"
-            )
-            db_obj.project.reconnect(db_proj, db_item)
-            return db_obj.save()
-        return None
-
-    def _connect_project(
-        self,
-        *,
-        db_obj: ModelType,
-        input_uuid: str,
-        provider_projects: list[Project],
-    ) -> None:
-        """Connect projects to the resource.
-
-        If the intersection between the provider projects and the resource projects is
-        empty rais an error.
-        """
-        filtered_projects = list(
-            filter(lambda x: x.uuid == input_uuid, provider_projects)
-        )
-        if len(filtered_projects) == 0:
-            raise ValueError(
-                f"Input project {input_uuid} not in the provider "
-                f"projects: {[i.uuid for i in provider_projects]}"
-            )
-        else:
-            for project in filtered_projects:
-                db_obj.project.connect(project)
-
-
 PrivateModelType = TypeVar("PrivateModelType", bound=StructuredNode)
 SharedModelType = TypeVar("SharedModelType", bound=StructuredNode)
 PrivateCRUDType = TypeVar("PrivateModelType", bound=CRUDBase)
