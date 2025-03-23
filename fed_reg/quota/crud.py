@@ -116,12 +116,11 @@ class CRUDQuota(
             filter(lambda x: x.project.single().uuid == obj_in.project, service_quotas),
             None,
         )
-        if quota:
-            raise ValueError(
-                f"Target project {obj_in.project} already has a quota with usage="
-                f"{obj_in.usage} and per_user={obj_in.per_user} on service "
-                f"{service.endpoint}"
-            )
+        assert not quota, (
+            f"Target project {obj_in.project} already has a quota with usage="
+            f"{obj_in.usage} and per_user={obj_in.per_user} on service "
+            f"{service.endpoint}"
+        )
         db_obj = super().create(obj_in=obj_in)
         db_obj.service.connect(service)
         db_obj.project.connect(project)

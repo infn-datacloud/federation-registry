@@ -104,6 +104,29 @@ def test_create(
 
 
 @parametrize_with_cases("item", cases=CaseQuota)
+def test_create_duplicate(
+    item: ObjectStoreQuotaCreateExtended, quota_model: ObjectStoreQuota
+) -> None:
+    """Empty list passed to the provider_projects param."""
+    service = quota_model.service.single()
+    projects = [quota_model.project.single()]
+
+    item.usage = quota_model.usage
+    item.per_user = quota_model.per_user
+    item.project = quota_model.project.single().uuid
+
+    msg = (
+        f"Target project {item.project} already has a quota with usage="
+        f"{item.usage} and per_user={item.per_user} on service "
+        f"{service.endpoint}"
+    )
+    with pytest.raises(AssertionError, match=msg):
+        object_store_quota_mng.create(
+            obj_in=item, service=service, provider_projects=projects
+        )
+
+
+@parametrize_with_cases("item", cases=CaseQuota)
 def test_create_with_invalid_project(
     item: ObjectStoreQuotaCreateExtended, quota_model: ObjectStoreQuota
 ) -> None:
