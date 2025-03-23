@@ -64,7 +64,7 @@ class CRUDPrivateFlavor(
             db_obj = super().create(obj_in=obj_in)
 
         db_obj.services.connect(service)
-        super()._connect_projects(
+        self._connect_projects(
             db_obj=db_obj,
             input_uuids=obj_in.projects,
             provider_projects=provider_projects,

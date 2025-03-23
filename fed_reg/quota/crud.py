@@ -153,7 +153,7 @@ class CRUDQuota(
             db_obj.project.reconnect(db_proj, db_item)
             edit = True
 
-        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
         return db_obj.save() if edit or edit_content else None
 

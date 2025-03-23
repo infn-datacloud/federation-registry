@@ -86,13 +86,18 @@ class CRUDBase(
                 model to return to users only public data.
         """
         super().__init__()
-        self.model = model
-        self.create_schema = create_schema
-        self.update_schema = update_schema
-        self.read_schema = read_schema
-        self.read_public_schema = read_public_schema
-        self.read_extended_schema = read_extended_schema
-        self.read_extended_public_schema = read_extended_public_schema
+        self.__model = model
+        self.__create_schema = create_schema
+        self.__update_schema = update_schema
+        self.__read_schema = read_schema
+        self.__read_public_schema = read_public_schema
+        self.__read_extended_schema = read_extended_schema
+        self.__read_extended_public_schema = read_extended_public_schema
+
+    @property
+    def model(self):
+        """Neomodel class."""
+        return self.__model
 
     def get(self, **kwargs) -> ModelType | None:
         """Try to retrieve from DB an object with the given attributes.
@@ -105,7 +110,7 @@ class CRUDBase(
         -------
             ModelType | None.
         """
-        return self.model.nodes.get_or_none(**kwargs)
+        return self.__model.nodes.get_or_none(**kwargs)
 
     def get_multi(
         self,
@@ -135,9 +140,9 @@ class CRUDBase(
                 sorting = [sort, "-uid"]
 
         if kwargs:
-            items = self.model.nodes.filter(**kwargs).order_by(*sorting).all()
+            items = self.__model.nodes.filter(**kwargs).order_by(*sorting).all()
         else:
-            items = self.model.nodes.order_by(*sorting).all()
+            items = self.__model.nodes.order_by(*sorting).all()
 
         return self._apply_limit_and_skip(items=items, skip=skip, limit=limit)
 
@@ -152,9 +157,9 @@ class CRUDBase(
         -------
             ModelType. The database object.
         """
-        obj_in = self.create_schema.parse_obj(obj_in)
+        obj_in = self.__create_schema.parse_obj(obj_in)
         obj_in_data = obj_in.dict(exclude_none=True)
-        db_obj = self.model.create(obj_in_data)[0]
+        db_obj = self.__model.create(obj_in_data)[0]
         return db_obj.save()
 
     def patch(self, *, db_obj: ModelType, obj_in: UpdateSchemaType) -> ModelType | None:
@@ -232,7 +237,7 @@ class CRUDBase(
                 apply.
         """
         obj_data = db_obj.__dict__
-        obj_in = self.update_schema.parse_obj(obj_in)
+        obj_in = self.__update_schema.parse_obj(obj_in)
         update_data = obj_in.dict(exclude_unset=not force)
 
         if all(obj_data.get(k) == v for k, v in update_data.items()):
@@ -293,14 +298,16 @@ class CRUDBase(
         if auth:
             if short:
                 if with_conn:
-                    return [self.read_extended_public_schema.from_orm(i) for i in items]
-                return [self.read_public_schema.from_orm(i) for i in items]
+                    return [
+                        self.__read_extended_public_schema.from_orm(i) for i in items
+                    ]
+                return [self.__read_public_schema.from_orm(i) for i in items]
             if with_conn:
-                return [self.read_extended_schema.from_orm(i) for i in items]
-            return [self.read_schema.from_orm(i) for i in items]
+                return [self.__read_extended_schema.from_orm(i) for i in items]
+            return [self.__read_schema.from_orm(i) for i in items]
         if with_conn:
-            return [self.read_extended_public_schema.from_orm(i) for i in items]
-        return [self.read_public_schema.from_orm(i) for i in items]
+            return [self.__read_extended_public_schema.from_orm(i) for i in items]
+        return [self.__read_public_schema.from_orm(i) for i in items]
 
 
 CreateExtendedSchemaType = TypeVar("CreateExtendedSchemaType", bound=BaseNodeCreate)
@@ -362,7 +369,7 @@ class CRUDMultiProject(
             db_obj.projects.disconnect(db_item)
             edit = True
 
-        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
         return db_obj.save() if edit or edit_content else None
 

@@ -267,7 +267,7 @@ class CRUDBlockStorageService(
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
         return db_obj.save() if edit or edit_content else None
 
 
@@ -337,12 +337,12 @@ class CRUDComputeService(
         """
         if provider_projects is None:
             provider_projects = []
-        edit1 = self._update_flavors(
+        edit1 = self.__update_flavors(
             db_obj=db_obj,
             input_flavors=obj_in.flavors,
             provider_projects=provider_projects,
         )
-        edit2 = self._update_images(
+        edit2 = self.__update_images(
             db_obj=db_obj,
             input_images=obj_in.images,
             provider_projects=provider_projects,
@@ -352,11 +352,11 @@ class CRUDComputeService(
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
         return db_obj.save() if edit1 or edit2 or edit3 or edit_content else None
 
-    def _update_flavors(
+    def __update_flavors(
         self,
         *,
         db_obj: ComputeService,
@@ -396,7 +396,7 @@ class CRUDComputeService(
 
         return edit
 
-    def _update_images(
+    def __update_images(
         self,
         *,
         db_obj: ComputeService,
@@ -528,16 +528,16 @@ class CRUDNetworkService(
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edit2 = self._update_networks(
+        edit2 = self.__update_networks(
             db_obj=db_obj,
             input_networks=obj_in.networks,
             provider_projects=provider_projects,
         )
-        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
         return db_obj.save() if edit1 or edit2 or edit_content else None
 
-    def _update_networks(
+    def __update_networks(
         self,
         *,
         db_obj: NetworkService,
@@ -635,7 +635,7 @@ class CRUDObjectStoreService(
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
         return db_obj.save() if edit or edit_content else None
 
 

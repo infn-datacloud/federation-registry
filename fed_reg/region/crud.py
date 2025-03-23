@@ -51,12 +51,15 @@ class CRUDRegion(
 
         db_obj = super().create(obj_in=obj_in)
         db_obj.provider.connect(provider)
+
         if obj_in.location is not None:
             db_loc = location_mng.get(site=obj_in.location.site)
             if db_loc is None:
                 location_mng.create(obj_in=obj_in.location, region=db_obj)
             else:
                 db_obj.location.connect(db_loc)
+                location_mng.patch(db_obj=db_loc, obj_in=obj_in.location)
+
         for item in (
             obj_in.block_storage_services
             + obj_in.compute_services
@@ -91,14 +94,14 @@ class CRUDRegion(
             + obj_in.network_services
             + obj_in.object_store_services
         )
-        edit1 = self._update_location(db_obj=db_obj, location=obj_in.location)
-        edit2 = self._update_services(
+        edit1 = self.__update_location(db_obj=db_obj, location=obj_in.location)
+        edit2 = self.__update_services(
             db_obj=db_obj, input_services=services, provider_projects=provider_projects
         )
-        edit_content = super()._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
         return db_obj.save() if edit1 or edit2 or edit_content else None
 
-    def _update_location(
+    def __update_location(
         self, *, db_obj: Region, location: LocationCreate | None
     ) -> bool:
         """Update region linked location.
@@ -126,6 +129,7 @@ class CRUDRegion(
                 location_mng.create(obj_in=location, region=db_obj)
             else:
                 db_obj.location.connect(db_location)
+                location_mng.patch(db_obj=db_location, obj_in=location)
             return True
 
         if curr_location and location and curr_location.site == location.site:
@@ -134,7 +138,7 @@ class CRUDRegion(
 
         return edit
 
-    def _update_services(
+    def __update_services(
         self,
         *,
         db_obj: Region,
