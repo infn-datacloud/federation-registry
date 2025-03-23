@@ -10,7 +10,30 @@ from fedreg.service.models import NetworkService
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.network.crud import shared_network_mng
-from tests.utils import random_lower_string, random_service_name, random_url
+from tests.utils import (
+    random_lower_string,
+    random_provider_type,
+    random_service_name,
+    random_url,
+)
+
+
+@pytest.fixture
+def stand_alone_network_model() -> SharedNetwork:
+    """Shared network model belonging to a different provider.
+
+    Already connected to a network service, a region and a provider.
+    """
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
+    region = Region(name=random_lower_string()).save()
+    service = NetworkService(
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
+    ).save()
+    network = SharedNetwork(name=random_lower_string(), uuid=str(uuid4())).save()
+    provider.regions.connect(region)
+    region.services.connect(service)
+    service.networks.connect(network)
+    return network
 
 
 @pytest.fixture
@@ -19,10 +42,10 @@ def service_model() -> NetworkService:
 
     Already connected to a region and a provider.
     """
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
     region = Region(name=random_lower_string()).save()
     service = NetworkService(
-        endpoint=str(random_url()), name=random_service_name(ServiceType.NETWORK)
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
     ).save()
     provider.regions.connect(region)
     region.services.connect(service)
@@ -30,20 +53,13 @@ def service_model() -> NetworkService:
 
 
 @pytest.fixture
-def shared_network_model() -> SharedNetwork:
+def network_model(service_model: NetworkService) -> SharedNetwork:
     """Shared network model.
 
     Already connected to a network service, a region and a provider.
     """
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
-    region = Region(name=random_lower_string()).save()
-    service = NetworkService(
-        endpoint=str(random_url()), name=random_service_name(ServiceType.NETWORK)
-    ).save()
     network = SharedNetwork(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.regions.connect(region)
-    region.services.connect(service)
-    service.networks.connect(network)
+    service_model.networks.connect(network)
     return network
 
 
@@ -56,6 +72,7 @@ class CaseNetwork:
 def test_create(item: SharedNetworkCreate, service_model: NetworkService) -> None:
     """Create a new istance"""
     db_obj = shared_network_mng.create(obj_in=item, service=service_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, SharedNetwork)
     assert db_obj.service.is_connected(service_model)
@@ -65,11 +82,13 @@ def test_create(item: SharedNetworkCreate, service_model: NetworkService) -> Non
 def test_create_same_uuid_diff_provider(
     item: SharedNetworkCreate,
     service_model: NetworkService,
-    shared_network_model: SharedNetwork,
+    stand_alone_network_model: SharedNetwork,
 ) -> None:
     """A network with the given uuid already exists but on a different provider."""
-    item.uuid = shared_network_model.uuid
+    item.uuid = stand_alone_network_model.uuid
+
     db_obj = shared_network_mng.create(obj_in=item, service=service_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, SharedNetwork)
     assert db_obj.service.is_connected(service_model)
@@ -78,13 +97,15 @@ def test_create_same_uuid_diff_provider(
 @parametrize_with_cases("item", cases=CaseNetwork)
 def test_create_already_exists(
     item: SharedNetworkCreate,
-    shared_network_model: SharedNetwork,
+    network_model: SharedNetwork,
 ) -> None:
     """A network with the given uuid already exists"""
-    item.uuid = shared_network_model.uuid
-    service = shared_network_model.service.single()
+    service = network_model.service.single()
     region = service.region.single()
     provider = region.provider.single()
+
+    item.uuid = network_model.uuid
+
     msg = (
         f"A shared network with uuid {item.uuid} belonging to provider "
         f"{provider.name} already exists"
@@ -94,9 +115,10 @@ def test_create_already_exists(
 
 
 @parametrize_with_cases("item", cases=CaseNetwork)
-def test_update(item: SharedNetworkCreate, shared_network_model: SharedNetwork) -> None:
+def test_update(item: SharedNetworkCreate, network_model: SharedNetwork) -> None:
     """Completely update the network attributes. Also override not set ones."""
-    db_obj = shared_network_mng.update(obj_in=item, db_obj=shared_network_model)
+    db_obj = shared_network_mng.update(obj_in=item, db_obj=network_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, SharedNetwork)
     d = item.dict()
@@ -108,10 +130,12 @@ def test_update(item: SharedNetworkCreate, shared_network_model: SharedNetwork) 
 
 @parametrize_with_cases("item", cases=CaseNetwork)
 def test_update_no_changes(
-    item: SharedNetworkCreate, shared_network_model: SharedNetwork
+    item: SharedNetworkCreate, network_model: SharedNetwork
 ) -> None:
     """The new item is equal to the existing one. No changes."""
-    item.uuid = shared_network_model.uuid
-    item.name = shared_network_model.name
-    db_obj = shared_network_mng.update(obj_in=item, db_obj=shared_network_model)
+    item.uuid = network_model.uuid
+    item.name = network_model.name
+
+    db_obj = shared_network_mng.update(obj_in=item, db_obj=network_model)
+
     assert db_obj is None

@@ -12,26 +12,45 @@ from fedreg.service.models import NetworkService
 from pytest_cases import case, parametrize, parametrize_with_cases
 
 from fed_reg.service.crud import network_service_mng
-from tests.utils import random_lower_string, random_service_name, random_url
+from tests.utils import (
+    random_lower_string,
+    random_provider_type,
+    random_service_name,
+    random_url,
+)
+
+
+@pytest.fixture
+def stand_alone_service_model() -> NetworkService:
+    """Network service model belonging to a different provider.
+
+    Already connected to a region and a provider.
+    """
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
+    region = Region(name=random_lower_string()).save()
+    service = NetworkService(
+        endpoint=str(random_url()), name=random_service_name(ServiceType.NETWORK)
+    ).save()
+    provider.regions.connect(region)
+    region.services.connect(service)
+    return service
 
 
 @pytest.fixture
 def region_model() -> Region:
-    """Network service model.
-
-    Already connected to a region and a provider.
-    """
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
+    """Region model. Already connected to a provider."""
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
     region = Region(name=random_lower_string()).save()
     provider.regions.connect(region)
     return region
 
 
 @pytest.fixture
-def network_service_model(region_model: Region) -> NetworkService:
+def service_model(region_model: Region) -> NetworkService:
     """Network service model.
 
-    Already connected to a block storage service, a region and a provider.
+    Already connected to a region and a provider. It already has one quota, one private
+    and one share network.
     """
     provider = region_model.provider.single()
     service = NetworkService(
@@ -103,9 +122,11 @@ def test_create(item: NetworkServiceCreateExtended, region_model: Region) -> Non
     """Create a new istance"""
     provider = region_model.provider.single()
     projects = provider.projects.all()
+
     db_obj = network_service_mng.create(
         obj_in=item, region=region_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, NetworkService)
     assert db_obj.region.is_connected(region_model)
@@ -113,54 +134,71 @@ def test_create(item: NetworkServiceCreateExtended, region_model: Region) -> Non
     assert len(db_obj.networks) == len(item.networks)
 
 
-@parametrize_with_cases("item", cases=CaseService)
+@parametrize_with_cases("item", cases=CaseService, has_tag="base")
+def test_create_with_no_provider_projects(
+    item: NetworkServiceCreateExtended, region_model: Region
+) -> None:
+    """No provider_projects param is needed when items not requesting it are defined."""
+    db_obj = network_service_mng.create(obj_in=item, region=region_model)
+
+    assert db_obj is not None
+    assert isinstance(db_obj, NetworkService)
+    assert db_obj.region.is_connected(region_model)
+
+
+@parametrize_with_cases("item", cases=CaseService, has_tag="base")
+def test_create_same_uuid_diff_provider(
+    item: NetworkServiceCreateExtended,
+    region_model: Region,
+    stand_alone_service_model: NetworkService,
+) -> None:
+    """A network service with the given endpoint exists on a different provider."""
+    item.endpoint = stand_alone_service_model.endpoint
+
+    db_obj = network_service_mng.create(obj_in=item, region=region_model)
+
+    assert db_obj is not None
+    assert isinstance(db_obj, NetworkService)
+    assert db_obj.region.is_connected(region_model)
+
+
+@parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_create_already_exists(
     item: NetworkServiceCreateExtended,
-    network_service_model: NetworkService,
+    service_model: NetworkService,
 ) -> None:
-    """A flavor with the given uuid already exists"""
-    item.endpoint = network_service_model.endpoint
-    region = network_service_model.region.single()
+    """A network service with the given uuid already exists"""
+    region = service_model.region.single()
     provider = region.provider.single()
-    projects = provider.projects.all()
+
+    item.endpoint = service_model.endpoint
+
     msg = (
         f"A network service with endpoint {item.endpoint} "
         f"belonging to provider {provider.name} already exists"
     )
     with pytest.raises(ValueError, match=msg):
-        network_service_mng.create(
-            obj_in=item, region=region, provider_projects=projects
-        )
-
-
-@parametrize_with_cases("item", cases=CaseService, has_tag="base")
-def test_create_with_no_provider_projects(
-    item: NetworkServiceCreateExtended, region_model: Region
-) -> None:
-    """No provider_projects param.
-
-    ValueError is raised only when the list of quotas is not empty.
-    In fact it is the quota's create operation that raises that error.
-    """
-    db_obj = network_service_mng.create(obj_in=item, region=region_model)
-    assert db_obj is not None
+        network_service_mng.create(obj_in=item, region=region)
 
 
 @parametrize_with_cases("item", cases=CaseService)
 def test_update(
     item: NetworkServiceCreateExtended,
-    network_service_model: NetworkService,
+    service_model: NetworkService,
 ) -> None:
     """Completely update the service attributes. Also override not set ones.
 
-    Replace existing quotas with new ones. Remove no more used and add new ones.
+    Replace existing quotas and networks with new ones.
+    Remove no more used and add new ones.
     """
-    region = network_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
+
     db_obj = network_service_mng.update(
-        obj_in=item, db_obj=network_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, NetworkService)
     d = item.dict()
@@ -175,47 +213,53 @@ def test_update(
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_update_no_changes(
     item: NetworkServiceCreateExtended,
-    network_service_model: NetworkService,
+    service_model: NetworkService,
 ) -> None:
     """The new item is equal to the existing one. No changes."""
-    region = network_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
-    item.endpoint = network_service_model.endpoint
+
+    item.endpoint = service_model.endpoint
     item.quotas = [{"project": projects[0].uuid}]
     networks = []
-    for network in network_service_model.networks:
+    for network in service_model.networks:
         d = {"name": network.name, "uuid": network.uuid}
         if not network.is_shared:
             d["projects"] = [x.uuid for x in network.projects]
         networks.append(d)
     item.networks = networks
+
     db_obj = network_service_mng.update(
-        obj_in=item, db_obj=network_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is None
 
 
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_update_only_service_details(
     item: NetworkServiceCreateExtended,
-    network_service_model: NetworkService,
+    service_model: NetworkService,
 ) -> None:
     """Change only item content. Keep same relationships."""
-    region = network_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
+
     item.quotas = [{"project": projects[0].uuid}]
     networks = []
-    for network in network_service_model.networks:
+    for network in service_model.networks:
         d = {"name": network.name, "uuid": network.uuid}
         if not network.is_shared:
             d["projects"] = [x.uuid for x in network.projects]
         networks.append(d)
     item.networks = networks
+
     db_obj = network_service_mng.update(
-        obj_in=item, db_obj=network_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, NetworkService)
     d = item.dict()
@@ -230,17 +274,20 @@ def test_update_only_service_details(
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_update_only_networks(
     item: NetworkServiceCreateExtended,
-    network_service_model: NetworkService,
+    service_model: NetworkService,
 ) -> None:
     """Change only networks."""
-    region = network_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
-    item.endpoint = network_service_model.endpoint
+
+    item.endpoint = service_model.endpoint
     item.quotas = [{"project": projects[0].uuid}]
+
     db_obj = network_service_mng.update(
-        obj_in=item, db_obj=network_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, NetworkService)
     d = item.dict()
@@ -255,15 +302,16 @@ def test_update_only_networks(
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_update_only_quotas(
     item: NetworkServiceCreateExtended,
-    network_service_model: NetworkService,
+    service_model: NetworkService,
 ) -> None:
     """Change only quotas."""
-    region = network_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
-    item.endpoint = network_service_model.endpoint
+
+    item.endpoint = service_model.endpoint
     networks = []
-    for network in network_service_model.networks:
+    for network in service_model.networks:
         d = {"name": network.name, "uuid": network.uuid}
         if not network.is_shared:
             d["projects"] = [x.uuid for x in network.projects]
@@ -271,8 +319,9 @@ def test_update_only_quotas(
     item.networks = networks
 
     db_obj = network_service_mng.update(
-        obj_in=item, db_obj=network_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, NetworkService)
     d = item.dict()

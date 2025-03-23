@@ -13,26 +13,45 @@ from fedreg.service.models import ComputeService
 from pytest_cases import case, parametrize, parametrize_with_cases
 
 from fed_reg.service.crud import compute_service_mng
-from tests.utils import random_lower_string, random_service_name, random_url
+from tests.utils import (
+    random_lower_string,
+    random_provider_type,
+    random_service_name,
+    random_url,
+)
+
+
+@pytest.fixture
+def stand_alone_service_model() -> ComputeService:
+    """Compute service model belonging to a different provider.
+
+    Already connected to a region and a provider.
+    """
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
+    region = Region(name=random_lower_string()).save()
+    service = ComputeService(
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
+    ).save()
+    provider.regions.connect(region)
+    region.services.connect(service)
+    return service
 
 
 @pytest.fixture
 def region_model() -> Region:
-    """Compute service model.
-
-    Already connected to a region and a provider.
-    """
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
+    """Region model. Already connected to a provider."""
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
     region = Region(name=random_lower_string()).save()
     provider.regions.connect(region)
     return region
 
 
 @pytest.fixture
-def compute_service_model(region_model: Region) -> ComputeService:
+def service_model(region_model: Region) -> ComputeService:
     """Compute service model.
 
-    Already connected to a block storage service, a region and a provider.
+    Already connected to a region and a provider. It already has one quota, one private
+    and one share flavor, one private and one share image.
     """
     provider = region_model.provider.single()
     service = ComputeService(
@@ -125,9 +144,11 @@ def test_create(item: ComputeServiceCreateExtended, region_model: Region) -> Non
     """Create a new istance"""
     provider = region_model.provider.single()
     projects = provider.projects.all()
+
     db_obj = compute_service_mng.create(
         obj_in=item, region=region_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, ComputeService)
     assert db_obj.region.is_connected(region_model)
@@ -136,54 +157,71 @@ def test_create(item: ComputeServiceCreateExtended, region_model: Region) -> Non
     assert len(db_obj.images) == len(item.images)
 
 
-@parametrize_with_cases("item", cases=CaseService)
+@parametrize_with_cases("item", cases=CaseService, has_tag="base")
+def test_create_with_no_provider_projects(
+    item: ComputeServiceCreateExtended, region_model: Region
+) -> None:
+    """No provider_projects param is needed when items not requesting it are defined."""
+    db_obj = compute_service_mng.create(obj_in=item, region=region_model)
+
+    assert db_obj is not None
+    assert isinstance(db_obj, ComputeService)
+    assert db_obj.region.is_connected(region_model)
+
+
+@parametrize_with_cases("item", cases=CaseService, has_tag="base")
+def test_create_same_uuid_diff_provider(
+    item: ComputeServiceCreateExtended,
+    region_model: Region,
+    stand_alone_service_model: ComputeService,
+) -> None:
+    """A compute service with the given endpoint exists on a different provider."""
+    item.endpoint = stand_alone_service_model.endpoint
+
+    db_obj = compute_service_mng.create(obj_in=item, region=region_model)
+
+    assert db_obj is not None
+    assert isinstance(db_obj, ComputeService)
+    assert db_obj.region.is_connected(region_model)
+
+
+@parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_create_already_exists(
     item: ComputeServiceCreateExtended,
-    compute_service_model: ComputeService,
+    service_model: ComputeService,
 ) -> None:
-    """A flavor with the given uuid already exists"""
-    item.endpoint = compute_service_model.endpoint
-    region = compute_service_model.region.single()
+    """A compute service with the given uuid already exists"""
+    region = service_model.region.single()
     provider = region.provider.single()
-    projects = provider.projects.all()
+
+    item.endpoint = service_model.endpoint
+
     msg = (
         f"A compute service with endpoint {item.endpoint} "
         f"belonging to provider {provider.name} already exists"
     )
     with pytest.raises(ValueError, match=msg):
-        compute_service_mng.create(
-            obj_in=item, region=region, provider_projects=projects
-        )
-
-
-@parametrize_with_cases("item", cases=CaseService, has_tag="base")
-def test_create_with_no_provider_projects(
-    item: ComputeServiceCreateExtended, region_model: Region
-) -> None:
-    """No provider_projects param.
-
-    ValueError is raised only when the list of quotas is not empty.
-    In fact it is the quota's create operation that raises that error.
-    """
-    db_obj = compute_service_mng.create(obj_in=item, region=region_model)
-    assert db_obj is not None
+        compute_service_mng.create(obj_in=item, region=region)
 
 
 @parametrize_with_cases("item", cases=CaseService)
 def test_update(
     item: ComputeServiceCreateExtended,
-    compute_service_model: ComputeService,
+    service_model: ComputeService,
 ) -> None:
     """Completely update the service attributes. Also override not set ones.
 
-    Replace existing quotas with new ones. Remove no more used and add new ones.
+    Replace existing quotas, flavors and images with new ones.
+    Remove no more used and add new ones.
     """
-    region = compute_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
+
     db_obj = compute_service_mng.update(
-        obj_in=item, db_obj=compute_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, ComputeService)
     d = item.dict()
@@ -199,61 +237,67 @@ def test_update(
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_update_no_changes(
     item: ComputeServiceCreateExtended,
-    compute_service_model: ComputeService,
+    service_model: ComputeService,
 ) -> None:
     """The new item is equal to the existing one. No changes."""
-    region = compute_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
-    item.endpoint = compute_service_model.endpoint
+
+    item.endpoint = service_model.endpoint
     item.quotas = [{"project": projects[0].uuid}]
     flavors = []
-    for flavor in compute_service_model.flavors:
+    for flavor in service_model.flavors:
         d = {"name": flavor.name, "uuid": flavor.uuid}
         if not flavor.is_shared:
             d["projects"] = [x.uuid for x in flavor.projects]
         flavors.append(d)
     item.flavors = flavors
     images = []
-    for image in compute_service_model.images:
+    for image in service_model.images:
         d = {"name": image.name, "uuid": image.uuid}
         if not image.is_shared:
             d["projects"] = [x.uuid for x in image.projects]
         images.append(d)
     item.images = images
+
     db_obj = compute_service_mng.update(
-        obj_in=item, db_obj=compute_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is None
 
 
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_update_only_service_details(
     item: ComputeServiceCreateExtended,
-    compute_service_model: ComputeService,
+    service_model: ComputeService,
 ) -> None:
     """Change only item content. Keep same relationships."""
-    region = compute_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
+
     item.quotas = [{"project": projects[0].uuid}]
     flavors = []
-    for flavor in compute_service_model.flavors:
+    for flavor in service_model.flavors:
         d = {"name": flavor.name, "uuid": flavor.uuid}
         if not flavor.is_shared:
             d["projects"] = [x.uuid for x in flavor.projects]
         flavors.append(d)
     item.flavors = flavors
     images = []
-    for image in compute_service_model.images:
+    for image in service_model.images:
         d = {"name": image.name, "uuid": image.uuid}
         if not image.is_shared:
             d["projects"] = [x.uuid for x in image.projects]
         images.append(d)
     item.images = images
+
     db_obj = compute_service_mng.update(
-        obj_in=item, db_obj=compute_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, ComputeService)
     d = item.dict()
@@ -269,24 +313,27 @@ def test_update_only_service_details(
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_update_only_flavors(
     item: ComputeServiceCreateExtended,
-    compute_service_model: ComputeService,
+    service_model: ComputeService,
 ) -> None:
     """Change only flavors."""
-    region = compute_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
-    item.endpoint = compute_service_model.endpoint
+
+    item.endpoint = service_model.endpoint
     item.quotas = [{"project": projects[0].uuid}]
     images = []
-    for image in compute_service_model.images:
+    for image in service_model.images:
         d = {"name": image.name, "uuid": image.uuid}
         if not image.is_shared:
             d["projects"] = [x.uuid for x in image.projects]
         images.append(d)
     item.images = images
+
     db_obj = compute_service_mng.update(
-        obj_in=item, db_obj=compute_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, ComputeService)
     d = item.dict()
@@ -302,24 +349,27 @@ def test_update_only_flavors(
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_update_only_images(
     item: ComputeServiceCreateExtended,
-    compute_service_model: ComputeService,
+    service_model: ComputeService,
 ) -> None:
     """Change only images."""
-    region = compute_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
-    item.endpoint = compute_service_model.endpoint
+
+    item.endpoint = service_model.endpoint
     item.quotas = [{"project": projects[0].uuid}]
     flavors = []
-    for flavor in compute_service_model.flavors:
+    for flavor in service_model.flavors:
         d = {"name": flavor.name, "uuid": flavor.uuid}
         if not flavor.is_shared:
             d["projects"] = [x.uuid for x in flavor.projects]
         flavors.append(d)
     item.flavors = flavors
+
     db_obj = compute_service_mng.update(
-        obj_in=item, db_obj=compute_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, ComputeService)
     d = item.dict()
@@ -335,30 +385,33 @@ def test_update_only_images(
 @parametrize_with_cases("item", cases=CaseService, has_tag="base")
 def test_update_only_quotas(
     item: ComputeServiceCreateExtended,
-    compute_service_model: ComputeService,
+    service_model: ComputeService,
 ) -> None:
     """Change only quotas."""
-    region = compute_service_model.region.single()
+    region = service_model.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
-    item.endpoint = compute_service_model.endpoint
+
+    item.endpoint = service_model.endpoint
     flavors = []
-    for flavor in compute_service_model.flavors:
+    for flavor in service_model.flavors:
         d = {"name": flavor.name, "uuid": flavor.uuid}
         if not flavor.is_shared:
             d["projects"] = [x.uuid for x in flavor.projects]
         flavors.append(d)
     item.flavors = flavors
     images = []
-    for image in compute_service_model.images:
+    for image in service_model.images:
         d = {"name": image.name, "uuid": image.uuid}
         if not image.is_shared:
             d["projects"] = [x.uuid for x in image.projects]
         images.append(d)
     item.images = images
+
     db_obj = compute_service_mng.update(
-        obj_in=item, db_obj=compute_service_model, provider_projects=projects
+        obj_in=item, db_obj=service_model, provider_projects=projects
     )
+
     assert db_obj is not None
     assert isinstance(db_obj, ComputeService)
     d = item.dict()

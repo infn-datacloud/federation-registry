@@ -45,7 +45,7 @@ class CRUDLocation(
         if not db_obj:
             db_obj = super().create(obj_in=obj_in)
         else:
-            raise ValueError(f"A location with site {obj_in.site} already exists")
+            raise ValueError(f"A location with site name {obj_in.site} already exists")
         if region:
             region_curr_location = region.location.single()
             if region_curr_location:

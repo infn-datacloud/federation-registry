@@ -267,7 +267,7 @@ class CRUDBlockStorageService(
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=obj_in)
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 
@@ -542,7 +542,7 @@ class CRUDNetworkService(
             input_networks=obj_in.networks,
             provider_projects=provider_projects,
         )
-        edited_obj3 = super()._update(db_obj=db_obj, obj_in=obj_in)
+        edited_obj3 = super().update(db_obj=db_obj, obj_in=obj_in)
 
         if edited_obj3:
             return edited_obj3
@@ -649,7 +649,7 @@ class CRUDObjectStoreService(
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super()._update(db_obj=db_obj, obj_in=obj_in)
+        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
         return edited_obj2 if edited_obj2 is not None else edited_obj1
 
 

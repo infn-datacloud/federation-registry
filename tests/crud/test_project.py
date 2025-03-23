@@ -7,22 +7,25 @@ from fedreg.provider.models import Provider
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.project.crud import project_mng
-from tests.utils import random_lower_string
+from tests.utils import random_lower_string, random_provider_type
+
+
+@pytest.fixture
+def project_model() -> Project:
+    """Stand alone project model.
+
+    Connected to a different provider.
+    """
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
+    project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
+    provider.projects.connect(project)
+    return project
 
 
 @pytest.fixture
 def provider_model() -> Provider:
     """Provider model."""
-    return Provider(name=random_lower_string(), type=random_lower_string()).save()
-
-
-@pytest.fixture
-def project_model() -> Project:
-    """Project model belonging to a different provider."""
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
-    project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.projects.connect(project)
-    return project
+    return Provider(name=random_lower_string(), type=random_provider_type()).save()
 
 
 class CaseProject:
@@ -34,6 +37,7 @@ class CaseProject:
 def test_create(item: ProjectCreate, provider_model: Provider) -> None:
     """Create a new istance"""
     db_obj = project_mng.create(obj_in=item, provider=provider_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, Project)
     assert db_obj.provider.is_connected(provider_model)
@@ -47,7 +51,9 @@ def test_create_same_uuid_diff_provider(
 ) -> None:
     """A project with the given uuid already exists but on a different provider."""
     item.uuid = project_model.uuid
+
     db_obj = project_mng.create(obj_in=item, provider=provider_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, Project)
     assert db_obj.provider.is_connected(provider_model)
@@ -58,9 +64,11 @@ def test_create_already_exists(
     item: ProjectCreate,
     project_model: Project,
 ) -> None:
-    """A project with the given uuid already exists"""
-    item.uuid = project_model.uuid
+    """A project with the given uuid on this provider already exists"""
     provider = project_model.provider.single()
+
+    item.uuid = project_model.uuid
+
     msg = (
         f"A project with uuid {item.uuid} belonging to provider "
         f"{provider.name} already exists"
@@ -73,6 +81,7 @@ def test_create_already_exists(
 def test_update(item: ProjectCreate, project_model: Project) -> None:
     """Completely update the project attributes. Also override not set ones."""
     db_obj = project_mng.update(obj_in=item, db_obj=project_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, Project)
     d = item.dict()
@@ -87,5 +96,7 @@ def test_update_no_changes(item: ProjectCreate, project_model: Project) -> None:
     """The new item is equal to the existing one. No changes."""
     item.uuid = project_model.uuid
     item.name = project_model.name
+
     db_obj = project_mng.update(obj_in=item, db_obj=project_model)
+
     assert db_obj is None

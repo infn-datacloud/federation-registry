@@ -6,13 +6,13 @@ from fedreg.region.models import Region
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.location.crud import location_mng
-from tests.utils import random_country, random_lower_string
+from tests.utils import random_country, random_lower_string, random_provider_type
 
 
 @pytest.fixture
 def region_model() -> Region:
-    """Region model."""
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
+    """Region model. Already connected to a provider."""
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
     region = Region(name=random_lower_string()).save()
     provider.regions.connect(region)
     return region
@@ -20,11 +20,8 @@ def region_model() -> Region:
 
 @pytest.fixture
 def location_model(region_model: Region) -> Location:
-    """Location model belonging to a different region."""
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
-    region = Region(name=random_lower_string()).save()
+    """Location model belonging to region."""
     location = Location(site=random_lower_string(), country=random_country()).save()
-    provider.regions.connect(region)
     region_model.location.connect(location)
     return location
 
@@ -35,22 +32,36 @@ class CaseLocation:
 
 
 @parametrize_with_cases("item", cases=CaseLocation)
+def test_create_without_region(item: LocationCreate) -> None:
+    """Create a new instance."""
+    db_obj = location_mng.create(obj_in=item)
+
+    assert db_obj is not None
+    assert isinstance(db_obj, Location)
+
+
+@parametrize_with_cases("item", cases=CaseLocation)
 def test_create(item: LocationCreate, region_model: Region) -> None:
-    """Create a new istance"""
+    """Create a new istance and connect it to a region."""
     db_obj = location_mng.create(obj_in=item, region=region_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, Location)
     assert db_obj.regions.is_connected(region_model)
 
 
 @parametrize_with_cases("item", cases=CaseLocation)
-def test_create_without_region(
-    item: LocationCreate,
+def test_create_replace_region_connection(
+    item: LocationCreate, location_model: Location
 ) -> None:
     """Replace the previous location linked to the target region."""
-    db_obj = location_mng.create(obj_in=item)
+    region = location_model.regions.single()
+
+    db_obj = location_mng.create(obj_in=item, region=region)
+
     assert db_obj is not None
     assert isinstance(db_obj, Location)
+    assert db_obj.regions.is_connected(region)
 
 
 @parametrize_with_cases("item", cases=CaseLocation)
@@ -58,31 +69,19 @@ def test_create_already_exists(
     item: LocationCreate,
     location_model: Location,
 ) -> None:
-    """A location with the given uuid already exists"""
+    """A location with the given site name already exists"""
     item.site = location_model.site
-    region = location_model.regions.single()
-    msg = f"A location with site {item.site} already exists"
+
+    msg = f"A location with site name {item.site} already exists"
     with pytest.raises(ValueError, match=msg):
-        location_mng.create(obj_in=item, region=region)
-
-
-@parametrize_with_cases("item", cases=CaseLocation)
-def test_create_replace_region_connection(
-    item: LocationCreate,
-    location_model: Location,
-) -> None:
-    """Replace the previous location linked to the target region."""
-    region = location_model.regions.single()
-    db_obj = location_mng.create(obj_in=item, region=region)
-    assert db_obj is not None
-    assert isinstance(db_obj, Location)
-    assert db_obj.regions.is_connected(region)
+        location_mng.create(obj_in=item)
 
 
 @parametrize_with_cases("item", cases=CaseLocation)
 def test_update(item: LocationCreate, location_model: Location) -> None:
     """Completely update the location attributes. Also override not set ones."""
     db_obj = location_mng.update(obj_in=item, db_obj=location_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, Location)
     d = item.dict()
@@ -97,5 +96,7 @@ def test_update_no_changes(item: LocationCreate, location_model: Location) -> No
     """The new item is equal to the existing one. No changes."""
     item.site = location_model.site
     item.country = location_model.country
+
     db_obj = location_mng.update(obj_in=item, db_obj=location_model)
+
     assert db_obj is None

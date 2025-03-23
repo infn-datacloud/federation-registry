@@ -11,13 +11,18 @@ from fedreg.user_group.models import UserGroup
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.sla.crud import sla_mng
-from tests.utils import random_lower_string, random_start_end_dates, random_url
+from tests.utils import (
+    random_lower_string,
+    random_provider_type,
+    random_start_end_dates,
+    random_url,
+)
 
 
 @pytest.fixture
 def project_model() -> Project:
     """Region model."""
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
     provider.projects.connect(project)
     return project
@@ -25,12 +30,15 @@ def project_model() -> Project:
 
 @pytest.fixture
 def user_group_model(project_model: Project) -> UserGroup:
-    """User Group model."""
-    provider = project_model.provider.single()
+    """User Group model.
+
+    The parent identity provider is connected to the project's provider.
+    """
     identity_provider = IdentityProvider(
         endpoint=str(random_url()), group_claim=random_lower_string()
     ).save()
     user_group = UserGroup(name=random_lower_string()).save()
+    provider = project_model.provider.single()
     provider.identity_providers.connect(
         identity_provider,
         {"protocol": random_lower_string(), "idp_name": random_lower_string()},
@@ -54,16 +62,13 @@ def sla_model(user_group_model: UserGroup) -> SLA:
 
 class CaseSLA:
     def case_sla_create(self, project_model: Project) -> SLACreateExtended:
-        """This SLA belongs to the same provider of project_model."""
+        """This SLA points to the project_model."""
         start_date, end_date = random_start_end_dates()
-        project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
-        provider = project_model.provider.single()
-        provider.projects.connect(project)
         return SLACreateExtended(
             doc_uuid=uuid4(),
             start_date=start_date,
             end_date=end_date,
-            project=project.uuid,
+            project=project_model.uuid,
         )
 
 
@@ -135,7 +140,7 @@ def test_update_connect_to_another_provider(
     """Completely update the sla attributes. Also override not set ones."""
     initial_project = sla_model.projects.single()
     user_group = sla_model.user_group.single()
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
     provider.projects.connect(project)
     projects = provider.projects.all()

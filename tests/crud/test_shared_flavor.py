@@ -10,7 +10,30 @@ from fedreg.service.models import ComputeService
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.flavor.crud import shared_flavor_mng
-from tests.utils import random_lower_string, random_service_name, random_url
+from tests.utils import (
+    random_lower_string,
+    random_provider_type,
+    random_service_name,
+    random_url,
+)
+
+
+@pytest.fixture
+def stand_alone_flavor_model() -> SharedFlavor:
+    """Shared flavor model belonging to a different provider.
+
+    Already connected to a compute service, a region and a provider.
+    """
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
+    region = Region(name=random_lower_string()).save()
+    service = ComputeService(
+        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
+    ).save()
+    flavor = SharedFlavor(name=random_lower_string(), uuid=str(uuid4())).save()
+    provider.regions.connect(region)
+    region.services.connect(service)
+    service.flavors.connect(flavor)
+    return flavor
 
 
 @pytest.fixture
@@ -19,7 +42,7 @@ def service_model() -> ComputeService:
 
     Already connected to a region and a provider.
     """
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
+    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
     region = Region(name=random_lower_string()).save()
     service = ComputeService(
         endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
@@ -30,20 +53,13 @@ def service_model() -> ComputeService:
 
 
 @pytest.fixture
-def shared_flavor_model() -> SharedFlavor:
+def flavor_model(service_model: ComputeService) -> SharedFlavor:
     """Shared flavor model.
 
     Already connected to a compute service, a region and a provider.
     """
-    provider = Provider(name=random_lower_string(), type=random_lower_string()).save()
-    region = Region(name=random_lower_string()).save()
-    service = ComputeService(
-        endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
-    ).save()
     flavor = SharedFlavor(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.regions.connect(region)
-    region.services.connect(service)
-    service.flavors.connect(flavor)
+    service_model.flavors.connect(flavor)
     return flavor
 
 
@@ -56,6 +72,7 @@ class CaseFlavor:
 def test_create(item: SharedFlavorCreate, service_model: ComputeService) -> None:
     """Create a new istance"""
     db_obj = shared_flavor_mng.create(obj_in=item, service=service_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, SharedFlavor)
     assert db_obj.services.is_connected(service_model)
@@ -65,11 +82,13 @@ def test_create(item: SharedFlavorCreate, service_model: ComputeService) -> None
 def test_create_same_uuid_diff_provider(
     item: SharedFlavorCreate,
     service_model: ComputeService,
-    shared_flavor_model: SharedFlavor,
+    stand_alone_flavor_model: SharedFlavor,
 ) -> None:
     """A flavor with the given uuid already exists but on a different provider."""
-    item.uuid = shared_flavor_model.uuid
+    item.uuid = stand_alone_flavor_model.uuid
+
     db_obj = shared_flavor_mng.create(obj_in=item, service=service_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, SharedFlavor)
     assert db_obj.services.is_connected(service_model)
@@ -78,13 +97,15 @@ def test_create_same_uuid_diff_provider(
 @parametrize_with_cases("item", cases=CaseFlavor)
 def test_create_already_exists(
     item: SharedFlavorCreate,
-    shared_flavor_model: SharedFlavor,
+    flavor_model: SharedFlavor,
 ) -> None:
     """A flavor with the given uuid already exists"""
-    item.uuid = shared_flavor_model.uuid
-    service = shared_flavor_model.services.single()
+    service = flavor_model.services.single()
     region = service.region.single()
     provider = region.provider.single()
+
+    item.uuid = flavor_model.uuid
+
     msg = (
         f"A shared flavor with uuid {item.uuid} belonging to provider "
         f"{provider.name} already exists"
@@ -94,9 +115,10 @@ def test_create_already_exists(
 
 
 @parametrize_with_cases("item", cases=CaseFlavor)
-def test_update(item: SharedFlavorCreate, shared_flavor_model: SharedFlavor) -> None:
+def test_update(item: SharedFlavorCreate, flavor_model: SharedFlavor) -> None:
     """Completely update the flavor attributes. Also override not set ones."""
-    db_obj = shared_flavor_mng.update(obj_in=item, db_obj=shared_flavor_model)
+    db_obj = shared_flavor_mng.update(obj_in=item, db_obj=flavor_model)
+
     assert db_obj is not None
     assert isinstance(db_obj, SharedFlavor)
     d = item.dict()
@@ -108,10 +130,12 @@ def test_update(item: SharedFlavorCreate, shared_flavor_model: SharedFlavor) -> 
 
 @parametrize_with_cases("item", cases=CaseFlavor)
 def test_update_no_changes(
-    item: SharedFlavorCreate, shared_flavor_model: SharedFlavor
+    item: SharedFlavorCreate, flavor_model: SharedFlavor
 ) -> None:
     """The new item is equal to the existing one. No changes."""
-    item.uuid = shared_flavor_model.uuid
-    item.name = shared_flavor_model.name
-    db_obj = shared_flavor_mng.update(obj_in=item, db_obj=shared_flavor_model)
+    item.uuid = flavor_model.uuid
+    item.name = flavor_model.name
+
+    db_obj = shared_flavor_mng.update(obj_in=item, db_obj=flavor_model)
+
     assert db_obj is None
