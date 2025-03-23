@@ -463,13 +463,13 @@ class CRUDIdentityService(
         Connect the service to the given region.
         """
         db_obj = region.services.filter(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        else:
-            updated_data = self.update(db_obj=db_obj, obj_in=obj_in)
-            if updated_data:
-                db_obj = updated_data
+        if db_obj:
+            raise ValueError(
+                f"An identity service with endpoint {obj_in.endpoint} "
+                f"belonging to region {region.name} already exists"
+            )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
         return db_obj
 
 
