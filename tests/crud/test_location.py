@@ -32,7 +32,7 @@ class CaseLocation:
 
 
 @parametrize_with_cases("item", cases=CaseLocation)
-def test_create_without_region(item: LocationCreate) -> None:
+def test_create(item: LocationCreate) -> None:
     """Create a new instance."""
     db_obj = location_mng.create(obj_in=item)
 
@@ -41,7 +41,7 @@ def test_create_without_region(item: LocationCreate) -> None:
 
 
 @parametrize_with_cases("item", cases=CaseLocation)
-def test_create(item: LocationCreate, region_model: Region) -> None:
+def test_create_with_region(item: LocationCreate, region_model: Region) -> None:
     """Create a new istance and connect it to a region."""
     db_obj = location_mng.create(obj_in=item, region=region_model)
 

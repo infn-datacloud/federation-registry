@@ -1,5 +1,6 @@
 """Module with Create, Read, Update and Delete operations for a Provider."""
 
+from fedreg.auth_method.models import AuthMethod
 from fedreg.identity_provider.models import IdentityProvider
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas import (
@@ -9,6 +10,7 @@ from fedreg.provider.schemas import (
     ProviderUpdate,
 )
 from fedreg.provider.schemas_extended import (
+    AuthMethodCreate,
     IdentityProviderCreateExtended,
     ProjectCreate,
     ProviderCreateExtended,
@@ -87,6 +89,17 @@ class CRUDProvider(
         edit3 = self.__update_regions(db_obj=db_obj, input_regions=obj_in.regions)
         edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
         return db_obj.save() if edit1 or edit2 or edit3 or edit_content else None
+
+    def update_idp_relationship(
+        self, *, db_obj: IdentityProvider, obj_in: AuthMethodCreate, provider: Provider
+    ) -> AuthMethod | None:
+        """Update identity provider and resource provider connection attributes."""
+        if db_obj.providers.is_connected(provider):
+            rel = db_obj.providers.relationship(provider)
+            if rel.procol != obj_in.protocol or rel.idp_name != obj_in.idp_name:
+                return db_obj.providers.reconnect(provider, obj_in.dict())
+            return None
+        return db_obj.providers.connect(provider, obj_in.dict())
 
     def __create_or_connect_to_idp(
         self,

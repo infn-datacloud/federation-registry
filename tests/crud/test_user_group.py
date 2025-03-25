@@ -1,47 +1,25 @@
-from uuid import uuid4
-
 import pytest
 from fedreg.identity_provider.models import IdentityProvider
-from fedreg.project.models import Project
-from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import UserGroupCreateExtended
 from fedreg.user_group.models import UserGroup
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.user_group.crud import user_group_mng
-from tests.utils import (
-    random_lower_string,
-    random_provider_type,
-    random_start_end_dates,
-    random_url,
-)
+from tests.utils import random_lower_string, random_url
 
 
 @pytest.fixture
-def provider_model() -> Project:
-    """Provider model."""
-    return Provider(name=random_lower_string(), type=random_provider_type()).save()
-
-
-@pytest.fixture
-def identity_provider_model(provider_model: Provider) -> IdentityProvider:
-    """Identity provider model.
-
-    The parent identity provider is connected to the project's provider.
-    """
+def identity_provider_model() -> IdentityProvider:
+    """Identity provider model."""
     identity_provider = IdentityProvider(
         endpoint=str(random_url()), group_claim=random_lower_string()
     ).save()
-    provider_model.identity_providers.connect(
-        identity_provider,
-        {"protocol": random_lower_string(), "idp_name": random_lower_string()},
-    )
     return identity_provider
 
 
 @pytest.fixture
 def user_group_model(identity_provider_model: IdentityProvider) -> UserGroup:
-    """User group model belonging to the same provider."""
+    """User group model belonging to the same identity provider."""
     user_group = UserGroup(name=random_lower_string()).save()
     identity_provider_model.user_groups.connect(user_group)
     return user_group
@@ -50,19 +28,7 @@ def user_group_model(identity_provider_model: IdentityProvider) -> UserGroup:
 class CaseUserGroup:
     def case_user_group_create(self) -> UserGroupCreateExtended:
         """This user group points to the identity_provider_model."""
-        start_date, end_date = random_start_end_dates()
-        doc_uuid = uuid4()
-        project = uuid4()
-        return UserGroupCreateExtended(
-            name=random_lower_string(),
-            # TODO: remove this attributes:
-            sla={
-                "start_date": start_date,
-                "end_date": end_date,
-                "doc_uuid": doc_uuid,
-                "project": project,
-            },
-        )
+        return UserGroupCreateExtended(name=random_lower_string())
 
 
 @parametrize_with_cases("item", cases=CaseUserGroup)
