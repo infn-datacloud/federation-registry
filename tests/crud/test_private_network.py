@@ -21,18 +21,6 @@ from tests.utils import (
 
 
 @pytest.fixture
-def stand_alone_project_model() -> Project:
-    """Stand alone project model.
-
-    Connected to a different provider.
-    """
-    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
-    project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.projects.connect(project)
-    return project
-
-
-@pytest.fixture
 def stand_alone_network_model() -> PrivateNetwork:
     """Private network model belonging to a different provider.
 

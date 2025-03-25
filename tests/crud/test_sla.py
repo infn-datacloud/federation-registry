@@ -8,6 +8,7 @@ from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import SLACreateExtended
 from fedreg.sla.models import SLA
 from fedreg.user_group.models import UserGroup
+from neomodel import DoesNotExist
 from pytest_cases import parametrize_with_cases
 
 from fed_reg.sla.crud import sla_mng
@@ -63,12 +64,15 @@ def sla_model(user_group_model: UserGroup) -> SLA:
 class CaseSLA:
     def case_sla_create(self, project_model: Project) -> SLACreateExtended:
         """This SLA points to the project_model."""
+        provider = project_model.provider.single()
+        project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
+        provider.projects.connect(project)
         start_date, end_date = random_start_end_dates()
         return SLACreateExtended(
             doc_uuid=uuid4(),
             start_date=start_date,
             end_date=end_date,
-            project=project_model.uuid,
+            project=project.uuid,
         )
 
 
@@ -101,26 +105,56 @@ def test_create_already_exists(
 
 
 @parametrize_with_cases("item", cases=CaseSLA)
-def test_create_replace_project_connection(
-    item: SLACreateExtended,
-    sla_model: SLA,
+def test_create_replace_project(
+    item: SLACreateExtended, sla_model: SLA, stand_alone_project_model: Project
 ) -> None:
     """Replace the previous sla linked to the target project."""
-    project = sla_model.projects.single()
     user_group = sla_model.user_group.single()
+    project = sla_model.projects.single()
+    sla_model.projects.connect(stand_alone_project_model)
+
     db_obj = sla_mng.create(obj_in=item, project=project, user_group=user_group)
+
     assert db_obj is not None
     assert isinstance(db_obj, SLA)
     assert db_obj.user_group.is_connected(user_group)
     assert db_obj.projects.is_connected(project)
+    assert sla_model.projects.is_connected(stand_alone_project_model)
+    assert not sla_model.projects.is_connected(project)
+
+
+@parametrize_with_cases("item", cases=CaseSLA)
+def test_create_replace_project_and_remove_prev_sla(
+    item: SLACreateExtended, sla_model: SLA
+) -> None:
+    """Replace the previous sla linked to the target project."""
+    project = sla_model.projects.single()
+    user_group = sla_model.user_group.single()
+
+    db_obj = sla_mng.create(obj_in=item, project=project, user_group=user_group)
+
+    assert db_obj is not None
+    assert isinstance(db_obj, SLA)
+    assert db_obj.user_group.is_connected(user_group)
+    assert db_obj.projects.is_connected(project)
+    assert not sla_model.projects.is_connected(project)
+    with pytest.raises(DoesNotExist):
+        sla_model.refresh()
 
 
 @parametrize_with_cases("item", cases=CaseSLA)
 def test_update(item: SLACreateExtended, sla_model: SLA) -> None:
-    """Completely update the sla attributes. Also override not set ones."""
-    projects = sla_model.projects.all()
+    """Completely update the sla attributes. Also override not set ones.
+
+    Connect SLA to another project of the same provider.
+    """
     user_group = sla_model.user_group.single()
+    project = sla_model.projects.single()
+    provider = project.provider.single()
+    projects = provider.projects.all()
+
     db_obj = sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
+
     assert db_obj is not None
     assert isinstance(db_obj, SLA)
     d = item.dict()
@@ -135,17 +169,17 @@ def test_update(item: SLACreateExtended, sla_model: SLA) -> None:
 
 @parametrize_with_cases("item", cases=CaseSLA)
 def test_update_connect_to_another_provider(
-    item: SLACreateExtended, sla_model: SLA
+    item: SLACreateExtended, sla_model: SLA, stand_alone_project_model: Project
 ) -> None:
     """Completely update the sla attributes. Also override not set ones."""
     initial_project = sla_model.projects.single()
     user_group = sla_model.user_group.single()
-    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
-    project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.projects.connect(project)
+    provider = stand_alone_project_model.provider.single()
     projects = provider.projects.all()
-    item.project = project.uuid
+    item.project = stand_alone_project_model.uuid
+
     db_obj = sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
+
     assert db_obj is not None
     assert isinstance(db_obj, SLA)
     d = item.dict()
@@ -163,36 +197,33 @@ def test_update_connect_to_another_provider(
 @parametrize_with_cases("item", cases=CaseSLA)
 def test_update_no_changes(item: SLACreateExtended, sla_model: SLA) -> None:
     """The new item is equal to the existing one. No changes."""
+    project = sla_model.projects.single()
+    provider = project.provider.single()
+    projects = provider.projects.all()
     item.doc_uuid = sla_model.doc_uuid
     item.start_date = sla_model.start_date
     item.end_date = sla_model.end_date
-    projects = sla_model.projects.all()
+    item.project = project.uuid
+
     db_obj = sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
+
     assert db_obj is None
 
 
 @parametrize_with_cases("item", cases=CaseSLA)
-def test_update_empy_provider_projects_list(
-    item: SLACreateExtended, sla_model: SLA
-) -> None:
-    """Empty list passed to the provider_projects param."""
-    msg = "The provider's projects list is empty"
-    with pytest.raises(AssertionError, match=re.escape(msg)):
-        sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=[])
-
-
-@parametrize_with_cases("item", cases=CaseSLA)
 def test_update_same_projects(item: SLACreateExtended, sla_model: SLA) -> None:
-    """Completely update the flavor attributes. Also override not set ones.
+    """Completely update the SLA attributes. Also override not set ones.
 
     Keep the same projects but change content..
     """
+    user_group = sla_model.user_group.single()
     project = sla_model.projects.single()
     provider = project.provider.single()
     projects = provider.projects.all()
-    user_group = sla_model.user_group.single()
     item.project = project.uuid
+
     db_obj = sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
+
     assert db_obj is not None
     assert isinstance(db_obj, SLA)
     d = item.dict()
@@ -206,6 +237,16 @@ def test_update_same_projects(item: SLACreateExtended, sla_model: SLA) -> None:
 
 
 @parametrize_with_cases("item", cases=CaseSLA)
+def test_update_empy_provider_projects_list(
+    item: SLACreateExtended, sla_model: SLA
+) -> None:
+    """Empty list passed to the provider_projects param."""
+    msg = "The provider's projects list is empty"
+    with pytest.raises(AssertionError, match=re.escape(msg)):
+        sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=[])
+
+
+@parametrize_with_cases("item", cases=CaseSLA)
 def test_update_invalid_project(item: SLACreateExtended, sla_model: SLA) -> None:
     """None of the new flavor projects belong to the target provider."""
     projects = [Project(name=random_lower_string(), uuid=str(uuid4())).save()]
@@ -215,6 +256,3 @@ def test_update_invalid_project(item: SLACreateExtended, sla_model: SLA) -> None
     )
     with pytest.raises(AssertionError, match=re.escape(msg)):
         sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
-
-
-# TODO gestire la disconnessione di una SLA da un progetto

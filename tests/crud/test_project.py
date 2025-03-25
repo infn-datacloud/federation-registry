@@ -11,21 +11,20 @@ from tests.utils import random_lower_string, random_provider_type
 
 
 @pytest.fixture
-def project_model() -> Project:
-    """Stand alone project model.
-
-    Connected to a different provider.
-    """
-    provider = Provider(name=random_lower_string(), type=random_provider_type()).save()
-    project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.projects.connect(project)
-    return project
-
-
-@pytest.fixture
 def provider_model() -> Provider:
     """Provider model."""
     return Provider(name=random_lower_string(), type=random_provider_type()).save()
+
+
+@pytest.fixture
+def project_model(provider_model: Provider) -> Project:
+    """Project model linked to the same provider.
+
+    Connected to a different provider.
+    """
+    project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
+    provider_model.projects.connect(project)
+    return project
 
 
 class CaseProject:
@@ -47,10 +46,10 @@ def test_create(item: ProjectCreate, provider_model: Provider) -> None:
 def test_create_same_uuid_diff_provider(
     item: ProjectCreate,
     provider_model: Provider,
-    project_model: Project,
+    stand_alone_project_model: Project,
 ) -> None:
     """A project with the given uuid already exists but on a different provider."""
-    item.uuid = project_model.uuid
+    item.uuid = stand_alone_project_model.uuid
 
     db_obj = project_mng.create(obj_in=item, provider=provider_model)
 
@@ -60,10 +59,7 @@ def test_create_same_uuid_diff_provider(
 
 
 @parametrize_with_cases("item", cases=CaseProject)
-def test_create_already_exists(
-    item: ProjectCreate,
-    project_model: Project,
-) -> None:
+def test_create_already_exists(item: ProjectCreate, project_model: Project) -> None:
     """A project with the given uuid on this provider already exists"""
     provider = project_model.provider.single()
 
