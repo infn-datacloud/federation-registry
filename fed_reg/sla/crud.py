@@ -24,7 +24,7 @@ class CRUDSLA(
     """SLA Create, Read, Update and Delete operations."""
 
     def create(
-        self, *, obj_in: SLACreate, project: Project, user_group: UserGroup
+        self, *, obj_in: SLACreateExtended, user_group: UserGroup, project: Project
     ) -> SLA:
         """Create a new SLA.
 
@@ -33,19 +33,24 @@ class CRUDSLA(
         and project. If the project already has an attached SLA, replace it.
         """
         db_obj = self.get(doc_uuid=obj_in.doc_uuid)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.user_group.connect(user_group)
-        else:
-            raise ValueError(
-                f"An SLA with document uuid {obj_in.doc_uuid} already exists"
-            )
+        assert db_obj is None, (
+            f"An SLA with document uuid {obj_in.doc_uuid} already exists"
+        )
+
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.user_group.connect(user_group)
+        return self.reconnect_sla(sla=db_obj, project=project)
+
+    def reconnect_sla(self, *, sla: SLA, project: Project) -> SLA:
+        """Disconnect previous project's SLA and eventually delete it."""
         old_sla = project.sla.single()
-        if old_sla:
-            project.sla.reconnect(old_sla, db_obj)
-        else:
-            db_obj.projects.connect(project)
-        return db_obj
+        if old_sla is not None:
+            if len(old_sla.projects) > 1:
+                project.sla.disconnect(old_sla)
+            else:
+                self.remove(db_obj=old_sla)
+        sla.projects.connect(project)
+        return sla.save()
 
     def update(
         self,
@@ -61,12 +66,12 @@ class CRUDSLA(
             input_uuid=obj_in.project,
             provider_projects=provider_projects,
         )
-        edited_obj2 = super().update(db_obj=db_obj, obj_in=obj_in)
-        return edited_obj2 if edited_obj2 is not None else edited_obj1
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return db_obj.save() if edited_obj1 or edit_content else None
 
     def _update_project(
         self, *, db_obj: SLA, input_uuid: str, provider_projects: list[Project]
-    ) -> SLA | None:
+    ) -> bool:
         """Update projects connections.
 
         To update projects, since the forced update happens when creating or updating a
@@ -75,7 +80,6 @@ class CRUDSLA(
         replace the old one with the new one, otherwise we immediately connect the new
         one.
         """
-        edit = False
         new_project = next(
             filter(lambda x: x.uuid == input_uuid, provider_projects), None
         )
@@ -87,13 +91,13 @@ class CRUDSLA(
         old_project = next(
             filter(lambda x: x in db_obj.projects, provider_projects), None
         )
-        if not old_project:
+        if old_project is None:
             db_obj.projects.connect(new_project)
-            edit = True
+            return True
         elif old_project.uuid != new_project.uuid:
             db_obj.projects.reconnect(old_project, new_project)
-            edit = True
-        return db_obj.save() if edit else None
+            return True
+        return False
 
 
 sla_mng = CRUDSLA(
