@@ -151,5 +151,44 @@ def test_update_no_changes(
     assert db_obj is None
 
 
-# TODO update only content
-# TODO update only projects
+@parametrize_with_cases("item", cases=CaseIdentityProvider, has_tag="base")
+def test_update_only_content(
+    item: IdentityProviderCreateExtended, identity_provider_model: IdentityProvider
+) -> None:
+    """The new item is equal to the existing one. No changes."""
+    groups = []
+    for user_group in identity_provider_model.user_groups:
+        d = {"name": user_group.name}
+        groups.append(d)
+    item.user_groups = groups
+
+    db_obj = identity_provider_mng.update(obj_in=item, db_obj=identity_provider_model)
+
+    assert db_obj is not None
+    assert isinstance(db_obj, IdentityProvider)
+    d = item.dict()
+    exclude_properties = ["uid", "element_id_property"]
+    for k in db_obj.__properties__.keys():
+        if k not in exclude_properties:
+            assert db_obj.__getattribute__(k) == d.get(k)
+    assert len(db_obj.user_groups) == len(item.user_groups)
+
+
+@parametrize_with_cases("item", cases=CaseIdentityProvider, has_tag="base")
+def test_update_only_user_groups(
+    item: IdentityProviderCreateExtended, identity_provider_model: IdentityProvider
+) -> None:
+    """The new item is equal to the existing one. No changes."""
+    item.endpoint = identity_provider_model.endpoint
+    item.group_claim = identity_provider_model.group_claim
+
+    db_obj = identity_provider_mng.update(obj_in=item, db_obj=identity_provider_model)
+
+    assert db_obj is not None
+    assert isinstance(db_obj, IdentityProvider)
+    d = item.dict()
+    exclude_properties = ["uid", "element_id_property"]
+    for k in db_obj.__properties__.keys():
+        if k not in exclude_properties:
+            assert db_obj.__getattribute__(k) == d.get(k)
+    assert len(db_obj.user_groups) == len(item.user_groups)
