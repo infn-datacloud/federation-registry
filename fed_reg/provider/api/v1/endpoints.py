@@ -65,7 +65,7 @@ from fed_reg.provider.api.dependencies import (
     valid_provider_id,
     validate_new_provider_values,
 )
-from fed_reg.provider.crud import provider_mng
+from fed_reg.provider.crud import provider_mgr
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 
 router = APIRouter(prefix="/providers", tags=["providers"])
@@ -100,11 +100,11 @@ def get_providers(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = provider_mng.get_multi(
+    items = provider_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = provider_mng.paginate(items=items, page=page.page, size=page.size)
-    return provider_mng.choose_out_schema(
+    items = provider_mgr.paginate(items=items, page=page.page, size=page.size)
+    return provider_mgr.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )
 
@@ -136,7 +136,7 @@ def post_provider(
 
     Only authenticated users can view this function.
     """
-    return provider_mng.create(obj_in=item)
+    return provider_mgr.create(obj_in=item)
 
 
 @router.get(
@@ -165,7 +165,7 @@ def get_provider(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return provider_mng.choose_out_schema(
+    return provider_mgr.choose_out_schema(
         items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
     )[0]
 
@@ -207,7 +207,7 @@ def patch_provider(
 
     Only authenticated users can view this function.
     """
-    db_item = provider_mng.update(db_obj=item, obj_in=update_data)
+    db_item = provider_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -251,7 +251,7 @@ def put_provider(
 
     Only authenticated users can view this function.
     """
-    db_item = provider_mng.update(db_obj=item, obj_in=update_data, force=True)
+    db_item = provider_mgr.update(db_obj=item, obj_in=update_data, force=True)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -281,7 +281,7 @@ def delete_providers(
 
     Only authenticated users can view this function.
     """
-    if not provider_mng.remove(db_obj=item):
+    if not provider_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

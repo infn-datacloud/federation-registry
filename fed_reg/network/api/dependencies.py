@@ -2,10 +2,14 @@
 
 from fastapi import Depends, HTTPException, status
 from fedreg.network.models import Network
-from fedreg.network.schemas import NetworkCreate, NetworkUpdate
+from fedreg.network.schemas import (
+    NetworkUpdate,
+    PrivateNetworkCreate,
+    SharedNetworkCreate,
+)
 from fedreg.service.models import NetworkService
 
-from fed_reg.network.crud import network_mng
+from fed_reg.network.crud import network_mgr
 from fed_reg.service.api.dependencies import valid_network_service_id
 
 
@@ -24,7 +28,7 @@ def valid_network_id(network_uid: str) -> Network:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = network_mng.get(uid=network_uid.replace("-", ""))
+    item = network_mgr.get(uid=network_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -34,7 +38,7 @@ def valid_network_id(network_uid: str) -> Network:
 
 
 def valid_network_uuid(
-    item: NetworkCreate | NetworkUpdate,
+    item: PrivateNetworkCreate | SharedNetworkCreate | NetworkUpdate,
     service: NetworkService = Depends(valid_network_service_id),
 ) -> None:
     """Check given data are valid ones.
@@ -97,25 +101,25 @@ def validate_new_network_values(
         )
 
 
-def is_private_network(item: Network = Depends(valid_network_id)) -> Network:
-    """Check given network has private or shared visibility.
+# def is_private_network(item: Network = Depends(valid_network_id)) -> Network:
+#     """Check given network has private or shared visibility.
 
-    Args:
-    ----
-        item (Network): entity to validate.
+#     Args:
+#     ----
+#         item (Network): entity to validate.
 
-    Returns:
-    -------
-        Network: DB entity with given uid.
+#     Returns:
+#     -------
+#         Network: DB entity with given uid.
 
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity has not valid visibility
-    """
-    if item.is_shared:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Network {item.uid} is a public network",
-        )
-    return item
+#     Raises:
+#     ------
+#         NotFoundError: DB entity with given uid not found.
+#         BadRequestError: DB entity has not valid visibility
+#     """
+#     if item.is_shared:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail=f"Network {item.uid} is a public network",
+#         )
+#     return item

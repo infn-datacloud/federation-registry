@@ -2,10 +2,10 @@
 
 from fastapi import Depends, HTTPException, status
 from fedreg.flavor.models import Flavor
-from fedreg.flavor.schemas import FlavorCreate, FlavorUpdate
+from fedreg.flavor.schemas import FlavorUpdate, PrivateFlavorCreate, SharedFlavorCreate
 from fedreg.service.models import ComputeService
 
-from fed_reg.flavor.crud import flavor_mng
+from fed_reg.flavor.crud import flavor_mgr
 from fed_reg.service.api.dependencies import valid_compute_service_id
 
 
@@ -24,7 +24,7 @@ def valid_flavor_id(flavor_uid: str) -> Flavor:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = flavor_mng.get(uid=flavor_uid.replace("-", ""))
+    item = flavor_mgr.get(uid=flavor_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -34,7 +34,7 @@ def valid_flavor_id(flavor_uid: str) -> Flavor:
 
 
 def valid_flavor_name(
-    item: FlavorCreate | FlavorUpdate,
+    item: PrivateFlavorCreate | SharedFlavorCreate | FlavorUpdate,
     services: list[ComputeService],
 ) -> None:
     """Check no duplicate name.
@@ -67,7 +67,7 @@ def valid_flavor_name(
 
 
 def valid_flavor_uuid(
-    item: FlavorCreate | FlavorUpdate,
+    item: PrivateFlavorCreate | SharedFlavorCreate | FlavorUpdate,
     services: list[ComputeService] = Depends(valid_compute_service_id),
 ) -> None:
     """Check no duplicate UUID.
@@ -126,32 +126,27 @@ def validate_new_flavor_values(
     #     valid_flavor_name(item=update_data, services=item.services.all())
     if update_data.uuid != item.uuid:
         valid_flavor_uuid(item=update_data, services=item.services.all())
-    if update_data.is_public != item.is_public:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Flavor visibility can't be changed",
-        )
 
 
-def is_private_flavor(item: Flavor = Depends(valid_flavor_id)) -> Flavor:
-    """Check given flavor has private or shared visibility.
+# def is_private_flavor(item: Flavor = Depends(valid_flavor_id)) -> Flavor:
+#     """Check given flavor has private or shared visibility.
 
-    Args:
-    ----
-        item (Flavor): entity to validate.
+#     Args:
+#     ----
+#         item (Flavor): entity to validate.
 
-    Returns:
-    -------
-        Flavor: DB entity with given uid.
+#     Returns:
+#     -------
+#         Flavor: DB entity with given uid.
 
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity has not valid visibility
-    """
-    if item.is_public:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Flavor {item.uid} is a public flavor",
-        )
-    return item
+#     Raises:
+#     ------
+#         NotFoundError: DB entity with given uid not found.
+#         BadRequestError: DB entity has not valid visibility
+#     """
+#     if item.is_shared:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail=f"Flavor {item.uid} is a public flavor",
+#         )
+#     return item

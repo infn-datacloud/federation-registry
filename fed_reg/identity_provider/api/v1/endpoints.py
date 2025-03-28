@@ -35,7 +35,7 @@ from fed_reg.identity_provider.api.dependencies import (
     valid_identity_provider_id,
     validate_new_identity_provider_values,
 )
-from fed_reg.identity_provider.crud import identity_provider_mng
+from fed_reg.identity_provider.crud import identity_provider_mgr
 
 # from app.project.schemas_extended import UserGroupReadExtended
 # from app.provider.api.dependencies import valid_provider_id
@@ -74,11 +74,11 @@ def get_identity_providers(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = identity_provider_mng.get_multi(
+    items = identity_provider_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = identity_provider_mng.paginate(items=items, page=page.page, size=page.size)
-    return identity_provider_mng.choose_out_schema(
+    items = identity_provider_mgr.paginate(items=items, page=page.page, size=page.size)
+    return identity_provider_mgr.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )
 
@@ -109,7 +109,7 @@ def get_identity_provider(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return identity_provider_mng.choose_out_schema(
+    return identity_provider_mgr.choose_out_schema(
         items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
     )[0]
 
@@ -151,7 +151,7 @@ def put_identity_provider(
 
     Only authenticated users can view this function.
     """
-    db_item = identity_provider_mng.update(db_obj=item, obj_in=update_data)
+    db_item = identity_provider_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -180,7 +180,7 @@ def delete_identity_providers(
 
     Only authenticated users can view this function.
     """
-    if not identity_provider_mng.remove(db_obj=item):
+    if not identity_provider_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

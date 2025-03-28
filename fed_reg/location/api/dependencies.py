@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fedreg.location.models import Location
 from fedreg.location.schemas import LocationCreate, LocationUpdate
 
-from fed_reg.location.crud import location_mng
+from fed_reg.location.crud import location_mgr
 
 
 def valid_location_id(location_uid: str) -> Location:
@@ -22,7 +22,7 @@ def valid_location_id(location_uid: str) -> Location:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = location_mng.get(uid=location_uid.replace("-", ""))
+    item = location_mgr.get(uid=location_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -46,7 +46,7 @@ def valid_location_site(item: LocationCreate | LocationUpdate) -> None:
     ------
         BadRequestError: DB entity with given site already exists.
     """
-    db_item = location_mng.get(site=item.site)
+    db_item = location_mgr.get(site=item.site)
     if db_item is not None:
         msg = f"Location with site '{item.site}' already registered"
         raise HTTPException(

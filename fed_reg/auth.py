@@ -18,7 +18,10 @@ lazy_security = HTTPBearer(auto_error=False)
 def has_write_access(user_infos: UserInfos) -> bool:
     """Target user has write access on Federation-Registry."""
     settings = get_settings()
-    return user_infos.user_info.get("email") in settings.ADMIN_EMAIL_LIST
+    email = user_infos.user_info.get("email", None)
+    if email is not None:
+        return email in settings.ADMIN_EMAIL_LIST
+    return False
 
 
 flaat = Flaat()

@@ -36,7 +36,7 @@ from fed_reg.sla.api.dependencies import (  # is_unique_sla,
     valid_sla_id,
     validate_new_sla_values,
 )
-from fed_reg.sla.crud import sla_mng
+from fed_reg.sla.crud import sla_mgr
 
 router = APIRouter(prefix="/slas", tags=["slas"])
 
@@ -70,11 +70,11 @@ def get_slas(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = sla_mng.get_multi(
+    items = sla_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = sla_mng.paginate(items=items, page=page.page, size=page.size)
-    return sla_mng.choose_out_schema(
+    items = sla_mgr.paginate(items=items, page=page.page, size=page.size)
+    return sla_mgr.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )
 
@@ -146,7 +146,7 @@ def get_sla(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return sla_mng.choose_out_schema(
+    return sla_mgr.choose_out_schema(
         items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
     )[0]
 
@@ -188,7 +188,7 @@ def put_sla(
 
     Only authenticated users can view this function.
     """
-    db_item = sla_mng.update(db_obj=item, obj_in=update_data)
+    db_item = sla_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -218,7 +218,7 @@ def delete_slas(
 
     Only authenticated users can view this function.
     """
-    if not sla_mng.remove(db_obj=item):
+    if not sla_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

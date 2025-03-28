@@ -2,10 +2,10 @@
 
 from fastapi import Depends, HTTPException, status
 from fedreg.image.models import Image
-from fedreg.image.schemas import ImageCreate, ImageUpdate
+from fedreg.image.schemas import ImageUpdate, PrivateImageCreate, SharedImageCreate
 from fedreg.service.models import ComputeService
 
-from fed_reg.image.crud import image_mng
+from fed_reg.image.crud import image_mgr
 from fed_reg.service.api.dependencies import valid_compute_service_id
 
 
@@ -24,7 +24,7 @@ def valid_image_id(image_uid: str) -> Image:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = image_mng.get(uid=image_uid.replace("-", ""))
+    item = image_mgr.get(uid=image_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -34,7 +34,8 @@ def valid_image_id(image_uid: str) -> Image:
 
 
 def valid_image_name(
-    item: ImageCreate | ImageUpdate, services: list[ComputeService]
+    item: PrivateImageCreate | SharedImageCreate | ImageUpdate,
+    services: list[ComputeService],
 ) -> None:
     """Check given data are valid ones.
 
@@ -65,7 +66,7 @@ def valid_image_name(
 
 
 def valid_image_uuid(
-    item: ImageCreate | ImageUpdate,
+    item: PrivateImageCreate | SharedImageCreate | ImageUpdate,
     services: list[ComputeService] = Depends(valid_compute_service_id),
 ) -> None:
     """Check given data are valid ones.
@@ -123,32 +124,27 @@ def validate_new_image_values(
     #     valid_image_name(item=update_data, services=item.services.all())
     if update_data.uuid != item.uuid:
         valid_image_uuid(item=update_data, services=item.services.all())
-    if update_data.is_public != item.is_public:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image visibility can't be changed",
-        )
 
 
-def is_private_image(item: Image = Depends(valid_image_id)) -> Image:
-    """Check given image has private or shared visibility.
+# def is_private_image(item: Image = Depends(valid_image_id)) -> Image:
+#     """Check given image has private or shared visibility.
 
-    Args:
-    ----
-        item (Image): entity to validate.
+#     Args:
+#     ----
+#         item (Image): entity to validate.
 
-    Returns:
-    -------
-        Image: DB entity with given uid.
+#     Returns:
+#     -------
+#         Image: DB entity with given uid.
 
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity has not valid visibility
-    """
-    if item.is_public:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Image {item.uid} is a public image",
-        )
-    return item
+#     Raises:
+#     ------
+#         NotFoundError: DB entity with given uid not found.
+#         BadRequestError: DB entity has not valid visibility
+#     """
+#     if item.is_public:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail=f"Image {item.uid} is a public image",
+#         )
+#     return item
