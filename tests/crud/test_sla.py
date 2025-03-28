@@ -11,7 +11,7 @@ from fedreg.user_group.models import UserGroup
 from neomodel import DoesNotExist
 from pytest_cases import parametrize_with_cases
 
-from fed_reg.sla.crud import sla_mng
+from fed_reg.sla.crud import sla_mgr
 from tests.utils import (
     random_lower_string,
     random_provider_type,
@@ -81,7 +81,7 @@ def test_create(
     item: SLACreateExtended, project_model: Project, user_group_model: UserGroup
 ) -> None:
     """Create a new istance"""
-    db_obj = sla_mng.create(
+    db_obj = sla_mgr.create(
         obj_in=item, project=project_model, user_group=user_group_model
     )
     assert db_obj is not None
@@ -101,7 +101,7 @@ def test_create_already_exists(
     project = sla_model.projects.single()
     msg = f"An SLA with document uuid {item.doc_uuid} already exists"
     with pytest.raises(AssertionError, match=msg):
-        sla_mng.create(obj_in=item, project=project, user_group=user_group)
+        sla_mgr.create(obj_in=item, project=project, user_group=user_group)
 
 
 @parametrize_with_cases("item", cases=CaseSLA)
@@ -113,7 +113,7 @@ def test_create_replace_project(
     project = sla_model.projects.single()
     sla_model.projects.connect(stand_alone_project_model)
 
-    db_obj = sla_mng.create(obj_in=item, project=project, user_group=user_group)
+    db_obj = sla_mgr.create(obj_in=item, project=project, user_group=user_group)
 
     assert db_obj is not None
     assert isinstance(db_obj, SLA)
@@ -131,7 +131,7 @@ def test_create_replace_project_and_remove_prev_sla(
     project = sla_model.projects.single()
     user_group = sla_model.user_group.single()
 
-    db_obj = sla_mng.create(obj_in=item, project=project, user_group=user_group)
+    db_obj = sla_mgr.create(obj_in=item, project=project, user_group=user_group)
 
     assert db_obj is not None
     assert isinstance(db_obj, SLA)
@@ -153,7 +153,7 @@ def test_update(item: SLACreateExtended, sla_model: SLA) -> None:
     provider = project.provider.single()
     projects = provider.projects.all()
 
-    db_obj = sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
+    db_obj = sla_mgr.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
 
     assert db_obj is not None
     assert isinstance(db_obj, SLA)
@@ -178,7 +178,7 @@ def test_update_connect_to_another_provider(
     projects = provider.projects.all()
     item.project = stand_alone_project_model.uuid
 
-    db_obj = sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
+    db_obj = sla_mgr.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
 
     assert db_obj is not None
     assert isinstance(db_obj, SLA)
@@ -205,7 +205,7 @@ def test_update_no_changes(item: SLACreateExtended, sla_model: SLA) -> None:
     item.end_date = sla_model.end_date
     item.project = project.uuid
 
-    db_obj = sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
+    db_obj = sla_mgr.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
 
     assert db_obj is None
 
@@ -222,7 +222,7 @@ def test_update_same_projects(item: SLACreateExtended, sla_model: SLA) -> None:
     projects = provider.projects.all()
     item.project = project.uuid
 
-    db_obj = sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
+    db_obj = sla_mgr.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
 
     assert db_obj is not None
     assert isinstance(db_obj, SLA)
@@ -243,7 +243,7 @@ def test_update_empy_provider_projects_list(
     """Empty list passed to the provider_projects param."""
     msg = "The provider's projects list is empty"
     with pytest.raises(AssertionError, match=re.escape(msg)):
-        sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=[])
+        sla_mgr.update(obj_in=item, db_obj=sla_model, provider_projects=[])
 
 
 @parametrize_with_cases("item", cases=CaseSLA)
@@ -255,4 +255,4 @@ def test_update_invalid_project(item: SLACreateExtended, sla_model: SLA) -> None
         f"projects: {[i.uuid for i in projects]}"
     )
     with pytest.raises(AssertionError, match=re.escape(msg)):
-        sla_mng.update(obj_in=item, db_obj=sla_model, provider_projects=projects)
+        sla_mgr.update(obj_in=item, db_obj=sla_model, provider_projects=projects)

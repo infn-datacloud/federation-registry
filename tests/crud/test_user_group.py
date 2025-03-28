@@ -4,7 +4,7 @@ from fedreg.provider.schemas_extended import UserGroupCreateExtended
 from fedreg.user_group.models import UserGroup
 from pytest_cases import parametrize_with_cases
 
-from fed_reg.user_group.crud import user_group_mng
+from fed_reg.user_group.crud import user_group_mgr
 from tests.utils import random_lower_string, random_url
 
 
@@ -36,7 +36,7 @@ def test_create(
     item: UserGroupCreateExtended, identity_provider_model: IdentityProvider
 ) -> None:
     """Create a new istance"""
-    db_obj = user_group_mng.create(
+    db_obj = user_group_mgr.create(
         obj_in=item, identity_provider=identity_provider_model
     )
     assert db_obj is not None
@@ -58,13 +58,13 @@ def test_create_already_exists(
         f"{identity_provider.endpoint}."
     )
     with pytest.raises(AssertionError, match=msg):
-        user_group_mng.create(obj_in=item, identity_provider=identity_provider)
+        user_group_mgr.create(obj_in=item, identity_provider=identity_provider)
 
 
 @parametrize_with_cases("item", cases=CaseUserGroup)
 def test_update(item: UserGroupCreateExtended, user_group_model: UserGroup) -> None:
     """Completely update the user group attributes. Also override not set ones."""
-    db_obj = user_group_mng.update(obj_in=item, db_obj=user_group_model)
+    db_obj = user_group_mgr.update(obj_in=item, db_obj=user_group_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, UserGroup)
@@ -82,6 +82,6 @@ def test_update_no_changes(
     """The new item is equal to the existing one. No changes."""
     item.name = user_group_model.name
 
-    db_obj = user_group_mng.update(obj_in=item, db_obj=user_group_model)
+    db_obj = user_group_mgr.update(obj_in=item, db_obj=user_group_model)
 
     assert db_obj is None

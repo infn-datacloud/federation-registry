@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fedreg.sla.models import SLA
 from fedreg.sla.schemas import SLACreate, SLAUpdate
 
-from fed_reg.sla.crud import sla_mng
+from fed_reg.sla.crud import sla_mgr
 
 
 def valid_sla_id(sla_uid: str) -> SLA:
@@ -22,7 +22,7 @@ def valid_sla_id(sla_uid: str) -> SLA:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = sla_mng.get(uid=sla_uid.replace("-", ""))
+    item = sla_mgr.get(uid=sla_uid.replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -46,7 +46,7 @@ def is_unique_sla(item: SLACreate | SLAUpdate) -> None:
     ------
         BadRequestError: DB entity with given document uuid already exists.
     """
-    db_item = sla_mng.get(doc_uuid=item.doc_uuid)
+    db_item = sla_mgr.get(doc_uuid=item.doc_uuid)
     if db_item is not None:
         msg = f"Document '{item.doc_uuid}' already used "
         msg += "by another SLA"

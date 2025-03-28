@@ -32,7 +32,7 @@ from fed_reg.region.api.dependencies import (
     valid_region_id,
     validate_new_region_values,
 )
-from fed_reg.region.crud import region_mng
+from fed_reg.region.crud import region_mgr
 
 router = APIRouter(prefix="/regions", tags=["regions"])
 
@@ -66,11 +66,11 @@ def get_regions(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = region_mng.get_multi(
+    items = region_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = region_mng.paginate(items=items, page=page.page, size=page.size)
-    return region_mng.choose_out_schema(
+    items = region_mgr.paginate(items=items, page=page.page, size=page.size)
+    return region_mgr.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )
 
@@ -101,7 +101,7 @@ def get_region(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return region_mng.choose_out_schema(
+    return region_mgr.choose_out_schema(
         items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
     )[0]
 
@@ -144,7 +144,7 @@ def put_region(
 
     Only authenticated users can view this function.
     """
-    db_item = region_mng.update(db_obj=item, obj_in=update_data)
+    db_item = region_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -174,7 +174,7 @@ def delete_regions(
 
     Only authenticated users can view this function.
     """
-    if not region_mng.remove(db_obj=item):
+    if not region_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

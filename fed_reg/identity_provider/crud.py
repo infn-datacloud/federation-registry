@@ -15,7 +15,7 @@ from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import IdentityProviderCreateExtended
 
 from fed_reg.crud import CRUDBase
-from fed_reg.user_group.crud import user_group_mng
+from fed_reg.user_group.crud import user_group_mgr
 
 
 class CRUDIdentityProvider(
@@ -64,7 +64,7 @@ class CRUDIdentityProvider(
             db_obj.providers.connect(provider, obj_in.relationship.dict())
 
         for item in obj_in.user_groups:
-            user_group_mng.create(obj_in=item, identity_provider=db_obj)
+            user_group_mgr.create(obj_in=item, identity_provider=db_obj)
 
         return db_obj
 
@@ -93,20 +93,20 @@ class CRUDIdentityProvider(
         for item in obj_in.user_groups:
             db_item = db_items.pop(item.name, None)
             if not db_item:
-                user_group_mng.create(obj_in=item, identity_provider=db_obj)
+                user_group_mgr.create(obj_in=item, identity_provider=db_obj)
                 edit = True
             else:
-                updated_data = user_group_mng.update(db_obj=db_item, obj_in=item)
+                updated_data = user_group_mgr.update(db_obj=db_item, obj_in=item)
                 edit = edit or updated_data is not None
         # Remove identity provider's user groups without SLAs
         for db_item in db_items.values():
             if len(db_item.slas) == 0:
-                user_group_mng.remove(db_obj=db_item)
+                user_group_mgr.remove(db_obj=db_item)
                 edit = True
         return edit
 
 
-identity_provider_mng = CRUDIdentityProvider(
+identity_provider_mgr = CRUDIdentityProvider(
     model=IdentityProvider,
     create_schema=IdentityProviderCreate,
     update_schema=IdentityProviderUpdate,

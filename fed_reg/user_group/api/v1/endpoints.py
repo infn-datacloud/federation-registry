@@ -68,7 +68,7 @@ from fed_reg.user_group.api.dependencies import (
     validate_new_user_group_values,
 )
 from fed_reg.user_group.api.utils import filter_on_provider_attr, filter_on_region_attr
-from fed_reg.user_group.crud import user_group_mng
+from fed_reg.user_group.crud import user_group_mgr
 
 router = APIRouter(prefix="/user_groups", tags=["user_groups"])
 
@@ -107,7 +107,7 @@ def get_user_groups(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = user_group_mng.get_multi(
+    items = user_group_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     if idp_endpoint:
@@ -129,8 +129,8 @@ def get_user_groups(
     region_query = RegionQuery(name=region_name)
     items = filter_on_region_attr(items=items, region_query=region_query)
 
-    items = user_group_mng.paginate(items=items, page=page.page, size=page.size)
-    return user_group_mng.choose_out_schema(
+    items = user_group_mgr.paginate(items=items, page=page.page, size=page.size)
+    return user_group_mgr.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )
 
@@ -161,7 +161,7 @@ def get_user_group(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return user_group_mng.choose_out_schema(
+    return user_group_mgr.choose_out_schema(
         items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
     )[0]
 
@@ -202,7 +202,7 @@ def put_user_group(
 
     Only authenticated users can view this function.
     """
-    db_item = user_group_mng.update(db_obj=item, obj_in=update_data)
+    db_item = user_group_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -231,7 +231,7 @@ def delete_user_group(
 
     Only authenticated users can view this function.
     """
-    if not user_group_mng.remove(db_obj=item):
+    if not user_group_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

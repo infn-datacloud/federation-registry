@@ -30,7 +30,7 @@ from fed_reg.image.api.dependencies import (
     valid_image_id,
     validate_new_image_values,
 )
-from fed_reg.image.crud import image_mng
+from fed_reg.image.crud import image_mgr
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 
 router = APIRouter(prefix="/images", tags=["images"])
@@ -65,11 +65,11 @@ def get_images(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = image_mng.get_multi(
+    items = image_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = image_mng.paginate(items=items, page=page.page, size=page.size)
-    return image_mng.choose_out_schema(
+    items = image_mgr.paginate(items=items, page=page.page, size=page.size)
+    return image_mgr.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )
 
@@ -100,7 +100,7 @@ def get_image(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return image_mng.choose_out_schema(
+    return image_mgr.choose_out_schema(
         items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
     )[0]
 
@@ -142,7 +142,7 @@ def put_image(
 
     Only authenticated users can view this function.
     """
-    db_item = image_mng.update(db_obj=item, obj_in=update_data)
+    db_item = image_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -172,7 +172,7 @@ def delete_images(
 
     Only authenticated users can view this function.
     """
-    if not image_mng.remove(db_obj=item):
+    if not image_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

@@ -21,7 +21,7 @@ from fedreg.service.models import (
 )
 
 from fed_reg.crud import CRUDBase
-from fed_reg.location.crud import location_mng
+from fed_reg.location.crud import location_mgr
 from fed_reg.service.crud import service_mgr
 
 
@@ -53,12 +53,12 @@ class CRUDRegion(
         db_obj.provider.connect(provider)
 
         if obj_in.location is not None:
-            db_loc = location_mng.get(site=obj_in.location.site)
+            db_loc = location_mgr.get(site=obj_in.location.site)
             if db_loc is None:
-                location_mng.create(obj_in=obj_in.location, region=db_obj)
+                location_mgr.create(obj_in=obj_in.location, region=db_obj)
             else:
                 db_obj.location.connect(db_loc)
-                location_mng.patch(db_obj=db_loc, obj_in=obj_in.location)
+                location_mgr.patch(db_obj=db_loc, obj_in=obj_in.location)
 
         for item in (
             obj_in.block_storage_services
@@ -124,16 +124,16 @@ class CRUDRegion(
         if (curr_location is None and location) or (
             curr_location and location and curr_location.site != location.site
         ):
-            db_location = location_mng.get(site=location.site)
+            db_location = location_mgr.get(site=location.site)
             if db_location is None:
-                location_mng.create(obj_in=location, region=db_obj)
+                location_mgr.create(obj_in=location, region=db_obj)
             else:
                 db_obj.location.connect(db_location)
-                location_mng.patch(db_obj=db_location, obj_in=location)
+                location_mgr.patch(db_obj=db_location, obj_in=location)
             return True
 
         if curr_location and location and curr_location.site == location.site:
-            updated_data = location_mng.update(db_obj=curr_location, obj_in=location)
+            updated_data = location_mgr.update(db_obj=curr_location, obj_in=location)
             return updated_data is not None
 
         return edit
@@ -181,7 +181,7 @@ class CRUDRegion(
         return edit
 
 
-region_mng = CRUDRegion(
+region_mgr = CRUDRegion(
     model=Region,
     create_schema=RegionCreate,
     update_schema=RegionUpdate,

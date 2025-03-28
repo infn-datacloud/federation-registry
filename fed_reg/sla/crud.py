@@ -100,7 +100,7 @@ class CRUDSLA(
         return False
 
 
-sla_mng = CRUDSLA(
+sla_mgr = CRUDSLA(
     model=SLA,
     create_schema=SLACreate,
     update_schema=SLAUpdate,

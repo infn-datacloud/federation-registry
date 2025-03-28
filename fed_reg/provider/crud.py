@@ -24,11 +24,11 @@ from fedreg.sla.models import SLA
 from fedreg.user_group.models import UserGroup
 
 from fed_reg.crud import CRUDBase
-from fed_reg.identity_provider.crud import identity_provider_mng
-from fed_reg.project.crud import project_mng
-from fed_reg.region.crud import region_mng
-from fed_reg.sla.crud import sla_mng
-from fed_reg.user_group.crud import user_group_mng
+from fed_reg.identity_provider.crud import identity_provider_mgr
+from fed_reg.project.crud import project_mgr
+from fed_reg.region.crud import region_mgr
+from fed_reg.sla.crud import sla_mgr
+from fed_reg.user_group.crud import user_group_mgr
 
 
 class CRUDProvider(
@@ -56,7 +56,7 @@ class CRUDProvider(
         )
         db_obj = super().create(obj_in=obj_in)
         for item in obj_in.projects:
-            project_mng.create(obj_in=item, provider=db_obj)
+            project_mgr.create(obj_in=item, provider=db_obj)
         for idp in obj_in.identity_providers:
             db_idp = self.__create_or_connect_to_idp(
                 input_identity_provider=idp, provider=db_obj
@@ -70,7 +70,7 @@ class CRUDProvider(
                     provider=db_obj,
                 )
         for item in obj_in.regions:
-            region_mng.create(obj_in=item, provider=db_obj)
+            region_mgr.create(obj_in=item, provider=db_obj)
         return db_obj
 
     def update(
@@ -113,15 +113,15 @@ class CRUDProvider(
         Create missing user groups.
         Create or connect SLAs to groups.
         """
-        db_idp = identity_provider_mng.get(endpoint=input_identity_provider.endpoint)
+        db_idp = identity_provider_mgr.get(endpoint=input_identity_provider.endpoint)
         if db_idp is None:
-            return identity_provider_mng.create(
+            return identity_provider_mgr.create(
                 obj_in=input_identity_provider, provider=provider
             )
         provider.identity_providers.connect(
             db_idp, input_identity_provider.relationship.dict()
         )
-        identity_provider_mng.patch(db_obj=db_idp, obj_in=input_identity_provider)
+        identity_provider_mgr.patch(db_obj=db_idp, obj_in=input_identity_provider)
 
         for user_group in input_identity_provider.user_groups:
             self.__create_or_patch_user_group(
@@ -140,10 +140,10 @@ class CRUDProvider(
             name=input_user_group.name
         )
         if db_user_group is None:
-            return user_group_mng.create(
+            return user_group_mgr.create(
                 obj_in=input_user_group, identity_provider=identity_provider
             )
-        return user_group_mng.patch(db_obj=db_user_group, obj_in=input_user_group)
+        return user_group_mgr.patch(db_obj=db_user_group, obj_in=input_user_group)
 
     def __create_or_connect_sla(
         self,
@@ -164,9 +164,9 @@ class CRUDProvider(
         )
 
         # Create or connect SLAs.
-        db_sla = sla_mng.get(doc_uuid=input_sla.doc_uuid)
+        db_sla = sla_mgr.get(doc_uuid=input_sla.doc_uuid)
         if db_sla is None:
-            return sla_mng.create(
+            return sla_mgr.create(
                 obj_in=input_sla, user_group=db_user_group, project=db_project
             )
 
@@ -189,9 +189,9 @@ class CRUDProvider(
         # existing SLA can be already attached to another project of this provider
         edit = False
         if not db_sla.projects.is_connected(db_project):
-            db_sla = sla_mng.reconnect_sla(sla=db_sla, project=db_project)
+            db_sla = sla_mgr.reconnect_sla(sla=db_sla, project=db_project)
             edit = True
-        updated_data = sla_mng.patch(db_obj=db_sla, obj_in=input_sla)
+        updated_data = sla_mgr.patch(db_obj=db_sla, obj_in=input_sla)
 
         return db_sla if edit or updated_data is not None else None
 
@@ -208,13 +208,13 @@ class CRUDProvider(
         for item in input_projects:
             db_item = db_items.pop(item.uuid, None)
             if not db_item:
-                project_mng.create(obj_in=item, provider=db_obj)
+                project_mgr.create(obj_in=item, provider=db_obj)
                 edit = True
             else:
-                updated_data = project_mng.update(db_obj=db_item, obj_in=item)
+                updated_data = project_mgr.update(db_obj=db_item, obj_in=item)
                 edit = edit or updated_data is not None
         for db_item in db_items.values():
-            project_mng.remove(db_obj=db_item)
+            project_mgr.remove(db_obj=db_item)
             edit = True
         return edit
 
@@ -246,7 +246,7 @@ class CRUDProvider(
                 if rel.idp_name != item.relationship.idp_name:
                     rel.idp_name = item.relationship.idp_name
                     edit = True
-                updated_data = identity_provider_mng.patch(db_obj=db_item, obj_in=item)
+                updated_data = identity_provider_mgr.patch(db_obj=db_item, obj_in=item)
                 edit = edit or updated_data is not None
                 for user_group in item.user_groups:
                     updated_data = self.__create_or_patch_user_group(
@@ -282,20 +282,20 @@ class CRUDProvider(
         for item in input_regions:
             db_item = db_items.pop(item.name, None)
             if not db_item:
-                region_mng.create(obj_in=item, provider=db_obj)
+                region_mgr.create(obj_in=item, provider=db_obj)
                 edit = True
             else:
-                updated_data = region_mng.update(
+                updated_data = region_mgr.update(
                     db_obj=db_item, obj_in=item, provider_projects=db_obj.projects
                 )
                 edit = edit or updated_data is not None
         for db_item in db_items.values():
-            region_mng.remove(db_obj=db_item)
+            region_mgr.remove(db_obj=db_item)
             edit = True
         return edit
 
 
-provider_mng = CRUDProvider(
+provider_mgr = CRUDProvider(
     model=Provider,
     create_schema=ProviderCreate,
     update_schema=ProviderUpdate,

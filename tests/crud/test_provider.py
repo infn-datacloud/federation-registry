@@ -10,7 +10,7 @@ from fedreg.sla.models import SLA
 from fedreg.user_group.models import UserGroup
 from pytest_cases import case, get_case_tags, parametrize, parametrize_with_cases
 
-from fed_reg.provider.crud import provider_mng
+from fed_reg.provider.crud import provider_mgr
 from tests.utils import (
     random_lower_string,
     random_provider_type,
@@ -275,7 +275,7 @@ class CaseProvider:
 )
 def test_create(item: ProviderCreateExtended) -> None:
     """Create a new istance"""
-    db_obj = provider_mng.create(obj_in=item)
+    db_obj = provider_mgr.create(obj_in=item)
 
     assert db_obj is not None
     assert isinstance(db_obj, Provider)
@@ -296,7 +296,7 @@ def test_create_existing_idp_diff_user_group(item: ProviderCreateExtended) -> No
 
     Add a new user group if present and leave existing user groups untouched.
     """
-    db_obj = provider_mng.create(obj_in=item)
+    db_obj = provider_mgr.create(obj_in=item)
 
     assert db_obj is not None
     assert isinstance(db_obj, Provider)
@@ -321,7 +321,7 @@ def test_create_existing_idp_update_existing_user_group(
     item: ProviderCreateExtended,
 ) -> None:
     """Create a new istance and connect it to an existing IDP."""
-    db_obj = provider_mng.create(obj_in=item)
+    db_obj = provider_mgr.create(obj_in=item)
 
     assert db_obj is not None
     assert isinstance(db_obj, Provider)
@@ -352,13 +352,13 @@ def test_create_already_exists(
     item.type = provider_model.type
     msg = f"Provider with name={item.name} and type={item.type} already exists."
     with pytest.raises(AssertionError, match=msg):
-        provider_mng.create(obj_in=item)
+        provider_mgr.create(obj_in=item)
 
 
 @parametrize_with_cases("item", cases=CaseProvider)
 def test_update(item: ProviderCreateExtended, provider_model: Provider) -> None:
     """Completely update the user group attributes. Also override not set ones."""
-    db_obj = provider_mng.update(obj_in=item, db_obj=provider_model)
+    db_obj = provider_mgr.update(obj_in=item, db_obj=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Provider)
@@ -403,7 +403,7 @@ def test_update_no_changes(
         idps.append(d)
     item.identity_providers = idps
 
-    db_obj = provider_mng.update(obj_in=item, db_obj=provider_model)
+    db_obj = provider_mgr.update(obj_in=item, db_obj=provider_model)
 
     assert db_obj is None
 
@@ -436,7 +436,7 @@ def test_update_only_content(
         idps.append(d)
     item.identity_providers = idps
 
-    db_obj = provider_mng.update(obj_in=item, db_obj=provider_model)
+    db_obj = provider_mgr.update(obj_in=item, db_obj=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Provider)
@@ -477,7 +477,7 @@ def test_update_only_projects(
         idps.append(d)
     item.identity_providers = idps
 
-    db_obj = provider_mng.update(obj_in=item, db_obj=provider_model)
+    db_obj = provider_mgr.update(obj_in=item, db_obj=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Provider)
@@ -518,7 +518,7 @@ def test_update_only_regions(
         idps.append(d)
     item.identity_providers = idps
 
-    db_obj = provider_mng.update(obj_in=item, db_obj=provider_model)
+    db_obj = provider_mgr.update(obj_in=item, db_obj=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Provider)
@@ -549,7 +549,7 @@ def test_update_only_idps(
         regions.append({"name": region.name})
     item.regions = regions
 
-    db_obj = provider_mng.update(obj_in=item, db_obj=provider_model)
+    db_obj = provider_mgr.update(obj_in=item, db_obj=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Provider)
@@ -593,7 +593,7 @@ def test_update_only_idp_rel(
         idps.append(d)
     item.identity_providers = idps
 
-    db_obj = provider_mng.update(obj_in=item, db_obj=provider_model)
+    db_obj = provider_mgr.update(obj_in=item, db_obj=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Provider)
@@ -638,7 +638,7 @@ def test_update_only_idp_rel(
 #         idps.append(d)
 #     item.identity_providers = idps
 
-#     db_obj = provider_mng.update(obj_in=item, db_obj=provider_model)
+#     db_obj = provider_mgr.update(obj_in=item, db_obj=provider_model)
 
 #     assert db_obj is not None
 #     assert isinstance(db_obj, Provider)

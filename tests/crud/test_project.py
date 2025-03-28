@@ -6,7 +6,7 @@ from fedreg.project.schemas import ProjectCreate
 from fedreg.provider.models import Provider
 from pytest_cases import parametrize_with_cases
 
-from fed_reg.project.crud import project_mng
+from fed_reg.project.crud import project_mgr
 from tests.utils import random_lower_string, random_provider_type
 
 
@@ -35,7 +35,7 @@ class CaseProject:
 @parametrize_with_cases("item", cases=CaseProject)
 def test_create(item: ProjectCreate, provider_model: Provider) -> None:
     """Create a new istance"""
-    db_obj = project_mng.create(obj_in=item, provider=provider_model)
+    db_obj = project_mgr.create(obj_in=item, provider=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Project)
@@ -51,7 +51,7 @@ def test_create_same_uuid_diff_provider(
     """A project with the given uuid already exists but on a different provider."""
     item.uuid = stand_alone_project_model.uuid
 
-    db_obj = project_mng.create(obj_in=item, provider=provider_model)
+    db_obj = project_mgr.create(obj_in=item, provider=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Project)
@@ -70,13 +70,13 @@ def test_create_already_exists(item: ProjectCreate, project_model: Project) -> N
         f"{provider.name} already exists"
     )
     with pytest.raises(AssertionError, match=msg):
-        project_mng.create(obj_in=item, provider=provider)
+        project_mgr.create(obj_in=item, provider=provider)
 
 
 @parametrize_with_cases("item", cases=CaseProject)
 def test_update(item: ProjectCreate, project_model: Project) -> None:
     """Completely update the project attributes. Also override not set ones."""
-    db_obj = project_mng.update(obj_in=item, db_obj=project_model)
+    db_obj = project_mgr.update(obj_in=item, db_obj=project_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Project)
@@ -93,6 +93,6 @@ def test_update_no_changes(item: ProjectCreate, project_model: Project) -> None:
     item.uuid = project_model.uuid
     item.name = project_model.name
 
-    db_obj = project_mng.update(obj_in=item, db_obj=project_model)
+    db_obj = project_mgr.update(obj_in=item, db_obj=project_model)
 
     assert db_obj is None

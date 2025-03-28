@@ -30,7 +30,7 @@ from fed_reg.network.api.dependencies import (
     valid_network_id,
     validate_new_network_values,
 )
-from fed_reg.network.crud import network_mng
+from fed_reg.network.crud import network_mgr
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 
 router = APIRouter(prefix="/networks", tags=["networks"])
@@ -65,11 +65,11 @@ def get_networks(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = network_mng.get_multi(
+    items = network_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = network_mng.paginate(items=items, page=page.page, size=page.size)
-    return network_mng.choose_out_schema(
+    items = network_mgr.paginate(items=items, page=page.page, size=page.size)
+    return network_mgr.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )
 
@@ -100,7 +100,7 @@ def get_network(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    return network_mng.choose_out_schema(
+    return network_mgr.choose_out_schema(
         items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
     )[0]
 
@@ -142,7 +142,7 @@ def put_network(
 
     Only authenticated users can view this function.
     """
-    db_item = network_mng.update(db_obj=item, obj_in=update_data)
+    db_item = network_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -172,7 +172,7 @@ def delete_networks(
 
     Only authenticated users can view this function.
     """
-    if not network_mng.remove(db_obj=item):
+    if not network_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",

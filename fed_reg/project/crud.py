@@ -41,7 +41,7 @@ class CRUDProject(
         return db_obj
 
 
-project_mng = CRUDProject(
+project_mgr = CRUDProject(
     model=Project,
     create_schema=ProjectCreate,
     update_schema=ProjectUpdate,

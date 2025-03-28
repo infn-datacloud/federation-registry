@@ -5,7 +5,7 @@ from fedreg.provider.schemas_extended import IdentityProviderCreateExtended
 from fedreg.user_group.models import UserGroup
 from pytest_cases import case, parametrize, parametrize_with_cases
 
-from fed_reg.identity_provider.crud import identity_provider_mng
+from fed_reg.identity_provider.crud import identity_provider_mgr
 from tests.utils import random_lower_string, random_provider_type, random_url
 
 
@@ -83,7 +83,7 @@ class CaseIdentityProvider:
 @parametrize_with_cases("item", cases=CaseIdentityProvider)
 def test_create(item: IdentityProviderCreateExtended) -> None:
     """Create a new istance"""
-    db_obj = identity_provider_mng.create(obj_in=item)
+    db_obj = identity_provider_mgr.create(obj_in=item)
     assert db_obj is not None
     assert isinstance(db_obj, IdentityProvider)
     assert len(db_obj.user_groups) == len(item.user_groups)
@@ -94,7 +94,7 @@ def test_create_and_connect_to_provider(
     item: IdentityProviderCreateExtended, provider_model: Provider
 ) -> None:
     """Create a new istance"""
-    db_obj = identity_provider_mng.create(obj_in=item, provider=provider_model)
+    db_obj = identity_provider_mgr.create(obj_in=item, provider=provider_model)
     assert db_obj is not None
     assert isinstance(db_obj, IdentityProvider)
     assert len(db_obj.user_groups) == len(item.user_groups)
@@ -113,7 +113,7 @@ def test_create_already_exists(
     item.endpoint = identity_provider_model.endpoint
     msg = f"Identity provider with endpoint {item.endpoint} already exists."
     with pytest.raises(AssertionError, match=msg):
-        identity_provider_mng.create(obj_in=item)
+        identity_provider_mgr.create(obj_in=item)
 
 
 @parametrize_with_cases("item", cases=CaseIdentityProvider)
@@ -121,7 +121,7 @@ def test_update(
     item: IdentityProviderCreateExtended, identity_provider_model: IdentityProvider
 ) -> None:
     """Completely update the user group attributes. Also override not set ones."""
-    db_obj = identity_provider_mng.update(obj_in=item, db_obj=identity_provider_model)
+    db_obj = identity_provider_mgr.update(obj_in=item, db_obj=identity_provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, IdentityProvider)
@@ -146,7 +146,7 @@ def test_update_no_changes(
         groups.append(d)
     item.user_groups = groups
 
-    db_obj = identity_provider_mng.update(obj_in=item, db_obj=identity_provider_model)
+    db_obj = identity_provider_mgr.update(obj_in=item, db_obj=identity_provider_model)
 
     assert db_obj is None
 
@@ -162,7 +162,7 @@ def test_update_only_content(
         groups.append(d)
     item.user_groups = groups
 
-    db_obj = identity_provider_mng.update(obj_in=item, db_obj=identity_provider_model)
+    db_obj = identity_provider_mgr.update(obj_in=item, db_obj=identity_provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, IdentityProvider)
@@ -182,7 +182,7 @@ def test_update_only_user_groups(
     item.endpoint = identity_provider_model.endpoint
     item.group_claim = identity_provider_model.group_claim
 
-    db_obj = identity_provider_mng.update(obj_in=item, db_obj=identity_provider_model)
+    db_obj = identity_provider_mgr.update(obj_in=item, db_obj=identity_provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, IdentityProvider)

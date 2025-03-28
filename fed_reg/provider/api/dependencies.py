@@ -12,16 +12,16 @@ from fedreg.provider.schemas_extended import (
 from fedreg.user_group.models import UserGroup
 from pydantic import UUID4
 
-from fed_reg.identity_provider.crud import identity_provider_mng
-from fed_reg.location.crud import location_mng
-from fed_reg.provider.crud import provider_mng
+from fed_reg.identity_provider.crud import identity_provider_mgr
+from fed_reg.location.crud import location_mgr
+from fed_reg.provider.crud import provider_mgr
 from fed_reg.service.api.dependencies import (
     valid_block_storage_service_endpoint,
     valid_compute_service_endpoint,
     valid_identity_service_endpoint,
     valid_network_service_endpoint,
 )
-from fed_reg.sla.crud import sla_mng
+from fed_reg.sla.crud import sla_mgr
 
 
 def valid_provider_id(provider_uid: UUID4) -> Provider:
@@ -39,7 +39,7 @@ def valid_provider_id(provider_uid: UUID4) -> Provider:
     ------
         NotFoundError: DB entity with given uid not found.
     """
-    item = provider_mng.get(uid=str(provider_uid).replace("-", ""))
+    item = provider_mgr.get(uid=str(provider_uid).replace("-", ""))
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -63,7 +63,7 @@ def is_unique_provider(item: ProviderCreateExtended | ProviderUpdate) -> None:
     ------
         BadRequestError: DB entity with given name already exists.
     """
-    db_item = provider_mng.get(name=item.name)
+    db_item = provider_mgr.get(name=item.name)
     if db_item is not None and db_item.type == item.type:
         msg = f"Provider with name '{item.name}' and type '{db_item.type}' "
         msg += "already registered"
@@ -132,7 +132,7 @@ def valid_identity_provider(item: IdentityProviderCreateExtended) -> None:
             or DB entity with given endpoint already exists but has
             different attributes.
     """
-    db_item = identity_provider_mng.get(endpoint=item.endpoint)
+    db_item = identity_provider_mgr.get(endpoint=item.endpoint)
     if db_item is not None:
         data = item.dict(exclude={"relationship", "user_groups"}, exclude_unset=True)
         for k, v in data.items():
@@ -142,7 +142,7 @@ def valid_identity_provider(item: IdentityProviderCreateExtended) -> None:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
 
     for group in item.user_groups:
-        db_item = sla_mng.get(doc_uuid=group.sla.doc_uuid)
+        db_item = sla_mgr.get(doc_uuid=group.sla.doc_uuid)
         if db_item is not None:
             db_group: UserGroup = db_item.user_group.single()
             db_idp: IdentityProvider = db_group.identity_provider.single()
@@ -154,7 +154,7 @@ def valid_identity_provider(item: IdentityProviderCreateExtended) -> None:
 def valid_region(item: RegionCreateExtended) -> None:
     """Check given data are valid one."""
     if item.location is not None:
-        db_item = location_mng.get(site=item.location.site)
+        db_item = location_mgr.get(site=item.location.site)
         if db_item is not None:
             for k, v in item.location.dict(exclude_unset=True).items():
                 if db_item.__getattribute__(k) != v:

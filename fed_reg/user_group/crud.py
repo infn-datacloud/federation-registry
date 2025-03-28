@@ -51,7 +51,7 @@ class CRUDUserGroup(
         return db_obj
 
 
-user_group_mng = CRUDUserGroup(
+user_group_mgr = CRUDUserGroup(
     model=UserGroup,
     create_schema=UserGroupCreate,
     update_schema=UserGroupUpdate,

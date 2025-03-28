@@ -15,7 +15,7 @@ from fedreg.service.models import (
 )
 from pytest_cases import case, parametrize, parametrize_with_cases
 
-from fed_reg.region.crud import region_mng
+from fed_reg.region.crud import region_mgr
 from tests.utils import (
     random_country,
     random_lower_string,
@@ -169,7 +169,7 @@ class CaseRegion:
 @parametrize_with_cases("item", cases=CaseRegion)
 def test_create(item: RegionCreateExtended, provider_model: Provider) -> None:
     """Create a new istance"""
-    db_obj = region_mng.create(obj_in=item, provider=provider_model)
+    db_obj = region_mgr.create(obj_in=item, provider=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -204,7 +204,7 @@ def test_create_same_name_diff_provider(
     """A region with the given name exists on another provider."""
     item.name = region_model.name
 
-    db_obj = region_mng.create(obj_in=item, provider=another_provider_model)
+    db_obj = region_mgr.create(obj_in=item, provider=another_provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -222,7 +222,7 @@ def test_create_location_already_exists(
     """A region with the given name exists on another provider."""
     item.location.site = location_model.site
 
-    db_obj = region_mng.create(obj_in=item, provider=provider_model)
+    db_obj = region_mgr.create(obj_in=item, provider=provider_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -242,7 +242,7 @@ def test_create_already_exists(
 
     msg = f"Provider {provider.name} already has a region with name {item.name}"
     with pytest.raises(AssertionError, match=msg):
-        region_mng.create(obj_in=item, provider=provider)
+        region_mgr.create(obj_in=item, provider=provider)
 
 
 @parametrize_with_cases("item", cases=CaseRegion)
@@ -252,7 +252,7 @@ def test_update(item: RegionCreateExtended, region_model: Region) -> None:
     Replace existing location and services with new ones.
     Remove no more used and add new ones.
     """
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -315,7 +315,7 @@ def test_update_no_changes(item: RegionCreateExtended, region_model: Region) -> 
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is None
 
@@ -354,7 +354,7 @@ def test_update_only_region_details(
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -414,7 +414,7 @@ def test_update_only_block_storage_services(
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -474,7 +474,7 @@ def test_update_only_compute_services(
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -534,7 +534,7 @@ def test_update_only_identity_services(
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -594,7 +594,7 @@ def test_update_only_network_services(
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -654,7 +654,7 @@ def test_update_only_object_store_services(
         network_services.append(d)
     item.network_services = network_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -719,7 +719,7 @@ def test_update_add_location(item: RegionCreateExtended, region_model: Region) -
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -780,7 +780,7 @@ def test_update_disconnect_location(
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -842,7 +842,7 @@ def test_update_replace_location(
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)
@@ -905,7 +905,7 @@ def test_update_replace_with_existing_location(
         object_store_services.append(d)
     item.object_store_services = object_store_services
 
-    db_obj = region_mng.update(obj_in=item, db_obj=region_model)
+    db_obj = region_mgr.update(obj_in=item, db_obj=region_model)
 
     assert db_obj is not None
     assert isinstance(db_obj, Region)

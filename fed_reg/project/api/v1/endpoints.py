@@ -44,7 +44,7 @@ from fed_reg.project.api.dependencies import (
     validate_new_project_values,
 )
 from fed_reg.project.api.utils import filter_on_region_attr, filter_on_service_attr
-from fed_reg.project.crud import project_mng
+from fed_reg.project.crud import project_mgr
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -83,7 +83,7 @@ def get_projects(
     user_infos object is not None and it is used to determine the data to return to the
     user.
     """
-    items = project_mng.get_multi(
+    items = project_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     if provider_uid:
@@ -93,12 +93,12 @@ def get_projects(
             lambda x: x.sla.single().user_group.single().uid == user_group_uid, items
         )
 
-    items = project_mng.paginate(items=items, page=page.page, size=page.size)
+    items = project_mgr.paginate(items=items, page=page.page, size=page.size)
     region_query = RegionQuery(name=region_name)
     items = filter_on_region_attr(items=items, region_query=region_query)
     service_query = IdentityServiceQuery(endpoint=identity_service_endpoint)
     items = filter_on_service_attr(items=items, service_query=service_query)
-    items = project_mng.choose_out_schema(
+    items = project_mgr.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )
     if provider_uid and size.with_conn:
@@ -139,7 +139,7 @@ def get_project(
     """
     region_query = RegionQuery(name=region_name)
     items = filter_on_region_attr(items=[item], region_query=region_query)
-    items = project_mng.choose_out_schema(
+    items = project_mgr.choose_out_schema(
         items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
     )
     return items[0]
@@ -182,7 +182,7 @@ def put_project(
 
     Only authenticated users can view this function.
     """
-    db_item = project_mng.update(db_obj=item, obj_in=update_data)
+    db_item = project_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -213,7 +213,7 @@ def delete_project(
 
     Only authenticated users can view this function.
     """
-    if not project_mng.remove(db_obj=item):
+    if not project_mgr.remove(db_obj=item):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete item",
