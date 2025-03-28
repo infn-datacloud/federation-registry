@@ -156,7 +156,7 @@ class CaseProvider:
         )
 
     @case(tags="existing-idp-diff-group")
-    def case_provider_create_with_esiting_idp(
+    def case_provider_create_with_existing_idp(
         self, stand_alone_identity_provider_model: IdentityProvider
     ) -> ProviderCreateExtended:
         relationship = {
@@ -175,7 +175,7 @@ class CaseProvider:
         )
 
     @case(tags="existing-idp-diff-group")
-    def case_provider_create_with_esiting_idps_add_group(
+    def case_provider_create_with_existing_idps_add_group(
         self, stand_alone_identity_provider_model: IdentityProvider
     ) -> ProviderCreateExtended:
         project = {"name": random_lower_string(), "uuid": uuid4()}
@@ -204,7 +204,7 @@ class CaseProvider:
         )
 
     @case(tags="existing-idp-same-group")
-    def case_provider_create_with_esiting_idps_same_group(
+    def case_provider_create_with_existing_idps_same_group(
         self, stand_alone_identity_provider_model: IdentityProvider
     ) -> ProviderCreateExtended:
         project = {"name": random_lower_string(), "uuid": uuid4()}
@@ -238,7 +238,7 @@ class CaseProvider:
         )
 
     @case(tags="existing-idp-same-group")
-    def case_provider_create_with_esiting_idps_same_sla(
+    def case_provider_create_with_existing_idps_same_sla(
         self, sla_model: SLA
     ) -> ProviderCreateExtended:
         user_group_model = sla_model.user_group.single()

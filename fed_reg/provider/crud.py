@@ -232,7 +232,7 @@ class CRUDProvider(
             db_item = db_items.pop(item.endpoint, None)
 
             if db_item is None:
-                self.__create_or_connect_to_idp(
+                db_item = self.__create_or_connect_to_idp(
                     input_identity_provider=item, provider=db_obj
                 )
                 edit = True
