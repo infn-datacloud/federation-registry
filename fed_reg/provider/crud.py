@@ -59,7 +59,7 @@ class CRUDProvider(
             project_mng.create(obj_in=item, provider=db_obj)
         for idp in obj_in.identity_providers:
             db_idp = self.__create_or_connect_to_idp(
-                identity_provider=idp, provider=db_obj
+                input_identity_provider=idp, provider=db_obj
             )
             for user_group in idp.user_groups:
                 self.__create_or_connect_sla(
@@ -240,11 +240,11 @@ class CRUDProvider(
             else:
                 # Update relationship data if needed
                 rel = db_item.providers.relationship(db_obj)
-                if (
-                    rel.protocol != item.relationship.protocol
-                    or rel.idp_name != item.relationship.idp_name
-                ):
-                    db_item.providers.replace(db_obj, item.relationship.dict())
+                if rel.protocol != item.relationship.protocol:
+                    rel.protocol = item.relationship.protocol
+                    edit = True
+                if rel.idp_name != item.relationship.idp_name:
+                    rel.idp_name = item.relationship.idp_name
                     edit = True
                 updated_data = identity_provider_mng.patch(db_obj=db_item, obj_in=item)
                 edit = edit or updated_data is not None
@@ -286,7 +286,7 @@ class CRUDProvider(
                 edit = True
             else:
                 updated_data = region_mng.update(
-                    db_obj=db_item, obj_in=item, projects=db_obj.projects
+                    db_obj=db_item, obj_in=item, provider_projects=db_obj.projects
                 )
                 edit = edit or updated_data is not None
         for db_item in db_items.values():
