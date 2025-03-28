@@ -212,7 +212,7 @@ class CRUDBase(
         -------
             bool. True if the operations succeeded. Raises exception otherwise.
         """
-        return db_obj.delete()
+        return db_obj.deleted if hasattr(db_obj, "deleted") else db_obj.delete()
 
     def _update(
         self,
@@ -238,7 +238,7 @@ class CRUDBase(
         """
         obj_data = db_obj.__dict__
         obj_in = self.__update_schema.parse_obj(obj_in)
-        update_data = obj_in.dict(exclude_unset=not force)
+        update_data = obj_in.dict(exclude_defaults=not force)
 
         if all(obj_data.get(k) == v for k, v in update_data.items()):
             return False
