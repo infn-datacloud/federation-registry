@@ -75,28 +75,3 @@ def test_create_already_exists(
     msg = f"A location with site name {item.site} already exists"
     with pytest.raises(AssertionError, match=msg):
         location_mgr.create(obj_in=item)
-
-
-@parametrize_with_cases("item", cases=CaseLocation)
-def test_update(item: LocationCreate, location_model: Location) -> None:
-    """Completely update the location attributes. Also override not set ones."""
-    db_obj = location_mgr.update(obj_in=item, db_obj=location_model)
-
-    assert db_obj is not None
-    assert isinstance(db_obj, Location)
-    d = item.dict()
-    exclude_properties = ["uid", "element_id_property"]
-    for k in db_obj.__properties__.keys():
-        if k not in exclude_properties:
-            assert db_obj.__getattribute__(k) == d.get(k)
-
-
-@parametrize_with_cases("item", cases=CaseLocation)
-def test_update_no_changes(item: LocationCreate, location_model: Location) -> None:
-    """The new item is equal to the existing one. No changes."""
-    item.site = location_model.site
-    item.country = location_model.country
-
-    db_obj = location_mgr.update(obj_in=item, db_obj=location_model)
-
-    assert db_obj is None

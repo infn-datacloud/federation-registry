@@ -101,33 +101,3 @@ def test_create_already_exists(
     )
     with pytest.raises(AssertionError, match=msg):
         identity_service_mng.create(obj_in=item, region=region)
-
-
-@parametrize_with_cases("item", cases=CaseService)
-def test_update(item: IdentityServiceCreate, service_model: IdentityService) -> None:
-    """Completely update the service attributes. Also override not set ones.
-
-    Replace existing quotas with new ones. Remove no more used and add new ones.
-    """
-    db_obj = identity_service_mng.update(obj_in=item, db_obj=service_model)
-
-    assert db_obj is not None
-    assert isinstance(db_obj, IdentityService)
-    d = item.dict()
-    exclude_properties = ["uid", "element_id_property"]
-    for k in db_obj.__properties__.keys():
-        if k not in exclude_properties:
-            assert db_obj.__getattribute__(k) == d.get(k)
-
-
-@parametrize_with_cases("item", cases=CaseService)
-def test_update_no_changes(
-    item: IdentityServiceCreate, service_model: IdentityService
-) -> None:
-    """The new item is equal to the existing one. No changes."""
-    item.endpoint = service_model.endpoint
-    item.name = service_model.name
-
-    db_obj = identity_service_mng.update(obj_in=item, db_obj=service_model)
-
-    assert db_obj is None

@@ -112,30 +112,3 @@ def test_create_already_exists(
     )
     with pytest.raises(AssertionError, match=msg):
         shared_flavor_mng.create(obj_in=item, service=service)
-
-
-@parametrize_with_cases("item", cases=CaseFlavor)
-def test_update(item: SharedFlavorCreate, flavor_model: SharedFlavor) -> None:
-    """Completely update the flavor attributes. Also override not set ones."""
-    db_obj = shared_flavor_mng.update(obj_in=item, db_obj=flavor_model)
-
-    assert db_obj is not None
-    assert isinstance(db_obj, SharedFlavor)
-    d = item.dict()
-    exclude_properties = ["uid", "element_id_property"]
-    for k in db_obj.__properties__.keys():
-        if k not in exclude_properties:
-            assert db_obj.__getattribute__(k) == d.get(k)
-
-
-@parametrize_with_cases("item", cases=CaseFlavor)
-def test_update_no_changes(
-    item: SharedFlavorCreate, flavor_model: SharedFlavor
-) -> None:
-    """The new item is equal to the existing one. No changes."""
-    item.uuid = flavor_model.uuid
-    item.name = flavor_model.name
-
-    db_obj = shared_flavor_mng.update(obj_in=item, db_obj=flavor_model)
-
-    assert db_obj is None

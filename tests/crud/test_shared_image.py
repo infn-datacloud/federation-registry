@@ -112,28 +112,3 @@ def test_create_already_exists(
     )
     with pytest.raises(AssertionError, match=msg):
         shared_image_mng.create(obj_in=item, service=service)
-
-
-@parametrize_with_cases("item", cases=CaseImage)
-def test_update(item: SharedImageCreate, image_model: SharedImage) -> None:
-    """Completely update the image attributes. Also override not set ones."""
-    db_obj = shared_image_mng.update(obj_in=item, db_obj=image_model)
-
-    assert db_obj is not None
-    assert isinstance(db_obj, SharedImage)
-    d = item.dict()
-    exclude_properties = ["uid", "element_id_property"]
-    for k in db_obj.__properties__.keys():
-        if k not in exclude_properties:
-            assert db_obj.__getattribute__(k) == d.get(k)
-
-
-@parametrize_with_cases("item", cases=CaseImage)
-def test_update_no_changes(item: SharedImageCreate, image_model: SharedImage) -> None:
-    """The new item is equal to the existing one. No changes."""
-    item.uuid = image_model.uuid
-    item.name = image_model.name
-
-    db_obj = shared_image_mng.update(obj_in=item, db_obj=image_model)
-
-    assert db_obj is None

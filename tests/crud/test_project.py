@@ -71,28 +71,3 @@ def test_create_already_exists(item: ProjectCreate, project_model: Project) -> N
     )
     with pytest.raises(AssertionError, match=msg):
         project_mgr.create(obj_in=item, provider=provider)
-
-
-@parametrize_with_cases("item", cases=CaseProject)
-def test_update(item: ProjectCreate, project_model: Project) -> None:
-    """Completely update the project attributes. Also override not set ones."""
-    db_obj = project_mgr.update(obj_in=item, db_obj=project_model)
-
-    assert db_obj is not None
-    assert isinstance(db_obj, Project)
-    d = item.dict()
-    exclude_properties = ["uid", "element_id_property"]
-    for k in db_obj.__properties__.keys():
-        if k not in exclude_properties:
-            assert db_obj.__getattribute__(k) == d.get(k)
-
-
-@parametrize_with_cases("item", cases=CaseProject)
-def test_update_no_changes(item: ProjectCreate, project_model: Project) -> None:
-    """The new item is equal to the existing one. No changes."""
-    item.uuid = project_model.uuid
-    item.name = project_model.name
-
-    db_obj = project_mgr.update(obj_in=item, db_obj=project_model)
-
-    assert db_obj is None

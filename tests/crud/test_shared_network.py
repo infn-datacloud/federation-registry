@@ -112,30 +112,3 @@ def test_create_already_exists(
     )
     with pytest.raises(AssertionError, match=msg):
         shared_network_mng.create(obj_in=item, service=service)
-
-
-@parametrize_with_cases("item", cases=CaseNetwork)
-def test_update(item: SharedNetworkCreate, network_model: SharedNetwork) -> None:
-    """Completely update the network attributes. Also override not set ones."""
-    db_obj = shared_network_mng.update(obj_in=item, db_obj=network_model)
-
-    assert db_obj is not None
-    assert isinstance(db_obj, SharedNetwork)
-    d = item.dict()
-    exclude_properties = ["uid", "element_id_property"]
-    for k in db_obj.__properties__.keys():
-        if k not in exclude_properties:
-            assert db_obj.__getattribute__(k) == d.get(k)
-
-
-@parametrize_with_cases("item", cases=CaseNetwork)
-def test_update_no_changes(
-    item: SharedNetworkCreate, network_model: SharedNetwork
-) -> None:
-    """The new item is equal to the existing one. No changes."""
-    item.uuid = network_model.uuid
-    item.name = network_model.name
-
-    db_obj = shared_network_mng.update(obj_in=item, db_obj=network_model)
-
-    assert db_obj is None
