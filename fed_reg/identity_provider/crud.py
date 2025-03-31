@@ -3,13 +3,7 @@
 from fedreg.identity_provider.models import IdentityProvider
 from fedreg.identity_provider.schemas import (
     IdentityProviderCreate,
-    IdentityProviderRead,
-    IdentityProviderReadPublic,
     IdentityProviderUpdate,
-)
-from fedreg.identity_provider.schemas_extended import (
-    IdentityProviderReadExtended,
-    IdentityProviderReadExtendedPublic,
 )
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import IdentityProviderCreateExtended
@@ -23,10 +17,6 @@ class CRUDIdentityProvider(
         IdentityProvider,
         IdentityProviderCreate,
         IdentityProviderUpdate,
-        IdentityProviderRead,
-        IdentityProviderReadPublic,
-        IdentityProviderReadExtended,
-        IdentityProviderReadExtendedPublic,
     ]
 ):
     """Identity Provider Create, Read, Update and Delete operations."""
@@ -110,8 +100,4 @@ identity_provider_mgr = CRUDIdentityProvider(
     model=IdentityProvider,
     create_schema=IdentityProviderCreate,
     update_schema=IdentityProviderUpdate,
-    read_schema=IdentityProviderRead,
-    read_public_schema=IdentityProviderReadPublic,
-    read_extended_schema=IdentityProviderReadExtended,
-    read_extended_public_schema=IdentityProviderReadExtendedPublic,
 )

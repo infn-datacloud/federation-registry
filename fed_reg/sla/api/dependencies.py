@@ -1,81 +1,44 @@
 """SLA REST API dependencies."""
 
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, status
 from fedreg.sla.models import SLA
-from fedreg.sla.schemas import SLACreate, SLAUpdate
+from fedreg.sla.schemas import SLAUpdate
 
+from fed_reg.dependencies import valid_id
 from fed_reg.sla.crud import sla_mgr
 
 
-def valid_sla_id(sla_uid: str) -> SLA:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        sla_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        SLA: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = sla_mgr.get(uid=sla_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"SLA '{sla_uid}' not found",
-        )
-    return item
+def sla_must_exist(sla_uid: str) -> SLA:
+    """The target sla must exists otherwise raises `not found` error."""
+    return valid_id(mgr=sla_mgr, item_id=sla_uid)
 
 
-def is_unique_sla(item: SLACreate | SLAUpdate) -> None:
-    """Check there are no other SLAs with the same document uuid.
-
-    Args:
-    ----
-        item (SLACreate | SLAUpdate): new data.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given document uuid already exists.
-    """
-    db_item = sla_mgr.get(doc_uuid=item.doc_uuid)
-    if db_item is not None:
-        msg = f"Document '{item.doc_uuid}' already used "
-        msg += "by another SLA"
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=msg,
-        )
+def get_sla_item(sla_uid: str) -> SLA:
+    """Retrieve the target sla. If not found, return None."""
+    return valid_id(mgr=sla_mgr, item_id=sla_uid, error=False)
 
 
 def validate_new_sla_values(
-    update_data: SLAUpdate, item: SLA = Depends(valid_sla_id)
-) -> None:
+    item: Annotated[SLA, Depends(sla_must_exist)], new_data: SLAUpdate
+) -> tuple[SLA, SLAUpdate]:
     """Check given data are valid ones.
 
-    Check there are no other SLAs with the same document uuid.
+    Check there are no other slas with the same site name. Avoid to change
+    sla visibility.
 
-    Args:
-    ----
-        update_data (FlavorUpdate): new data.
-        item (Flavor): DB entity to update.
+    Raises `not found` error if the target entity does not exists.
+    It raises `conflict` error if a DB entity with identical document uuid already
+    exists.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given document uuid already exists.
+    Return the current item and the schema with the new data.
     """
-    if update_data.doc_uuid is not None and update_data.doc_uuid != item.doc_uuid:
-        is_unique_sla(update_data)
+    if new_data.doc_uuid != item.doc_uuid:
+        db_item = sla_mgr.get(doc_uuid=new_data.doc_uuid)
+        if db_item is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"SLA with document uuid '{item.doc_uuid}' already registered",
+            )
+    return item, new_data

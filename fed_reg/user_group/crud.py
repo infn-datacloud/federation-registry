@@ -3,31 +3,12 @@
 from fedreg.identity_provider.models import IdentityProvider
 from fedreg.provider.schemas_extended import UserGroupCreateExtended
 from fedreg.user_group.models import UserGroup
-from fedreg.user_group.schemas import (
-    UserGroupCreate,
-    UserGroupRead,
-    UserGroupReadPublic,
-    UserGroupUpdate,
-)
-from fedreg.user_group.schemas_extended import (
-    UserGroupReadExtended,
-    UserGroupReadExtendedPublic,
-)
+from fedreg.user_group.schemas import UserGroupCreate, UserGroupUpdate
 
 from fed_reg.crud import CRUDBase
 
 
-class CRUDUserGroup(
-    CRUDBase[
-        UserGroup,
-        UserGroupCreate,
-        UserGroupUpdate,
-        UserGroupRead,
-        UserGroupReadPublic,
-        UserGroupReadExtended,
-        UserGroupReadExtendedPublic,
-    ]
-):
+class CRUDUserGroup(CRUDBase[UserGroup, UserGroupCreate, UserGroupUpdate]):
     """User Group Create, Read, Update and Delete operations."""
 
     def create(
@@ -52,11 +33,5 @@ class CRUDUserGroup(
 
 
 user_group_mgr = CRUDUserGroup(
-    model=UserGroup,
-    create_schema=UserGroupCreate,
-    update_schema=UserGroupUpdate,
-    read_schema=UserGroupRead,
-    read_public_schema=UserGroupReadPublic,
-    read_extended_schema=UserGroupReadExtended,
-    read_extended_public_schema=UserGroupReadExtendedPublic,
+    model=UserGroup, create_schema=UserGroupCreate, update_schema=UserGroupUpdate
 )

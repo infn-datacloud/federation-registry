@@ -2,21 +2,13 @@
 
 from typing import Generic, Literal, TypeVar
 
-from fedreg.core import BaseNodeCreate, BaseNodeRead, BaseReadPrivate, BaseReadPublic
+from fedreg.core import BaseNodeCreate
 from fedreg.project.models import Project
 from neomodel import StructuredNode
 
 ModelType = TypeVar("ModelType", bound=StructuredNode)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseNodeCreate)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseNodeCreate)
-ReadSchemaType = TypeVar("ReadSchemaType", bound=BaseReadPrivate)
-ReadPublicSchemaType = TypeVar("ReadPublicSchemaType", bound=BaseReadPublic)
-ReadExtendedSchemaType = TypeVar(
-    "ReadExtendedSchemaType", BaseNodeRead, BaseReadPrivate, None
-)
-ReadExtendedPublicSchemaType = TypeVar(
-    "ReadExtendedPublicSchemaType", BaseNodeRead, BaseReadPublic, None
-)
 
 
 class SkipLimit(Generic[ModelType]):
@@ -46,15 +38,7 @@ class SkipLimit(Generic[ModelType]):
 
 class CRUDBase(
     SkipLimit[ModelType],
-    Generic[
-        ModelType,
-        CreateSchemaType,
-        UpdateSchemaType,
-        ReadSchemaType,
-        ReadPublicSchemaType,
-        ReadExtendedSchemaType,
-        ReadExtendedPublicSchemaType,
-    ],
+    Generic[ModelType, CreateSchemaType, UpdateSchemaType],
 ):
     """Class with common Create, Read, Update and delete operations."""
 
@@ -64,10 +48,6 @@ class CRUDBase(
         model: type[ModelType],
         create_schema: type[CreateSchemaType],
         update_schema: type[UpdateSchemaType],
-        read_schema: type[ReadSchemaType],
-        read_public_schema: type[ReadPublicSchemaType],
-        read_extended_schema: type[ReadExtendedSchemaType],
-        read_extended_public_schema: type[ReadExtendedPublicSchemaType],
     ):
         """CRUD object with default methods to Create, Read, Update, Delete (CRUD).
 
@@ -89,10 +69,6 @@ class CRUDBase(
         self.__model = model
         self.__create_schema = create_schema
         self.__update_schema = update_schema
-        self.__read_schema = read_schema
-        self.__read_public_schema = read_public_schema
-        self.__read_extended_schema = read_extended_schema
-        self.__read_extended_public_schema = read_extended_public_schema
 
     @property
     def model(self):
@@ -248,91 +224,13 @@ class CRUDBase(
                 setattr(db_obj, field, update_data[field])
         return True
 
-    def paginate(
-        self, *, items: list[ModelType], page: int, size: int | None
-    ) -> list[ModelType]:
-        """Divide the list in chunks.
-
-        Args:
-        ----
-            items (list[ModelType]): list to split.
-            page (int): Target chunk (start from 0).
-            size (int | None): Chunk size.
-
-        Returns:
-        -------
-            list[ModelType]. Chunk with index equal to page and length equal to, at
-            most, size.
-        """
-        if size is None:
-            return items
-        start = page * size
-        end = start + size
-        return items[start:end]
-
-    def choose_out_schema(
-        self, *, items: list[ModelType], auth: bool, with_conn: bool, short: bool
-    ) -> (
-        list[ReadPublicSchemaType]
-        | list[ReadSchemaType]
-        | list[ReadExtendedPublicSchemaType]
-        | list[ReadExtendedSchemaType]
-    ):
-        """Choose which read model use to return data to users.
-
-        Based on authorization, and on the user request to retrieve linked items, choose
-        one of the read schemas.
-
-        Args:
-        ----
-            items (list[ModelType]): list of items to cast.
-            auth (bool): Flag for authorization.
-            with_conn (bool): Flag to retrieve linked items.
-            short (bool): Only for authenticated users: show shrunk version (public).
-
-        Returns:
-        -------
-            list[ReadPublicSchemaType] | list[ReadSchemaType] |
-            list[ReadExtendedPublicSchemaType] | list[ReadExtendedSchemaType].
-        """
-        if auth:
-            if short:
-                if with_conn:
-                    return [
-                        self.__read_extended_public_schema.from_orm(i) for i in items
-                    ]
-                return [self.__read_public_schema.from_orm(i) for i in items]
-            if with_conn:
-                return [self.__read_extended_schema.from_orm(i) for i in items]
-            return [self.__read_schema.from_orm(i) for i in items]
-        if with_conn:
-            return [self.__read_extended_public_schema.from_orm(i) for i in items]
-        return [self.__read_public_schema.from_orm(i) for i in items]
-
 
 CreateExtendedSchemaType = TypeVar("CreateExtendedSchemaType", bound=BaseNodeCreate)
 
 
 class CRUDMultiProject(
-    CRUDBase[
-        ModelType,
-        CreateSchemaType,
-        UpdateSchemaType,
-        ReadSchemaType,
-        ReadPublicSchemaType,
-        ReadExtendedSchemaType,
-        ReadExtendedPublicSchemaType,
-    ],
-    Generic[
-        ModelType,
-        CreateSchemaType,
-        CreateExtendedSchemaType,
-        UpdateSchemaType,
-        ReadSchemaType,
-        ReadPublicSchemaType,
-        ReadExtendedSchemaType,
-        ReadExtendedPublicSchemaType,
-    ],
+    CRUDBase[ModelType, CreateSchemaType, UpdateSchemaType],
+    Generic[ModelType, CreateSchemaType, CreateExtendedSchemaType, UpdateSchemaType],
 ):
     """Class with the function to merge new projects into current ones."""
 
@@ -405,7 +303,7 @@ SharedCreateSchemaType = TypeVar("SharedCreateSchemaType", bound=BaseNodeCreate)
 
 
 class CRUDPrivateSharedDispatcher(
-    # SkipLimit[PrivateModelType | SharedModelType],
+    SkipLimit[PrivateModelType | SharedModelType],
     Generic[
         PrivateModelType,
         SharedModelType,
@@ -431,43 +329,42 @@ class CRUDPrivateSharedDispatcher(
         self.__shared_model = shared_model
         self.__shared_create_schema = shared_create_schema
 
-    # def get(self, **kwargs) -> PrivateModelType | SharedModelType | None:
-    #     """Get a single resource. Return None if the resource is not found."""
-    #     item = self.__shared_mgr.get(**kwargs)
-    #     if item:
-    #         return item
-    #     return self.__private_mgr.get(**kwargs)
+    def get(self, **kwargs) -> PrivateModelType | SharedModelType | None:
+        """Get a single resource. Return None if the resource is not found."""
+        item = self.__shared_mgr.get(**kwargs)
+        if item:
+            return item
+        return self.__private_mgr.get(**kwargs)
 
-    # def get_multi(
-    #     self, skip: int = 0, limit: int | None = None, sort: str | None = None,
-    # **kwargs
-    # ) -> list[PrivateModelType | SharedModelType]:
-    #     """Get list of resources."""
-    #     req_is_shared = kwargs.get("is_shared", None)
+    def get_multi(
+        self, skip: int = 0, limit: int | None = None, sort: str | None = None, **kwargs
+    ) -> list[PrivateModelType | SharedModelType]:
+        """Get list of resources."""
+        req_is_shared = kwargs.get("is_shared", None)
 
-    #     if req_is_shared is None:
-    #         shared_items = self.__shared_mgr.get_multi(**kwargs)
-    #         private_items = self.__private_mgr.get_multi(**kwargs)
+        if req_is_shared is None:
+            shared_items = self.__shared_mgr.get_multi(**kwargs)
+            private_items = self.__private_mgr.get_multi(**kwargs)
 
-    #         if sort:
-    #             if sort.startswith("-"):
-    #                 sort = sort[1:]
-    #                 reverse = True
-    #             sorting = [sort, "uid"]
-    #             items = sorted(
-    #                 [*shared_items, *private_items],
-    #                 key=lambda x: (x.__getattribute__(k) for k in sorting),
-    #                 reverse=reverse,
-    #             )
+            items = [*shared_items, *private_items]
+            if sort:
+                if sort.startswith("-"):
+                    sort = sort[1:]
+                    reverse = True
+                sorting = [sort, "uid"]
+                items = sorted(
+                    items,
+                    key=lambda x: (x.__getattribute__(k) for k in sorting),
+                    reverse=reverse,
+                )
 
-    #         return self._apply_limit_and_skip(items=items, skip=skip, limit=limit)
+            return self._apply_limit_and_skip(items=items, skip=skip, limit=limit)
 
-    #     if req_is_shared:
-    #         return self.__shared_mgr.get_multi(
-    #             skip=skip, limit=limit, sort=sort, **kwargs
-    #         )
-    #     return self.__private_mgr.get_multi(skip=skip, limit=limit, sort=sort,
-    # **kwargs)
+        if req_is_shared:
+            return self.__shared_mgr.get_multi(
+                skip=skip, limit=limit, sort=sort, **kwargs
+            )
+        return self.__private_mgr.get_multi(skip=skip, limit=limit, sort=sort, **kwargs)
 
     def create(
         self,

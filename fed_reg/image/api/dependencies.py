@@ -1,150 +1,48 @@
 """Image REST API dependencies."""
 
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, status
-from fedreg.image.models import Image
-from fedreg.image.schemas import ImageUpdate, PrivateImageCreate, SharedImageCreate
-from fedreg.service.models import ComputeService
+from fedreg.image.models import PrivateImage, SharedImage
+from fedreg.image.schemas import ImageUpdate
 
+from fed_reg.dependencies import valid_id
 from fed_reg.image.crud import image_mgr
-from fed_reg.service.api.dependencies import valid_compute_service_id
+from fed_reg.service.api.dependencies import compute_service_must_exist
 
 
-def valid_image_id(image_uid: str) -> Image:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        image_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        Image: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = image_mgr.get(uid=image_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Image '{image_uid}' not found",
-        )
-    return item
+def image_must_exist(image_uid: str) -> PrivateImage | SharedImage:
+    """The target image must exists otherwise raises `not found` error."""
+    return valid_id(mgr=image_mgr, item_id=image_uid)
 
 
-def valid_image_name(
-    item: PrivateImageCreate | SharedImageCreate | ImageUpdate,
-    services: list[ComputeService],
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other images, belonging to the same service, with the same name.
-
-    Args:
-    ----
-        item (ImageCreate | ImageUpdate): new data.
-        services (list of ComputeService): list of services to inspect.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with identical name,
-            belonging to the same service, already exists.
-    """
-    for service in services:
-        service = valid_compute_service_id(service.uid)
-        db_item = service.images.get_or_none(name=item.name)
-        if db_item is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Image with name '{item.name}' already registered",
-            )
-
-
-def valid_image_uuid(
-    item: PrivateImageCreate | SharedImageCreate | ImageUpdate,
-    services: list[ComputeService] = Depends(valid_compute_service_id),
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other images, belonging to the same service, with the same uuid.
-
-    Args:
-    ----
-        item (ImageCreate | ImageUpdate): new data.
-        services (list of ComputeService): list of services to inspect.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with identical uuid,
-            belonging to the same service, already exists.
-    """
-    for service in services:
-        service = valid_compute_service_id(service.uid)
-        db_item = service.images.get_or_none(uuid=item.uuid)
-        if db_item is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Image with uuid '{item.uuid}' already registered",
-            )
+def get_image_item(image_uid: str) -> PrivateImage | SharedImage:
+    """Retrieve the target image. If not found, return None."""
+    return valid_id(mgr=image_mgr, item_id=image_uid, error=False)
 
 
 def validate_new_image_values(
-    update_data: ImageUpdate, item: Image = Depends(valid_image_id)
-) -> None:
+    item: Annotated[PrivateImage | SharedImage, Depends(image_must_exist)],
+    new_data: ImageUpdate,
+) -> tuple[PrivateImage | SharedImage, ImageUpdate]:
     """Check given data are valid ones.
 
-    Check there are no other images, belonging to the same service, with the same uuid
-    and name. Avoid to change image visibility.
+    Check there are no other images, belonging to the same service, with the same
+    uuid. Avoid to change image visibility.
 
-    Args:
-    ----
-        update_data (ImageUpdate): new data.
-        item (Image): DB entity to update.
+    Raises `not found` error if the target entity does not exists.
+    It raises `conflict` error if a DB entity with identical uuid and belonging to the
+    same service already exists.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with identical name or uuid,
-            belonging to the same service, already exists.
+    Return the current item and the schema with the new data.
     """
-    # if update_data.name != item.name:
-    #     valid_image_name(item=update_data, services=item.services.all())
-    if update_data.uuid != item.uuid:
-        valid_image_uuid(item=update_data, services=item.services.all())
-
-
-# def is_private_image(item: Image = Depends(valid_image_id)) -> Image:
-#     """Check given image has private or shared visibility.
-
-#     Args:
-#     ----
-#         item (Image): entity to validate.
-
-#     Returns:
-#     -------
-#         Image: DB entity with given uid.
-
-#     Raises:
-#     ------
-#         NotFoundError: DB entity with given uid not found.
-#         BadRequestError: DB entity has not valid visibility
-#     """
-#     if item.is_public:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail=f"Image {item.uid} is a public image",
-#         )
-#     return item
+    if new_data.uuid != item.uuid:
+        for service in item.services:
+            service = compute_service_must_exist(service.uid)
+            db_item = service.images.get_or_none(uuid=new_data.uuid)
+            if db_item is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Image with uuid '{item.uuid}' already registered",
+                )
+    return item, new_data

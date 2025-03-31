@@ -1,41 +1,22 @@
 """SLA endpoints to execute POST, GET, PUT, PATCH and DELETE operations."""
 
-from typing import Optional
+from typing import Annotated
 
-# from app.user_group.api.dependencies import valid_user_group_id
-# from app.user_group.models import UserGroup
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Request,
-    Response,
-    Security,
-    status,
-)
+from fastapi import APIRouter, Depends, Request, Response, Security, status
 from fastapi.security import HTTPBasicCredentials
 from fedreg.sla.models import SLA
-from fedreg.sla.schemas import (
-    SLAQuery,
-    SLARead,
-    SLAUpdate,
-)
-from fedreg.sla.schemas_extended import (
-    SLAReadMulti,
-    SLAReadSingle,
-)
+from fedreg.sla.schemas import SLAQuery, SLARead, SLAUpdate
 from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.auth import custom, flaat, get_user_infos, security
-
-# from app.project.api.dependencies import project_has_no_sla
-# from app.project.models import Project
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
-from fed_reg.sla.api.dependencies import (  # is_unique_sla,
-    valid_sla_id,
+from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
+from fed_reg.sla.api.dependencies import (
+    get_sla_item,
+    sla_must_exist,
     validate_new_sla_values,
 )
+from fed_reg.sla.api.utils import SLAReadMulti, SLAReadSingle, choose_schema
 from fed_reg.sla.crud import sla_mgr
 
 router = APIRouter(prefix="/slas", tags=["slas"])
@@ -44,39 +25,135 @@ router = APIRouter(prefix="/slas", tags=["slas"])
 @router.get(
     "/",
     response_model=SLAReadMulti,
-    summary="Read all SLAs",
-    description="Retrieve all SLAs stored in the database. \
-        It is possible to filter on SLAs attributes and other \
+    summary="Read all slas",
+    description="Retrieve all slas stored in the database. \
+        It is possible to filter on slas attributes and other \
         common query parameters.",
 )
 @custom.decorate_view_func
 @db.read_transaction
 def get_slas(
-    comm: DbQueryCommonParams = Depends(),
-    page: Pagination = Depends(),
-    size: SchemaSize = Depends(),
-    item: SLAQuery = Depends(),
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    comm: Annotated[DbQueryCommonParams, Depends()],
+    page: Annotated[Pagination, Depends()],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[SLAQuery, Depends()],
 ):
-    """GET operation to retrieve all SLAs.
+    """GET operation to retrieve all slas.
 
     It can receive the following group op parameters:
     - comm: parameters common to all DB queries to limit, skip or sort results.
     - page: parameters to limit and select the number of results to return to the user.
-    - size: parameters to define the number of information contained in each result.
+    - shape: parameters to define the number of information contained in each result.
     - item: parameters specific for this item typology. Used to apply filters.
 
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
     """
     items = sla_mgr.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = sla_mgr.paginate(items=items, page=page.page, size=page.size)
-    return sla_mgr.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_schema(
+        items,
+        auth=user_infos is not None,
+        short=shape.short,
+        with_conn=shape.with_conn,
     )
+
+
+@router.get(
+    "/{sla_uid}",
+    response_model=SLAReadSingle,
+    summary="Read a specific sla",
+    description="Retrieve a specific sla using its *uid*. If no entity matches the \
+        given *uid*, the endpoint raises a `not found` error.",
+)
+@custom.decorate_view_func
+@db.read_transaction
+def get_sla(
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[SLA, Depends(sla_must_exist)],
+):
+    """GET operation to retrieve the sla matching a specific uid.
+
+    The endpoint expects a uid and uses a dependency to check its existence.
+
+    It can receive the following group op parameters:
+    - shape: parameters to define the number of information contained in each result.
+
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
+    """
+    return choose_schema(
+        item, auth=user_infos is not None, short=shape.short, with_conn=shape.with_conn
+    )
+
+
+@router.patch(
+    "/{sla_uid}",
+    status_code=status.HTTP_200_OK,
+    response_model=SLARead | None,
+    summary="Patch only specific attribute of the target sla",
+    description="Update only the received attribute values of a specific sla. The \
+        target sla is identified using its *uid*. If no entity matches the given \
+        *uid*, the endpoint raises a `not found` error.  At first, the endpoint \
+        validates the new sla values checking there are no other items with the \
+        given *doc_uuid*. In that case, the endpoint raises the `conflict` \
+        error. If there are no differences between new values and current ones, the \
+        database entity is left unchanged and the endpoint returns the `not modified` \
+        message.",
+)
+@flaat.access_level("write")
+@db.write_transaction
+def put_sla(
+    request: Request,
+    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
+    response: Response,
+    validated_data: Annotated[tuple[SLA, SLAUpdate], Depends(validate_new_sla_values)],
+):
+    """PATCH operation to update the sla matching a specific uid.
+
+    The endpoint expects the item's uid and uses a dependency to check its existence.
+    It expects the new data to write in the database.
+    It updates only the received attributes. It leaves unchanged the other item's
+    attributes and its relationships.
+
+    If new data equals current data, no update is performed and the endpoint returns a
+    response with an empty body and the 304 status code.
+
+    Only authenticated users can view this function.
+    """
+    item, update_data = validated_data
+    db_item = sla_mgr.update(db_obj=item, obj_in=update_data)
+    if not db_item:
+        response.status_code = status.HTTP_304_NOT_MODIFIED
+    return db_item
+
+
+@router.delete(
+    "/{sla_uid}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a specific sla",
+    description="Delete a specific sla using its *uid*. Returns `no content`.",
+)
+@flaat.access_level("write")
+@db.write_transaction
+def delete_slas(
+    request: Request,
+    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
+    item: Annotated[SLA, Depends(get_sla_item)],
+):
+    """DELETE operation to remove the sla matching a specific uid.
+
+    The endpoint expects the item's uid.
+
+    Only authenticated users can view this endpoint.
+    """
+    sla_mgr.remove(db_obj=item)
 
 
 # @db.write_transaction
@@ -118,108 +195,3 @@ def get_slas(
 #             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
 #     # Create SLA
 #     return sla.create(obj_in=item, project=project, user_group=user_group, force=True)
-
-
-@router.get(
-    "/{sla_uid}",
-    response_model=SLAReadSingle,
-    summary="Read a specific SLA",
-    description="Retrieve a specific SLA using its *uid*. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error.",
-)
-@custom.decorate_view_func
-@db.read_transaction
-def get_sla(
-    size: SchemaSize = Depends(),
-    item: SLA = Depends(valid_sla_id),
-    user_infos: UserInfos | None = Security(get_user_infos),
-):
-    """GET operation to retrieve the SLA matching a specific uid.
-
-    The endpoints expect a uid and uses a dependency to check its existence.
-
-    It can receive the following group op parameters:
-    - size: parameters to define the number of information contained in each result.
-
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
-    """
-    return sla_mgr.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
-    )[0]
-
-
-@router.patch(
-    "/{sla_uid}",
-    status_code=status.HTTP_200_OK,
-    response_model=Optional[SLARead],
-    dependencies=[
-        Depends(validate_new_sla_values),
-    ],
-    summary="Edit a specific SLA",
-    description="Update attribute values of a specific SLA. \
-        The target SLA is identified using its uid. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. If new values equal \
-        current ones, the database entity is left unchanged \
-        and the endpoint returns the `not modified` message. \
-        At first validate new SLA values checking there are \
-        no other items with the given *endpoint*.",
-)
-@flaat.access_level("write")
-@db.write_transaction
-def put_sla(
-    request: Request,
-    update_data: SLAUpdate,
-    response: Response,
-    item: SLA = Depends(valid_sla_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
-):
-    """PATCH operation to update the SLA matching a specific uid.
-
-    The endpoints expect a uid and uses a dependency to check its existence. It also
-    expects the new data to write in the database. It updates only the item attributes,
-    not its relationships.
-
-    If the new data equals the current data, no update is performed and the function
-    returns a response with an empty body and the 304 status code.
-
-    Only authenticated users can view this function.
-    """
-    db_item = sla_mgr.update(db_obj=item, obj_in=update_data)
-    if not db_item:
-        response.status_code = status.HTTP_304_NOT_MODIFIED
-    return db_item
-
-
-@router.delete(
-    "/{sla_uid}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a specific SLA",
-    description="Delete a specific SLA using its *uid*. \
-        Returns `no content`. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. \
-        If the deletion procedure fails, raises a `internal \
-        server` error",
-)
-@flaat.access_level("write")
-@db.write_transaction
-def delete_slas(
-    request: Request,
-    item: SLA = Depends(valid_sla_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
-):
-    """DELETE operation to remove the SLA matching a specific uid.
-
-    The endpoints expect a uid and uses a dependency to check its existence.
-
-    Only authenticated users can view this function.
-    """
-    if not sla_mgr.remove(db_obj=item):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete item",
-        )

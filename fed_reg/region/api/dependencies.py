@@ -1,97 +1,53 @@
 """Region REST API dependencies."""
 
-from fastapi import Depends, HTTPException, status
-from fedreg.provider.models import Provider
-from fedreg.region.models import Region
-from fedreg.region.schemas import RegionCreate, RegionUpdate
+from typing import Annotated
 
-from fed_reg.provider.api.dependencies import valid_provider_id
+from fastapi import Depends, HTTPException, status
+from fedreg.region.models import Region
+from fedreg.region.schemas import RegionUpdate
+
+from fed_reg.dependencies import valid_id
+from fed_reg.provider.api.dependencies import provider_must_exist
 from fed_reg.region.crud import region_mgr
 
 
-def valid_region_id(region_uid: str) -> Region:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        region_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        Region: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = region_mgr.get(uid=region_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Region '{region_uid}' not found",
-        )
-    return item
+def region_must_exist(region_uid: str) -> Region:
+    """The target region must exists otherwise raises `not found` error."""
+    return valid_id(mgr=region_mgr, item_id=region_uid)
 
 
-def is_unique_region(
-    item: RegionCreate | RegionUpdate,
-    provider: Provider = Depends(valid_provider_id),
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other regions, belonging to the same provider, with the same
-    name.
-
-    Args:
-    ----
-        item (RegionCreate | RegionUpdate): new data.
-        provider (Provider): hosting provider.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given name already exists.
-    """
-    db_item = provider.regions.get_or_none(name=item.name)
-    if db_item is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Region with name '{item.name}' already registered",
-        )
+def get_region_item(region_uid: str) -> Region:
+    """Retrieve the target region. If not found, return None."""
+    return valid_id(mgr=region_mgr, item_id=region_uid, error=False)
 
 
 def validate_new_region_values(
-    update_data: RegionUpdate, item: Region = Depends(valid_region_id)
-) -> None:
+    item: Annotated[Region, Depends(region_must_exist)], new_data: RegionUpdate
+) -> tuple[Region, RegionUpdate]:
     """Check given data are valid ones.
 
-    Check there are no other user groups, belonging to the same identity provider, with
-    the same name.
+    Check there are no other regions with the same site name. Avoid to change
+    region visibility.
 
-    Args:
-    ----
-        update_data (RegionUpdate): new data.
-        item (Region): DB entity to update.
+    Raises `not found` error if the target entity does not exists.
+    It raises `conflict` error if a DB entity with identical site name already exists.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given name already exists.
+    Return the current item and the schema with the new data.
     """
-    if update_data.name != item.name:
-        is_unique_region(item=update_data, provider=item.provider.single())
+    if new_data.name != item.name:
+        provider = provider_must_exist(item.provider.uid)
+        db_item = provider.regions.get_or_none(name=new_data.name)
+        if db_item is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Region with name '{item.name}' already registered",
+            )
+    return item, new_data
 
 
-def not_last_region(item: Region = Depends(valid_region_id)) -> Region:
+def not_last_region(item: Annotated[Region, Depends(region_must_exist)]) -> Region:
     """Check parent provider has other regions."""
-    db_provider: Provider = item.provider.single()
+    db_provider: Region = item.provider.single()
     if len(db_provider.regions) == 1:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

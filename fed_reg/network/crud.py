@@ -2,15 +2,9 @@
 
 from fedreg.network.models import PrivateNetwork, SharedNetwork
 from fedreg.network.schemas import (
-    NetworkRead,
-    NetworkReadPublic,
     NetworkUpdate,
     PrivateNetworkCreate,
     SharedNetworkCreate,
-)
-from fedreg.network.schemas_extended import (
-    NetworkReadExtended,
-    NetworkReadExtendedPublic,
 )
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateNetworkCreateExtended
@@ -25,10 +19,6 @@ class CRUDPrivateNetwork(
         PrivateNetworkCreate,
         PrivateNetworkCreateExtended,
         NetworkUpdate,
-        NetworkRead,
-        NetworkReadPublic,
-        NetworkReadExtended,
-        NetworkReadExtendedPublic,
     ]
 ):
     """Private Network Create, Read, Update and Delete operations."""
@@ -69,17 +59,7 @@ class CRUDPrivateNetwork(
         return db_obj
 
 
-class CRUDSharedNetwork(
-    CRUDBase[
-        SharedNetwork,
-        SharedNetworkCreate,
-        NetworkUpdate,
-        NetworkRead,
-        NetworkReadPublic,
-        NetworkReadExtended,
-        NetworkReadExtendedPublic,
-    ]
-):
+class CRUDSharedNetwork(CRUDBase[SharedNetwork, SharedNetworkCreate, NetworkUpdate]):
     """Network Create, Read, Update and Delete operations."""
 
     def create(
@@ -125,20 +105,10 @@ private_network_mng = CRUDPrivateNetwork(
     model=PrivateNetwork,
     create_schema=PrivateNetworkCreate,
     update_schema=NetworkUpdate,
-    read_schema=NetworkRead,
-    read_public_schema=NetworkReadPublic,
-    read_extended_schema=NetworkReadExtended,
-    read_extended_public_schema=NetworkReadExtendedPublic,
 )
 
 shared_network_mng = CRUDSharedNetwork(
-    model=SharedNetwork,
-    create_schema=SharedNetworkCreate,
-    update_schema=NetworkUpdate,
-    read_schema=NetworkRead,
-    read_public_schema=NetworkReadPublic,
-    read_extended_schema=NetworkReadExtended,
-    read_extended_public_schema=NetworkReadExtendedPublic,
+    model=SharedNetwork, create_schema=SharedNetworkCreate, update_schema=NetworkUpdate
 )
 network_mgr = CRUDNetwork(
     private_mgr=private_network_mng,

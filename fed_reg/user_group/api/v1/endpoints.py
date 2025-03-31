@@ -1,70 +1,24 @@
 """User Group endpoints to execute POST, GET, PUT, PATCH and DELETE operations."""
 
-from typing import Optional
+from typing import Annotated
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Request,
-    Response,
-    Security,
-    status,
-)
+from fastapi import APIRouter, Depends, Request, Response, Security, status
 from fastapi.security import HTTPBasicCredentials
 from fedreg.provider.enum import ProviderStatus, ProviderType
 from fedreg.provider.schemas import ProviderQuery
 from fedreg.region.schemas import RegionQuery
 from fedreg.user_group.models import UserGroup
-from fedreg.user_group.schemas import (
-    UserGroupQuery,
-    UserGroupRead,
-    UserGroupUpdate,
-)
-from fedreg.user_group.schemas_extended import (
-    UserGroupReadMulti,
-    UserGroupReadSingle,
-)
+from fedreg.user_group.schemas import UserGroupQuery, UserGroupRead, UserGroupUpdate
+from fedreg.user_group.schemas_extended import UserGroupReadMulti, UserGroupReadSingle
 from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.auth import custom, flaat, get_user_infos, security
-
-# from app.flavor.crud import flavor
-# from app.flavor.schemas import FlavorRead, FlavorReadPublic, FlavorReadShort
-# from app.flavor.schemas_extended import FlavorReadExtended, FlavorReadExtendedPublic
-# from app.identity_provider.schemas_extended import (
-#     ProviderReadExtended,
-#     ProviderReadExtendedPublic,
-# )
-# from app.image.crud import image
-# from app.image.schemas import ImageRead, ImageReadPublic, ImageReadShort
-# from app.image.schemas_extended import ImageReadExtended, ImageReadExtendedPublic
-# from app.provider.crud import provider
-# from app.provider.schemas import ProviderRead, ProviderReadPublic, ProviderReadShort
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
-
-# from app.service.schemas import (
-#     BlockStorageServiceRead,
-#     BlockStorageServiceReadPublic,
-#     BlockStorageServiceReadShort,
-#     ComputeServiceRead,
-#     ComputeServiceReadPublic,
-#     ComputeServiceReadShort,
-#     IdentityServiceRead,
-#     IdentityServiceReadPublic,
-#     IdentityServiceReadShort,
-# )
-# from app.service.schemas_extended import (
-#     BlockStorageServiceReadExtended,
-#     BlockStorageServiceReadExtendedPublic,
-#     ComputeServiceReadExtended,
-#     ComputeServiceReadExtendedPublic,
-#     IdentityServiceReadExtended,
-#     IdentityServiceReadExtendedPublic,
-# )
+from fed_reg.project.api.utils import choose_schema
+from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
 from fed_reg.user_group.api.dependencies import (
-    valid_user_group_id,
+    get_user_group_item,
+    user_group_must_exist,
     validate_new_user_group_values,
 )
 from fed_reg.user_group.api.utils import filter_on_provider_attr, filter_on_region_attr
@@ -84,16 +38,16 @@ router = APIRouter(prefix="/user_groups", tags=["user_groups"])
 @custom.decorate_view_func
 @db.read_transaction
 def get_user_groups(
-    comm: DbQueryCommonParams = Depends(),
-    page: Pagination = Depends(),
-    size: SchemaSize = Depends(),
-    item: UserGroupQuery = Depends(),
-    idp_endpoint: Optional[str] = None,
-    provider_name: Optional[str] = None,
-    provider_type: Optional[ProviderType] = None,
-    provider_status: Optional[ProviderStatus] = None,
-    region_name: Optional[str] = None,
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    comm: Annotated[DbQueryCommonParams, Depends()],
+    page: Annotated[Pagination, Depends()],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[UserGroupQuery, Depends()],
+    idp_endpoint: str | None = None,
+    region_name: str | None = None,
+    provider_name: str | None = None,
+    provider_type: ProviderType | None = None,
+    provider_status: ProviderStatus | None = None,
 ):
     """GET operation to retrieve all user groups.
 
@@ -116,7 +70,6 @@ def get_user_groups(
                 lambda x: x.identity_provider.single().endpoint == idp_endpoint, items
             )
         )
-
     if provider_type:
         provider_type = provider_type.value
     if provider_status:
@@ -125,13 +78,12 @@ def get_user_groups(
         name=provider_name, type=provider_type, status=provider_status
     )
     items = filter_on_provider_attr(items=items, provider_query=provider_query)
-
     region_query = RegionQuery(name=region_name)
     items = filter_on_region_attr(items=items, region_query=region_query)
 
-    items = user_group_mgr.paginate(items=items, page=page.page, size=page.size)
-    return user_group_mgr.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_schema(
+        items, auth=user_infos is not None, short=shape.short, with_conn=shape.with_conn
     )
 
 
@@ -139,69 +91,69 @@ def get_user_groups(
     "/{user_group_uid}",
     response_model=UserGroupReadSingle,
     summary="Read a specific user group",
-    description="Retrieve a specific user group using its *uid*. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error.",
+    description="Retrieve a specific user group using its *uid*. If no entity matches \
+        the given *uid*, the endpoint raises a `not found` error.",
 )
 @custom.decorate_view_func
 @db.read_transaction
 def get_user_group(
-    size: SchemaSize = Depends(),
-    item: UserGroup = Depends(valid_user_group_id),
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[UserGroup, Depends(user_group_must_exist)],
 ):
     """GET operation to retrieve the user group matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence.
+    The endpoint expects a uid and uses a dependency to check its existence.
 
     It can receive the following group op parameters:
-    - size: parameters to define the number of information contained in each result.
+    - shape: parameters to define the number of information contained in each result.
 
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
     """
-    return user_group_mgr.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
-    )[0]
+    return choose_schema(
+        item, auth=user_infos is not None, short=shape.short, with_conn=shape.with_conn
+    )
 
 
 @router.patch(
     "/{user_group_uid}",
     status_code=status.HTTP_200_OK,
-    response_model=Optional[UserGroupRead],
-    dependencies=[Depends(validate_new_user_group_values)],
-    summary="Edit a specific user group",
-    description="Update attribute values of a specific user group. \
-        The target user group is identified using its uid. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. If new values equal \
-        current ones, the database entity is left unchanged \
-        and the endpoint returns the `not modified` message. \
-        At first validate new user group values checking there are \
-        no other items, belonging to same identity provider, \
-        with the given *name*.",
+    response_model=UserGroupRead | None,
+    summary="Patch only specific attribute of the target user group",
+    description="Update only the received attribute values of a specific user group. \
+        The target user group is identified using its *uid*. If no entity matches the \
+        given *uid*, the endpoint raises a `not found` error.  At first, the endpoint \
+        validates the new user group values checking there are no other items with the \
+        given *uuid* and *name*. In that case, the endpoint raises the `conflict` \
+        error. If there are no differences between new values and current ones, the \
+        database entity is left unchanged and the endpoint returns the `not modified` \
+        message.",
 )
 @flaat.access_level("write")
 @db.write_transaction
 def put_user_group(
     request: Request,
-    update_data: UserGroupUpdate,
+    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
-    item: UserGroup = Depends(valid_user_group_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
+    validated_data: Annotated[
+        tuple[UserGroup, UserGroupUpdate], Depends(validate_new_user_group_values)
+    ],
 ):
     """PATCH operation to update the user group matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence. It also
-    expects the new data to write in the database. It updates only the item attributes,
-    not its relationships.
+    The endpoint expects the item's uid and uses a dependency to check its existence.
+    It expects the new data to write in the database.
+    It updates only the received attributes. It leaves unchanged the other item's
+    attributes and its relationships.
 
-    If the new data equals the current data, no update is performed and the function
-    returns a response with an empty body and the 304 status code.
+    If new data equals current data, no update is performed and the endpoint returns a
+    response with an empty body and the 304 status code.
 
     Only authenticated users can view this function.
     """
+    item, update_data = validated_data
     db_item = user_group_mgr.update(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
@@ -212,30 +164,22 @@ def put_user_group(
     "/{user_group_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific user group",
-    description="Delete a specific user group using its *uid*. \
-        Returns `no content`. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. \
-        On cascade, delete related SLAs.",
+    description="Delete a specific user group using its *uid*. Returns `no content`.",
 )
 @flaat.access_level("write")
 @db.write_transaction
-def delete_user_group(
+def delete_user_groups(
     request: Request,
-    item: UserGroup = Depends(valid_user_group_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
+    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
+    item: Annotated[UserGroup, Depends(get_user_group_item)],
 ):
     """DELETE operation to remove the user group matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence.
+    The endpoint expects the item's uid.
 
-    Only authenticated users can view this function.
+    Only authenticated users can view this endpoint.
     """
-    if not user_group_mgr.remove(db_obj=item):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete item",
-        )
+    user_group_mgr.remove(db_obj=item)
 
 
 # @db.read_transaction
@@ -254,7 +198,7 @@ def delete_user_group(
 # )
 # def get_user_group_flavors(
 #     auth: bool = Depends(check_read_access),
-#     size: SchemaSize = Depends(),
+#     size: SchemaShape = Depends(),
 #     item: UserGroup = Depends(valid_user_group_id),
 # ):
 #     return flavor.choose_out_schema(
@@ -280,7 +224,7 @@ def delete_user_group(
 # )
 # def get_user_group_images(
 #     auth: bool = Depends(check_read_access),
-#     size: SchemaSize = Depends(),
+#     size: SchemaShape = Depends(),
 #     item: UserGroup = Depends(valid_user_group_id),
 # ):
 #     return image.choose_out_schema(
@@ -306,7 +250,7 @@ def delete_user_group(
 # )
 # def get_user_group_providers(
 #     auth: bool = Depends(check_read_access),
-#     size: SchemaSize = Depends(),
+#     size: SchemaShape = Depends(),
 #     item: UserGroup = Depends(valid_user_group_id),
 # ):
 #     return provider.choose_out_schema(
@@ -348,7 +292,7 @@ def delete_user_group(
 # )
 # def get_user_group_services(
 #    auth: bool = Depends(check_read_access),
-#    size: SchemaSize = Depends(),
+#    size: SchemaShape = Depends(),
 #    item: UserGroup = Depends(valid_user_group_id),
 #    srv: ServiceQuery = Depends(),
 # ):

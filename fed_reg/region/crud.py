@@ -5,13 +5,7 @@ from fedreg.project.models import Project
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import RegionCreateExtended
 from fedreg.region.models import Region
-from fedreg.region.schemas import (
-    RegionCreate,
-    RegionRead,
-    RegionReadPublic,
-    RegionUpdate,
-)
-from fedreg.region.schemas_extended import RegionReadExtended, RegionReadExtendedPublic
+from fedreg.region.schemas import RegionCreate, RegionUpdate
 from fedreg.service.models import (
     BlockStorageService,
     ComputeService,
@@ -25,17 +19,7 @@ from fed_reg.location.crud import location_mgr
 from fed_reg.service.crud import service_mgr
 
 
-class CRUDRegion(
-    CRUDBase[
-        Region,
-        RegionCreate,
-        RegionUpdate,
-        RegionRead,
-        RegionReadPublic,
-        RegionReadExtended,
-        RegionReadExtendedPublic,
-    ]
-):
+class CRUDRegion(CRUDBase[Region, RegionCreate, RegionUpdate]):
     """Region Create, Read, Update and Delete operations."""
 
     def create(self, *, obj_in: RegionCreateExtended, provider: Provider) -> Region:
@@ -182,11 +166,5 @@ class CRUDRegion(
 
 
 region_mgr = CRUDRegion(
-    model=Region,
-    create_schema=RegionCreate,
-    update_schema=RegionUpdate,
-    read_schema=RegionRead,
-    read_public_schema=RegionReadPublic,
-    read_extended_schema=RegionReadExtended,
-    read_extended_public_schema=RegionReadExtendedPublic,
+    model=Region, create_schema=RegionCreate, update_schema=RegionUpdate
 )

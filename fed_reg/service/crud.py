@@ -29,46 +29,20 @@ from fedreg.service.models import (
 )
 from fedreg.service.schemas import (
     BlockStorageServiceCreate,
-    BlockStorageServiceRead,
-    BlockStorageServiceReadPublic,
     BlockStorageServiceUpdate,
     ComputeServiceCreate,
-    ComputeServiceRead,
-    ComputeServiceReadPublic,
     ComputeServiceUpdate,
     IdentityServiceCreate,
-    IdentityServiceRead,
-    IdentityServiceReadPublic,
     IdentityServiceUpdate,
     NetworkServiceCreate,
-    NetworkServiceRead,
-    NetworkServiceReadPublic,
     NetworkServiceUpdate,
     ObjectStoreServiceCreate,
-    ObjectStoreServiceRead,
-    ObjectStoreServiceReadPublic,
     ObjectStoreServiceUpdate,
-)
-from fedreg.service.schemas_extended import (
-    BlockStorageServiceReadExtended,
-    BlockStorageServiceReadExtendedPublic,
-    ComputeServiceReadExtended,
-    ComputeServiceReadExtendedPublic,
-    IdentityServiceReadExtended,
-    IdentityServiceReadExtendedPublic,
-    NetworkServiceReadExtended,
-    NetworkServiceReadExtendedPublic,
-    ObjectStoreServiceReadExtended,
-    ObjectStoreServiceReadExtendedPublic,
 )
 
 from fed_reg.crud import (
     CreateSchemaType,
     CRUDBase,
-    ReadExtendedPublicSchemaType,
-    ReadExtendedSchemaType,
-    ReadPublicSchemaType,
-    ReadSchemaType,
     SkipLimit,
     UpdateSchemaType,
 )
@@ -133,23 +107,11 @@ ResourceCRUDType = TypeVar(
 
 
 class CRUDMultiQuota(
-    CRUDBase[
-        ModelType,
-        CreateSchemaType,
-        UpdateSchemaType,
-        ReadSchemaType,
-        ReadPublicSchemaType,
-        ReadExtendedSchemaType,
-        ReadExtendedPublicSchemaType,
-    ],
+    CRUDBase[ModelType, CreateSchemaType, UpdateSchemaType],
     Generic[
         ModelType,
         CreateSchemaType,
         UpdateSchemaType,
-        ReadSchemaType,
-        ReadPublicSchemaType,
-        ReadExtendedSchemaType,
-        ReadExtendedPublicSchemaType,
         QuotaCRUDType,
         QuotaCreateExtendedSchemaType,
     ],
@@ -214,10 +176,6 @@ class CRUDBlockStorageService(
         BlockStorageService,
         BlockStorageServiceCreate,
         BlockStorageServiceUpdate,
-        BlockStorageServiceRead,
-        BlockStorageServiceReadPublic,
-        BlockStorageServiceReadExtended,
-        BlockStorageServiceReadExtendedPublic,
         CRUDBlockStorageQuota,
         BlockStorageQuotaCreateExtended,
     ],
@@ -276,10 +234,6 @@ class CRUDComputeService(
         ComputeService,
         ComputeServiceCreate,
         ComputeServiceUpdate,
-        ComputeServiceRead,
-        ComputeServiceReadPublic,
-        ComputeServiceReadExtended,
-        ComputeServiceReadExtendedPublic,
         CRUDComputeQuota,
         ComputeQuotaCreateExtended,
     ],
@@ -436,15 +390,7 @@ class CRUDComputeService(
 
 
 class CRUDIdentityService(
-    CRUDBase[
-        IdentityService,
-        IdentityServiceCreate,
-        IdentityServiceUpdate,
-        IdentityServiceRead,
-        IdentityServiceReadPublic,
-        IdentityServiceReadExtended,
-        IdentityServiceReadExtendedPublic,
-    ]
+    CRUDBase[IdentityService, IdentityServiceCreate, IdentityServiceUpdate]
 ):
     """Identity Service Create, Read, Update and Delete operations."""
 
@@ -470,10 +416,6 @@ class CRUDNetworkService(
         NetworkService,
         NetworkServiceCreate,
         NetworkServiceUpdate,
-        NetworkServiceRead,
-        NetworkServiceReadPublic,
-        NetworkServiceReadExtended,
-        NetworkServiceReadExtendedPublic,
         CRUDNetworkQuota,
         NetworkQuotaCreateExtended,
     ],
@@ -578,10 +520,6 @@ class CRUDObjectStoreService(
         ObjectStoreService,
         ObjectStoreServiceCreate,
         ObjectStoreServiceUpdate,
-        ObjectStoreServiceRead,
-        ObjectStoreServiceReadPublic,
-        ObjectStoreServiceReadExtended,
-        ObjectStoreServiceReadExtendedPublic,
         CRUDObjectStoreQuota,
         ObjectStoreQuotaCreateExtended,
     ],
@@ -868,49 +806,29 @@ block_storage_service_mng = CRUDBlockStorageService(
     model=BlockStorageService,
     create_schema=BlockStorageServiceCreate,
     update_schema=BlockStorageServiceUpdate,
-    read_schema=BlockStorageServiceRead,
-    read_public_schema=BlockStorageServiceReadPublic,
-    read_extended_schema=BlockStorageServiceReadExtended,
-    read_extended_public_schema=BlockStorageServiceReadExtendedPublic,
     quota_mgr=block_storage_quota_mng,
 )
 compute_service_mng = CRUDComputeService(
     model=ComputeService,
     create_schema=ComputeServiceCreate,
     update_schema=ComputeServiceUpdate,
-    read_schema=ComputeServiceRead,
-    read_public_schema=ComputeServiceReadPublic,
-    read_extended_schema=ComputeServiceReadExtended,
-    read_extended_public_schema=ComputeServiceReadExtendedPublic,
     quota_mgr=compute_quota_mng,
 )
 identity_service_mng = CRUDIdentityService(
     model=IdentityService,
     create_schema=IdentityServiceCreate,
     update_schema=IdentityServiceUpdate,
-    read_schema=IdentityServiceRead,
-    read_public_schema=IdentityServiceReadPublic,
-    read_extended_schema=IdentityServiceReadExtended,
-    read_extended_public_schema=IdentityServiceReadExtendedPublic,
 )
 network_service_mng = CRUDNetworkService(
     model=NetworkService,
     create_schema=NetworkServiceCreate,
     update_schema=NetworkServiceUpdate,
-    read_schema=NetworkServiceRead,
-    read_public_schema=NetworkServiceReadPublic,
-    read_extended_schema=NetworkServiceReadExtended,
-    read_extended_public_schema=NetworkServiceReadExtendedPublic,
     quota_mgr=network_quota_mng,
 )
 object_store_service_mng = CRUDObjectStoreService(
     model=ObjectStoreService,
     create_schema=ObjectStoreServiceCreate,
     update_schema=ObjectStoreServiceUpdate,
-    read_schema=ObjectStoreServiceRead,
-    read_public_schema=ObjectStoreServiceReadPublic,
-    read_extended_schema=ObjectStoreServiceReadExtended,
-    read_extended_public_schema=ObjectStoreServiceReadExtendedPublic,
     quota_mgr=object_store_quota_mng,
 )
 service_mgr = CRUDServiceDispatcher(

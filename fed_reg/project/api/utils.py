@@ -1,8 +1,62 @@
-"""Utilities used in Project endpoints."""
+"""Project REST API utils."""
 
 from fedreg.project.models import Project
+from fedreg.project.schemas import ProjectRead, ProjectReadPublic
+from fedreg.project.schemas_extended import (
+    ProjectReadExtended,
+    ProjectReadExtendedPublic,
+)
 from fedreg.region.schemas import RegionQuery
 from fedreg.service.schemas import IdentityServiceQuery
+from pydantic import BaseModel, Field
+
+from fed_reg.query import choose_out_schema
+
+
+class ProjectReadSingle(BaseModel):
+    __root__: (
+        ProjectReadExtended
+        | ProjectRead
+        | ProjectReadExtendedPublic
+        | ProjectReadPublic
+    ) = Field(..., discriminator="schema_type")
+
+
+class ProjectReadMulti(BaseModel):
+    __root__: (
+        list[ProjectReadExtended]
+        | list[ProjectRead]
+        | list[ProjectReadExtendedPublic]
+        | list[ProjectReadPublic]
+    ) = Field(..., discriminator="schema_type")
+
+
+def choose_schema(
+    items: list[Project],
+    *,
+    auth: bool,
+    with_conn: bool,
+    short: bool,
+) -> (
+    list[ProjectRead]
+    | list[ProjectReadPublic]
+    | list[ProjectReadExtended]
+    | list[ProjectReadExtendedPublic]
+    | ProjectRead
+    | ProjectReadPublic
+    | ProjectReadExtended
+    | ProjectReadExtendedPublic
+):
+    return choose_out_schema(
+        items=items,
+        auth=auth,
+        short=short,
+        with_conn=with_conn,
+        read_private_schema=ProjectRead,
+        read_public_schema=ProjectReadPublic,
+        read_private_extended_schema=ProjectReadExtended,
+        read_public_extended_schema=ProjectReadExtendedPublic,
+    )
 
 
 def filter_on_region_attr(  # noqa: C901

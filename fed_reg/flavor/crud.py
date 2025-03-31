@@ -1,14 +1,7 @@
 """Module with Create, Read, Update and Delete operations for a Flavor."""
 
 from fedreg.flavor.models import PrivateFlavor, SharedFlavor
-from fedreg.flavor.schemas import (
-    FlavorRead,
-    FlavorReadPublic,
-    FlavorUpdate,
-    PrivateFlavorCreate,
-    SharedFlavorCreate,
-)
-from fedreg.flavor.schemas_extended import FlavorReadExtended, FlavorReadExtendedPublic
+from fedreg.flavor.schemas import FlavorUpdate, PrivateFlavorCreate, SharedFlavorCreate
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateFlavorCreateExtended
 from fedreg.service.models import ComputeService
@@ -18,14 +11,7 @@ from fed_reg.crud import CRUDBase, CRUDMultiProject, CRUDPrivateSharedDispatcher
 
 class CRUDPrivateFlavor(
     CRUDMultiProject[
-        PrivateFlavor,
-        PrivateFlavorCreate,
-        PrivateFlavorCreateExtended,
-        FlavorUpdate,
-        FlavorRead,
-        FlavorReadPublic,
-        FlavorReadExtended,
-        FlavorReadExtendedPublic,
+        PrivateFlavor, PrivateFlavorCreate, PrivateFlavorCreateExtended, FlavorUpdate
     ]
 ):
     """Private Flavor Create, Read, Update and Delete operations."""
@@ -73,17 +59,7 @@ class CRUDPrivateFlavor(
         return db_obj
 
 
-class CRUDSharedFlavor(
-    CRUDBase[
-        SharedFlavor,
-        SharedFlavorCreate,
-        FlavorUpdate,
-        FlavorRead,
-        FlavorReadPublic,
-        FlavorReadExtended,
-        FlavorReadExtendedPublic,
-    ]
-):
+class CRUDSharedFlavor(CRUDBase[SharedFlavor, SharedFlavorCreate, FlavorUpdate]):
     """Flavor Create, Read, Update and Delete operations."""
 
     def create(
@@ -133,22 +109,10 @@ class CRUDFlavor(
 
 
 private_flavor_mng = CRUDPrivateFlavor(
-    model=PrivateFlavor,
-    create_schema=PrivateFlavorCreate,
-    update_schema=FlavorUpdate,
-    read_schema=FlavorRead,
-    read_public_schema=FlavorReadPublic,
-    read_extended_schema=FlavorReadExtended,
-    read_extended_public_schema=FlavorReadExtendedPublic,
+    model=PrivateFlavor, create_schema=PrivateFlavorCreate, update_schema=FlavorUpdate
 )
 shared_flavor_mng = CRUDSharedFlavor(
-    model=SharedFlavor,
-    create_schema=SharedFlavorCreate,
-    update_schema=FlavorUpdate,
-    read_schema=FlavorRead,
-    read_public_schema=FlavorReadPublic,
-    read_extended_schema=FlavorReadExtended,
-    read_extended_public_schema=FlavorReadExtendedPublic,
+    model=SharedFlavor, create_schema=SharedFlavorCreate, update_schema=FlavorUpdate
 )
 flavor_mgr = CRUDFlavor(
     private_mgr=private_flavor_mng,

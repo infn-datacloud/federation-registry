@@ -3,24 +3,13 @@
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import SLACreateExtended
 from fedreg.sla.models import SLA
-from fedreg.sla.schemas import SLACreate, SLARead, SLAReadPublic, SLAUpdate
-from fedreg.sla.schemas_extended import SLAReadExtended, SLAReadExtendedPublic
+from fedreg.sla.schemas import SLACreate, SLAUpdate
 from fedreg.user_group.models import UserGroup
 
 from fed_reg.crud import CRUDBase
 
 
-class CRUDSLA(
-    CRUDBase[
-        SLA,
-        SLACreate,
-        SLAUpdate,
-        SLARead,
-        SLAReadPublic,
-        SLAReadExtended,
-        SLAReadExtendedPublic,
-    ]
-):
+class CRUDSLA(CRUDBase[SLA, SLACreate, SLAUpdate]):
     """SLA Create, Read, Update and Delete operations."""
 
     def create(
@@ -100,12 +89,4 @@ class CRUDSLA(
         return False
 
 
-sla_mgr = CRUDSLA(
-    model=SLA,
-    create_schema=SLACreate,
-    update_schema=SLAUpdate,
-    read_schema=SLARead,
-    read_public_schema=SLAReadPublic,
-    read_extended_schema=SLAReadExtended,
-    read_extended_public_schema=SLAReadExtendedPublic,
-)
+sla_mgr = CRUDSLA(model=SLA, create_schema=SLACreate, update_schema=SLAUpdate)

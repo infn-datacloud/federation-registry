@@ -17,12 +17,6 @@ from fedreg.service.enum import (
 from pycountry import countries
 from pydantic import AnyHttpUrl
 
-# from fed_reg.models import BaseNodeRead
-# from fed_reg.provider.enum import ProviderType
-
-MOCK_READ_EMAIL = "user@test.it"
-MOCK_WRITE_EMAIL = "admin@test.it"
-
 
 def random_lower_string() -> str:
     """Return a generic random string."""

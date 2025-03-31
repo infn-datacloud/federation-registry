@@ -3,19 +3,12 @@
 from fedreg.auth_method.models import AuthMethod
 from fedreg.identity_provider.models import IdentityProvider
 from fedreg.provider.models import Provider
-from fedreg.provider.schemas import (
-    ProviderCreate,
-    ProviderRead,
-    ProviderReadPublic,
-    ProviderUpdate,
-)
+from fedreg.provider.schemas import ProviderCreate, ProviderUpdate
 from fedreg.provider.schemas_extended import (
     AuthMethodCreate,
     IdentityProviderCreateExtended,
     ProjectCreate,
     ProviderCreateExtended,
-    ProviderReadExtended,
-    ProviderReadExtendedPublic,
     RegionCreateExtended,
     SLACreateExtended,
     UserGroupCreateExtended,
@@ -31,17 +24,7 @@ from fed_reg.sla.crud import sla_mgr
 from fed_reg.user_group.crud import user_group_mgr
 
 
-class CRUDProvider(
-    CRUDBase[
-        Provider,
-        ProviderCreate,
-        ProviderUpdate,
-        ProviderRead,
-        ProviderReadPublic,
-        ProviderReadExtended,
-        ProviderReadExtendedPublic,
-    ]
-):
+class CRUDProvider(CRUDBase[Provider, ProviderCreate, ProviderUpdate]):
     """Provider Create, Read, Update and Delete operations."""
 
     def create(self, *, obj_in: ProviderCreateExtended) -> Provider:
@@ -296,11 +279,5 @@ class CRUDProvider(
 
 
 provider_mgr = CRUDProvider(
-    model=Provider,
-    create_schema=ProviderCreate,
-    update_schema=ProviderUpdate,
-    read_schema=ProviderRead,
-    read_public_schema=ProviderReadPublic,
-    read_extended_schema=ProviderReadExtended,
-    read_extended_public_schema=ProviderReadExtendedPublic,
+    model=Provider, create_schema=ProviderCreate, update_schema=ProviderUpdate
 )

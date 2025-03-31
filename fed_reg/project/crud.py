@@ -1,32 +1,13 @@
 """Module with Create, Read, Update and Delete operations for a Project."""
 
 from fedreg.project.models import Project
-from fedreg.project.schemas import (
-    ProjectCreate,
-    ProjectRead,
-    ProjectReadPublic,
-    ProjectUpdate,
-)
-from fedreg.project.schemas_extended import (
-    ProjectReadExtended,
-    ProjectReadExtendedPublic,
-)
+from fedreg.project.schemas import ProjectCreate, ProjectUpdate
 from fedreg.provider.models import Provider
 
 from fed_reg.crud import CRUDBase
 
 
-class CRUDProject(
-    CRUDBase[
-        Project,
-        ProjectCreate,
-        ProjectUpdate,
-        ProjectRead,
-        ProjectReadPublic,
-        ProjectReadExtended,
-        ProjectReadExtendedPublic,
-    ]
-):
+class CRUDProject(CRUDBase[Project, ProjectCreate, ProjectUpdate]):
     """Flavor Create, Read, Update and Delete operations."""
 
     def create(self, *, obj_in: ProjectCreate, provider: Provider) -> Project:
@@ -42,11 +23,5 @@ class CRUDProject(
 
 
 project_mgr = CRUDProject(
-    model=Project,
-    create_schema=ProjectCreate,
-    update_schema=ProjectUpdate,
-    read_schema=ProjectRead,
-    read_public_schema=ProjectReadPublic,
-    read_extended_schema=ProjectReadExtended,
-    read_extended_public_schema=ProjectReadExtendedPublic,
+    model=Project, create_schema=ProjectCreate, update_schema=ProjectUpdate
 )

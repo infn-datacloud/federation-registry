@@ -1,14 +1,7 @@
 """Module with Create, Read, Update and Delete operations for a Image."""
 
 from fedreg.image.models import PrivateImage, SharedImage
-from fedreg.image.schemas import (
-    ImageRead,
-    ImageReadPublic,
-    ImageUpdate,
-    PrivateImageCreate,
-    SharedImageCreate,
-)
-from fedreg.image.schemas_extended import ImageReadExtended, ImageReadExtendedPublic
+from fedreg.image.schemas import ImageUpdate, PrivateImageCreate, SharedImageCreate
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateImageCreateExtended
 from fedreg.service.models import ComputeService
@@ -18,14 +11,7 @@ from fed_reg.crud import CRUDBase, CRUDMultiProject, CRUDPrivateSharedDispatcher
 
 class CRUDPrivateImage(
     CRUDMultiProject[
-        PrivateImage,
-        PrivateImageCreate,
-        PrivateImageCreateExtended,
-        ImageUpdate,
-        ImageRead,
-        ImageReadPublic,
-        ImageReadExtended,
-        ImageReadExtendedPublic,
+        PrivateImage, PrivateImageCreate, PrivateImageCreateExtended, ImageUpdate
     ]
 ):
     """Private Image Create, Read, Update and Delete operations."""
@@ -72,17 +58,7 @@ class CRUDPrivateImage(
         return db_obj
 
 
-class CRUDSharedImage(
-    CRUDBase[
-        SharedImage,
-        SharedImageCreate,
-        ImageUpdate,
-        ImageRead,
-        ImageReadPublic,
-        ImageReadExtended,
-        ImageReadExtendedPublic,
-    ]
-):
+class CRUDSharedImage(CRUDBase[SharedImage, SharedImageCreate, ImageUpdate]):
     """Image Create, Read, Update and Delete operations."""
 
     def create(
@@ -132,23 +108,11 @@ class CRUDImage(
 
 
 private_image_mng = CRUDPrivateImage(
-    model=PrivateImage,
-    create_schema=PrivateImageCreate,
-    update_schema=ImageUpdate,
-    read_schema=ImageRead,
-    read_public_schema=ImageReadPublic,
-    read_extended_schema=ImageReadExtended,
-    read_extended_public_schema=ImageReadExtendedPublic,
+    model=PrivateImage, create_schema=PrivateImageCreate, update_schema=ImageUpdate
 )
 
 shared_image_mng = CRUDSharedImage(
-    model=SharedImage,
-    create_schema=SharedImageCreate,
-    update_schema=ImageUpdate,
-    read_schema=ImageRead,
-    read_public_schema=ImageReadPublic,
-    read_extended_schema=ImageReadExtended,
-    read_extended_public_schema=ImageReadExtendedPublic,
+    model=SharedImage, create_schema=SharedImageCreate, update_schema=ImageUpdate
 )
 image_mgr = CRUDImage(
     private_mgr=private_image_mng,
