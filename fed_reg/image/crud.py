@@ -1,6 +1,6 @@
 """Module with Create, Read, Update and Delete operations for a Image."""
 
-from fedreg.image.models import PrivateImage, SharedImage
+from fedreg.image.models import Image, PrivateImage, SharedImage
 from fedreg.image.schemas import ImageUpdate, PrivateImageCreate, SharedImageCreate
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateImageCreateExtended
@@ -105,6 +105,10 @@ class CRUDImage(
     ]
 ):
     """Private and Shared Image Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Image]:
+        return Image
 
 
 private_image_mng = CRUDPrivateImage(

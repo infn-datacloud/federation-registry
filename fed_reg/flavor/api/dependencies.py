@@ -8,7 +8,6 @@ from fedreg.flavor.schemas import FlavorUpdate
 
 from fed_reg.dependencies import valid_id
 from fed_reg.flavor.crud import flavor_mgr
-from fed_reg.service.api.dependencies import compute_service_must_exist
 
 
 def flavor_must_exist(flavor_uid: str) -> PrivateFlavor | SharedFlavor:
@@ -36,9 +35,8 @@ def validate_new_flavor_values(
 
     Return the current item and the schema with the new data.
     """
-    if new_data.uuid != item.uuid:
+    if new_data.uuid is not None and new_data.uuid != item.uuid:
         for service in item.services:
-            service = compute_service_must_exist(service.uid)
             db_item = service.flavors.get_or_none(uuid=new_data.uuid)
             if db_item is not None:
                 raise HTTPException(

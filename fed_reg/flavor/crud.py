@@ -1,6 +1,6 @@
 """Module with Create, Read, Update and Delete operations for a Flavor."""
 
-from fedreg.flavor.models import PrivateFlavor, SharedFlavor
+from fedreg.flavor.models import Flavor, PrivateFlavor, SharedFlavor
 from fedreg.flavor.schemas import FlavorUpdate, PrivateFlavorCreate, SharedFlavorCreate
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import PrivateFlavorCreateExtended
@@ -106,6 +106,10 @@ class CRUDFlavor(
     ]
 ):
     """Private and Shared Flavor Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Flavor]:
+        return Flavor
 
 
 private_flavor_mng = CRUDPrivateFlavor(

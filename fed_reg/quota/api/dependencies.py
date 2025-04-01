@@ -120,7 +120,7 @@ def validate_new_quota_values(
 
     Return the current item and the schema with the new data.
     """
-    if new_data.per_user != item.per_user:
+    if new_data.per_user != item.per_user or new_data.usage != item.usage:
         db_project = item.project.single()
         db_service = item.service.single()
         proj_quotas = db_project.quotas.filter(

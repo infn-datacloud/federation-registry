@@ -1,6 +1,6 @@
 """Module with Create, Read, Update and Delete operations for a Network."""
 
-from fedreg.network.models import PrivateNetwork, SharedNetwork
+from fedreg.network.models import Network, PrivateNetwork, SharedNetwork
 from fedreg.network.schemas import (
     NetworkUpdate,
     PrivateNetworkCreate,
@@ -99,6 +99,10 @@ class CRUDNetwork(
     ]
 ):
     """Private and Shared Network Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Network]:
+        return Network
 
 
 private_network_mng = CRUDPrivateNetwork(

@@ -34,7 +34,7 @@ def validate_new_location_values(
 
     Return the current item and the schema with the new data.
     """
-    if new_data.site != item.site:
+    if new_data.site is not None and new_data.site != item.site:
         db_item = location_mgr.get(site=new_data.site)
         if db_item is not None:
             raise HTTPException(

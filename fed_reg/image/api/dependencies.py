@@ -8,7 +8,6 @@ from fedreg.image.schemas import ImageUpdate
 
 from fed_reg.dependencies import valid_id
 from fed_reg.image.crud import image_mgr
-from fed_reg.service.api.dependencies import compute_service_must_exist
 
 
 def image_must_exist(image_uid: str) -> PrivateImage | SharedImage:
@@ -36,9 +35,8 @@ def validate_new_image_values(
 
     Return the current item and the schema with the new data.
     """
-    if new_data.uuid != item.uuid:
+    if new_data.uuid is not None and new_data.uuid != item.uuid:
         for service in item.services:
-            service = compute_service_must_exist(service.uid)
             db_item = service.images.get_or_none(uuid=new_data.uuid)
             if db_item is not None:
                 raise HTTPException(

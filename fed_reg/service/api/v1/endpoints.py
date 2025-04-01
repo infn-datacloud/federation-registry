@@ -184,7 +184,7 @@ def put_block_storage_service(
     Only authenticated users can view this function.
     """
     item, update_data = validated_data
-    db_item = block_storage_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = block_storage_service_mng.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -359,7 +359,7 @@ def put_compute_service(
     Only authenticated users can view this function.
     """
     item, update_data = validated_data
-    db_item = compute_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = compute_service_mng.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -497,7 +497,7 @@ def put_identity_service(
     Only authenticated users can view this function.
     """
     item, update_data = validated_data
-    db_item = identity_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = identity_service_mng.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -635,7 +635,7 @@ def put_network_service(
     Only authenticated users can view this function.
     """
     item, update_data = validated_data
-    db_item = network_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = network_service_mng.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -773,7 +773,7 @@ def put_object_store_service(
     Only authenticated users can view this function.
     """
     item, update_data = validated_data
-    db_item = object_store_service_mng.update(db_obj=item, obj_in=update_data)
+    db_item = object_store_service_mng.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item

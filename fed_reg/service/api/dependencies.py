@@ -1,6 +1,6 @@
 """Service REST API dependencies."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from fedreg.service.models import (
@@ -43,7 +43,9 @@ def validate_new_block_storage_service_values(
     new_data: BlockStorageServiceUpdate,
 ) -> tuple[BlockStorageService, BlockStorageServiceUpdate]:
     """Check given data are valid ones."""
-    return validate_new_service_values(item=item, new_data=new_data)
+    return validate_new_service_values(
+        mgr=block_storage_service_mng, item=item, new_data=new_data
+    )
 
 
 def compute_service_must_exist(service_uid: str) -> ComputeService:
@@ -61,7 +63,9 @@ def validate_new_compute_service_values(
     new_data: ComputeServiceUpdate,
 ) -> tuple[ComputeService, ComputeServiceUpdate]:
     """Check given data are valid ones."""
-    return validate_new_service_values(item=item, new_data=new_data)
+    return validate_new_service_values(
+        mgr=compute_service_mng, item=item, new_data=new_data
+    )
 
 
 def identity_service_must_exist(service_uid: str) -> IdentityService:
@@ -79,7 +83,9 @@ def validate_new_identity_service_values(
     new_data: IdentityServiceUpdate,
 ) -> tuple[IdentityService, IdentityServiceUpdate]:
     """Check given data are valid ones."""
-    return validate_new_service_values(item=item, new_data=new_data)
+    return validate_new_service_values(
+        mgr=identity_service_mng, item=item, new_data=new_data
+    )
 
 
 def network_service_must_exist(service_uid: str) -> NetworkService:
@@ -97,7 +103,9 @@ def validate_new_network_service_values(
     new_data: NetworkServiceUpdate,
 ) -> tuple[NetworkService, NetworkServiceUpdate]:
     """Check given data are valid ones."""
-    return validate_new_service_values(item=item, new_data=new_data)
+    return validate_new_service_values(
+        mgr=network_service_mng, item=item, new_data=new_data
+    )
 
 
 def object_store_service_must_exist(service_uid: str) -> ObjectStoreService:
@@ -115,10 +123,13 @@ def validate_new_object_store_service_values(
     new_data: ObjectStoreServiceUpdate,
 ) -> tuple[ObjectStoreService, ObjectStoreServiceUpdate]:
     """Check given data are valid ones."""
-    return validate_new_service_values(item=item, new_data=new_data)
+    return validate_new_service_values(
+        mgr=object_store_service_mng, item=item, new_data=new_data
+    )
 
 
 def validate_new_service_values(
+    mgr: Any,
     item: BlockStorageService
     | ComputeService
     | IdentityService
@@ -147,9 +158,9 @@ def validate_new_service_values(
 
     Return the current item and the schema with the new data.
     """
-    if new_data.endpoint != item.endpoint:
-        db_item = block_storage_service_mng.get(endpoint=item.endpoint)
+    if new_data.endpoint is not None and str(new_data.endpoint) != item.endpoint:
+        db_item = mgr.get(endpoint=item.endpoint)
         if db_item is not None:
-            msg = f"{type(item)} with endpoint '{item.endpoint}' already registered."
+            msg = f"{mgr.model} with endpoint '{item.endpoint}' already registered."
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
     return item, new_data

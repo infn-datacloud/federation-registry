@@ -5,10 +5,10 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fedreg.project.models import Project
 from fedreg.project.schemas import ProjectUpdate
+from neomodel.exceptions import CardinalityViolation
 
 from fed_reg.dependencies import valid_id
 from fed_reg.project.crud import project_mgr
-from fed_reg.provider.api.dependencies import provider_must_exist
 
 
 def project_must_exist(project_uid: str) -> Project:
@@ -36,8 +36,16 @@ def validate_new_project_values(
 
     Return the current item and the schema with the new data.
     """
-    if new_data.uuid != item.uuid:
-        provider = provider_must_exist(item.provider.uid)
+    if new_data.uuid is not None and new_data.uuid != item.uuid:
+        try:
+            provider = item.provider.single()
+        except CardinalityViolation as e:
+            msg = (
+                f"Corrupted DB: Project with uuid '{item.uuid}' has no linked provider"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=msg
+            ) from e
         db_item = provider.projects.get_or_none(uuid=new_data.uuid)
         if db_item is not None:
             raise HTTPException(

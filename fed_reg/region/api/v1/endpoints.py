@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.region.models import Region
 from fedreg.region.schemas import RegionQuery, RegionRead, RegionUpdate
 from flaat.user_infos import UserInfos
@@ -11,7 +11,7 @@ from neomodel import db
 from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
 from fed_reg.region.api.dependencies import (
-    not_last_region,
+    get_region_item,
     region_must_exist,
     validate_new_region_values,
 )
@@ -124,7 +124,7 @@ def put_region(
     Only authenticated users can view this function.
     """
     item, update_data = validated_data
-    db_item = region_mgr.update(db_obj=item, obj_in=update_data)
+    db_item = region_mgr.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -138,7 +138,7 @@ def put_region(
     dependencies=[Security(strict_security)],
 )
 @db.write_transaction
-def delete_regions(request: Request, item: Annotated[Region, Depends(not_last_region)]):
+def delete_regions(item: Annotated[Region, Depends(get_region_item)]):
     """DELETE operation to remove the region matching a specific uid.
 
     The endpoint expects the item's uid.

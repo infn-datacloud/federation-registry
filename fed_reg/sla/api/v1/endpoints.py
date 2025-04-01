@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.sla.models import SLA
 from fedreg.sla.schemas import SLAQuery, SLARead, SLAUpdate
 from flaat.user_infos import UserInfos
@@ -125,7 +125,7 @@ def put_sla(
     Only authenticated users can view this function.
     """
     item, update_data = validated_data
-    db_item = sla_mgr.update(db_obj=item, obj_in=update_data)
+    db_item = sla_mgr.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -139,7 +139,7 @@ def put_sla(
     dependencies=[Security(strict_security)],
 )
 @db.write_transaction
-def delete_slas(request: Request, item: Annotated[SLA, Depends(get_sla_item)]):
+def delete_slas(item: Annotated[SLA, Depends(get_sla_item)]):
     """DELETE operation to remove the sla matching a specific uid.
 
     The endpoint expects the item's uid.

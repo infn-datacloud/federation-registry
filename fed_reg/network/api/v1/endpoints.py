@@ -128,7 +128,7 @@ def put_network(
     Only authenticated users can view this function.
     """
     item, update_data = validated_data
-    db_item = network_mgr.update(db_obj=item, obj_in=update_data)
+    db_item = network_mgr.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item

@@ -36,7 +36,7 @@ def validate_new_identity_provider_values(
 
     Return the current item and the schema with the new data.
     """
-    if str(new_data.endpoint) != item.endpoint:
+    if new_data.endpoint is not None and str(new_data.endpoint) != item.endpoint:
         db_item = identity_provider_mgr.get(endpoint=new_data.endpoint)
         if db_item is not None:
             msg = (

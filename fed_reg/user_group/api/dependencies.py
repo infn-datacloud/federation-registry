@@ -5,9 +5,9 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fedreg.user_group.models import UserGroup
 from fedreg.user_group.schemas import UserGroupUpdate
+from neomodel.exceptions import CardinalityViolation
 
 from fed_reg.dependencies import valid_id
-from fed_reg.identity_provider.api.dependencies import identity_provider_must_exist
 from fed_reg.user_group.crud import user_group_mgr
 
 
@@ -36,8 +36,17 @@ def validate_new_user_group_values(
 
     Return the current item and the schema with the new data.
     """
-    if new_data.name != item.name:
-        idp = identity_provider_must_exist(item.identity_provider.uid)
+    if new_data.name is not None and new_data.name != item.name:
+        try:
+            idp = item.identity_provider.single()
+        except CardinalityViolation as e:
+            msg = (
+                f"Corrupted DB: User group with uuid '{item.uuid}' has no linked "
+                "identity provider"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=msg
+            ) from e
         db_item = idp.user_groups.get_or_none(name=new_data.name)
         if db_item is not None:
             raise HTTPException(

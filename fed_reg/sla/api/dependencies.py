@@ -34,7 +34,7 @@ def validate_new_sla_values(
 
     Return the current item and the schema with the new data.
     """
-    if new_data.doc_uuid != item.doc_uuid:
+    if new_data.doc_uuid is not None and new_data.doc_uuid != item.doc_uuid:
         db_item = sla_mgr.get(doc_uuid=new_data.doc_uuid)
         if db_item is not None:
             raise HTTPException(

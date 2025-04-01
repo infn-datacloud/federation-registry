@@ -43,8 +43,8 @@ def validate_new_provider_values(
 
     Return the current item and the schema with the new data.
     """
-    if new_data.name != item.name:
-        db_item = provider_mgr.get(site=new_data.name, type=new_data.type)
+    if new_data.name is not None and new_data.name != item.name:
+        db_item = provider_mgr.get(name=new_data.name, type=new_data.type)
         if db_item is not None:
             msg = (
                 f"Provider with name '{item.name}' and type '{item.type}' already "
