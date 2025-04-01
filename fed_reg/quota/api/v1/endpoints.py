@@ -2,8 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.quota.models import (
     BlockStorageQuota,
     ComputeQuota,
@@ -27,7 +26,7 @@ from fedreg.quota.schemas import (
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
 from fed_reg.quota.api.dependencies import (
     block_storage_quota_must_exist,
@@ -109,7 +108,7 @@ def get_block_storage_quotas(
 
 
 @bs_router.get(
-    "/{block_storage_quota_uid}",
+    "/{quota_uid}",
     response_model=BlockStorageQuotaReadSingle,
     summary="Read a specific block_storage_quota",
     description="Retrieve a specific block_storage_quota using its *uid*. If no entity \
@@ -139,7 +138,7 @@ def get_block_storage_quota(
 
 
 @bs_router.patch(
-    "/{block_storage_quota_uid}",
+    "/{quota_uid}",
     status_code=status.HTTP_200_OK,
     response_model=BlockStorageQuotaRead | None,
     summary="Patch only specific attribute of the target block_storage_quota",
@@ -151,12 +150,10 @@ def get_block_storage_quota(
         endpoint raises the `conflict` error. If there are no differences between new \
         values and current ones, the database entity is left unchanged and the \
         endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_block_storage_quota(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[BlockStorageQuota, BlockStorageQuotaUpdate],
@@ -183,17 +180,15 @@ def put_block_storage_quota(
 
 
 @bs_router.delete(
-    "/{block_storage_quota_uid}",
+    "/{quota_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific block_storage_quota",
     description="Delete a specific block_storage_quota using its *uid*. Returns \
         `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_block_storage_quotas(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[BlockStorageQuota, Depends(get_block_storage_quota_item)],
 ):
     """DELETE operation to remove the block_storage_quota matching a specific uid.
@@ -202,7 +197,8 @@ def delete_block_storage_quotas(
 
     Only authenticated users can view this endpoint.
     """
-    block_storage_quota_mng.remove(db_obj=item)
+    if item is not None:
+        block_storage_quota_mng.remove(db_obj=item)
 
 
 # @db.write_transaction
@@ -287,7 +283,7 @@ def get_compute_quotas(
 
 
 @c_router.get(
-    "/{compute_quota_uid}",
+    "/{quota_uid}",
     response_model=ComputeQuotaReadSingle,
     summary="Read a specific compute_quota",
     description="Retrieve a specific compute_quota using its *uid*. If no entity \
@@ -317,7 +313,7 @@ def get_compute_quota(
 
 
 @c_router.patch(
-    "/{compute_quota_uid}",
+    "/{quota_uid}",
     status_code=status.HTTP_200_OK,
     response_model=ComputeQuotaRead | None,
     summary="Patch only specific attribute of the target compute_quota",
@@ -329,12 +325,10 @@ def get_compute_quota(
         raises the `conflict` error. If there are no differences between new values \
         and current ones, the database entity is left unchanged and the endpoint \
         returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_compute_quota(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[ComputeQuota, ComputeQuotaUpdate],
@@ -361,17 +355,15 @@ def put_compute_quota(
 
 
 @c_router.delete(
-    "/{compute_quota_uid}",
+    "/{quota_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific compute_quota",
     description="Delete a specific compute_quota using its *uid*. Returns \
         `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_compute_quotas(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[ComputeQuota, Depends(get_compute_quota_item)],
 ):
     """DELETE operation to remove the compute_quota matching a specific uid.
@@ -380,7 +372,8 @@ def delete_compute_quotas(
 
     Only authenticated users can view this endpoint.
     """
-    compute_quota_mng.remove(db_obj=item)
+    if item is not None:
+        compute_quota_mng.remove(db_obj=item)
 
 
 n_router = APIRouter(prefix="/network_quotas", tags=["network_quotas"])
@@ -428,7 +421,7 @@ def get_network_quotas(
 
 
 @n_router.get(
-    "/{network_quota_uid}",
+    "/{quota_uid}",
     response_model=NetworkQuotaReadSingle,
     summary="Read a specific network_quota",
     description="Retrieve a specific network_quota using its *uid*. If no entity \
@@ -458,7 +451,7 @@ def get_network_quota(
 
 
 @n_router.patch(
-    "/{network_quota_uid}",
+    "/{quota_uid}",
     status_code=status.HTTP_200_OK,
     response_model=NetworkQuotaRead | None,
     summary="Patch only specific attribute of the target network_quota",
@@ -470,12 +463,10 @@ def get_network_quota(
         raises the `conflict` error. If there are no differences between new values \
         and current ones, the database entity is left unchanged and the endpoint \
         returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_network_quota(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[NetworkQuota, NetworkQuotaUpdate],
@@ -502,17 +493,15 @@ def put_network_quota(
 
 
 @n_router.delete(
-    "/{network_quota_uid}",
+    "/{quota_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific network_quota",
     description="Delete a specific network_quota using its *uid*. Returns \
         `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_network_quotas(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[NetworkQuota, Depends(get_network_quota_item)],
 ):
     """DELETE operation to remove the network_quota matching a specific uid.
@@ -521,7 +510,8 @@ def delete_network_quotas(
 
     Only authenticated users can view this endpoint.
     """
-    network_quota_mng.remove(db_obj=item)
+    if item is not None:
+        network_quota_mng.remove(db_obj=item)
 
 
 os_router = APIRouter(prefix="/object_store_quotas", tags=["object_store_quotas"])
@@ -569,7 +559,7 @@ def get_object_store_quotas(
 
 
 @os_router.get(
-    "/{object_store_quota_uid}",
+    "/{quota_uid}",
     response_model=ObjectStoreQuotaReadSingle,
     summary="Read a specific object_store_quota",
     description="Retrieve a specific object_store_quota using its *uid*. If no entity \
@@ -599,7 +589,7 @@ def get_object_store_quota(
 
 
 @os_router.patch(
-    "/{object_store_quota_uid}",
+    "/{quota_uid}",
     status_code=status.HTTP_200_OK,
     response_model=ObjectStoreQuotaRead | None,
     summary="Patch only specific attribute of the target object_store_quota",
@@ -611,12 +601,10 @@ def get_object_store_quota(
         endpoint raises the `conflict` error. If there are no differences between new \
         values and current ones, the database entity is left unchanged and the \
         endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_object_store_quota(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[ObjectStoreQuota, ObjectStoreQuotaUpdate],
@@ -643,17 +631,15 @@ def put_object_store_quota(
 
 
 @os_router.delete(
-    "/{object_store_quota_uid}",
+    "/{quota_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific object_store_quota",
     description="Delete a specific object_store_quota using its *uid*. Returns \
         `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_object_store_quotas(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[ObjectStoreQuota, Depends(get_object_store_quota_item)],
 ):
     """DELETE operation to remove the object_store_quota matching a specific uid.
@@ -662,4 +648,5 @@ def delete_object_store_quotas(
 
     Only authenticated users can view this endpoint.
     """
-    object_store_quota_mng.remove(db_obj=item)
+    if item is not None:
+        object_store_quota_mng.remove(db_obj=item)

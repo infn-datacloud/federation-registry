@@ -2,8 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.provider.enum import ProviderStatus, ProviderType
 from fedreg.provider.schemas import ProviderQuery
 from fedreg.region.schemas import RegionQuery
@@ -13,7 +12,7 @@ from fedreg.user_group.schemas_extended import UserGroupReadMulti, UserGroupRead
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.project.api.utils import choose_schema
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
 from fed_reg.user_group.api.dependencies import (
@@ -130,12 +129,10 @@ def get_user_group(
         error. If there are no differences between new values and current ones, the \
         database entity is left unchanged and the endpoint returns the `not modified` \
         message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_user_group(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[UserGroup, UserGroupUpdate], Depends(validate_new_user_group_values)
@@ -165,21 +162,18 @@ def put_user_group(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific user group",
     description="Delete a specific user group using its *uid*. Returns `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
-def delete_user_groups(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
-    item: Annotated[UserGroup, Depends(get_user_group_item)],
-):
+def delete_user_groups(item: Annotated[UserGroup, Depends(get_user_group_item)]):
     """DELETE operation to remove the user group matching a specific uid.
 
     The endpoint expects the item's uid.
 
     Only authenticated users can view this endpoint.
     """
-    user_group_mgr.remove(db_obj=item)
+    if item is not None:
+        user_group_mgr.remove(db_obj=item)
 
 
 # @db.read_transaction

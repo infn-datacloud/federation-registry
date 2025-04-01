@@ -2,8 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.identity_provider.models import IdentityProvider
 from fedreg.identity_provider.schemas import (
     IdentityProviderQuery,
@@ -13,7 +12,7 @@ from fedreg.identity_provider.schemas import (
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.identity_provider.api.dependencies import (
     get_identity_provider_item,
     identity_provider_must_exist,
@@ -114,12 +113,10 @@ def get_identity_provider(
         endpoint raises the `conflict` error. If there are no differences between new \
         values and current ones, the database entity is left unchanged and the \
         endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_identity_provider(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[IdentityProvider, IdentityProviderUpdate],
@@ -151,12 +148,10 @@ def put_identity_provider(
     summary="Delete a specific identity provider",
     description="Delete a specific identity provider using its *uid*. \
         Returns `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_identity_providers(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[IdentityProvider, Depends(get_identity_provider_item)],
 ):
     """DELETE operation to remove the identity provider matching a specific uid.
@@ -165,7 +160,8 @@ def delete_identity_providers(
 
     Only authenticated users can view this endpoint.
     """
-    identity_provider_mgr.remove(db_obj=item)
+    if item is not None:
+        identity_provider_mgr.remove(db_obj=item)
 
 
 # @db.write_transaction

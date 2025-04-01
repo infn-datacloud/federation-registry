@@ -3,13 +3,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
 from fedreg.region.models import Region
 from fedreg.region.schemas import RegionQuery, RegionRead, RegionUpdate
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
 from fed_reg.region.api.dependencies import (
     not_last_region,
@@ -103,12 +102,10 @@ def get_region(
         error. If there are no differences between new values and current ones, the \
         database entity is left unchanged and the endpoint returns the `not modified` \
         message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_region(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[Region, RegionUpdate], Depends(validate_new_region_values)
@@ -138,18 +135,15 @@ def put_region(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific region",
     description="Delete a specific region using its *uid*. Returns `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
-def delete_regions(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
-    item: Annotated[Region, Depends(not_last_region)],
-):
+def delete_regions(request: Request, item: Annotated[Region, Depends(not_last_region)]):
     """DELETE operation to remove the region matching a specific uid.
 
     The endpoint expects the item's uid.
 
     Only authenticated users can view this endpoint.
     """
-    region_mgr.remove(db_obj=item)
+    if item is not None:
+        region_mgr.remove(db_obj=item)

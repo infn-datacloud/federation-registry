@@ -2,14 +2,13 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.flavor.models import PrivateFlavor, SharedFlavor
 from fedreg.flavor.schemas import FlavorQuery, FlavorRead, FlavorUpdate
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.flavor.api.dependencies import (
     flavor_must_exist,
     get_flavor_item,
@@ -106,12 +105,10 @@ def get_flavor(
         the `conflict` error. If there are no differences between new values and \
         current ones, the database entity is left unchanged and the endpoint returns \
         the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_flavor(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[PrivateFlavor | SharedFlavor, FlavorUpdate],
@@ -142,12 +139,10 @@ def put_flavor(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific flavor",
     description="Delete a specific flavor using its *uid*. Returns `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_flavors(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[PrivateFlavor | SharedFlavor, Depends(get_flavor_item)],
 ):
     """DELETE operation to remove the flavor matching a specific uid.
@@ -156,4 +151,5 @@ def delete_flavors(
 
     Only authenticated users can view this endpoint.
     """
-    flavor_mgr.remove(db_obj=item)
+    if item is not None:
+        flavor_mgr.remove(db_obj=item)

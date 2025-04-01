@@ -2,8 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas import ProviderQuery, ProviderRead, ProviderUpdate
 from fedreg.provider.schemas_extended import (
@@ -13,7 +12,7 @@ from fedreg.provider.schemas_extended import (
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.provider.api.dependencies import (
     get_provider_item,
     provider_must_exist,
@@ -112,12 +111,10 @@ def get_provider(
         error. If there are no differences between new values and current ones, the \
         database entity is left unchanged and the endpoint returns the `not modified` \
         message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def patch_provider(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[Provider, ProviderUpdate], Depends(validate_new_provider_values)
@@ -147,39 +144,33 @@ def patch_provider(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific provider",
     description="Delete a specific provider using its *uid*. Returns `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
-def delete_providers(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
-    item: Annotated[Provider, Depends(get_provider_item)],
-):
+def delete_providers(item: Annotated[Provider, Depends(get_provider_item)]):
     """DELETE operation to remove the provider matching a specific uid.
 
     The endpoint expects the item's uid.
 
     Only authenticated users can view this endpoint.
     """
-    provider_mgr.remove(db_obj=item)
+    if item is not None:
+        provider_mgr.remove(db_obj=item)
 
 
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=ProviderReadExtended,
-    dependencies=[],
     summary="Create provider",
     description="Create a provider and its related entities: flavors, identity \
         providers, images, provider, projects and services. At first validate new \
         provider values checking there are no other items with the given *name*. \
         Moreover check the received lists do not contain duplicates.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def post_provider(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[ProviderCreateExtended, Depends(provider_must_not_exist)],
 ):
     """POST operation to create a new provider and all its related items.
@@ -206,12 +197,10 @@ def post_provider(
         At first validate new provider values checking there are \
         no other items with the given *name* and *type*. \
         Recursively update relationships and related nodes.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_provider(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[Provider, ProviderCreateExtended], Depends(validate_new_provider_values)

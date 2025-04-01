@@ -2,14 +2,13 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.location.models import Location
 from fedreg.location.schemas import LocationQuery, LocationRead, LocationUpdate
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.location.api.dependencies import (
     get_location_item,
     location_must_exist,
@@ -110,12 +109,10 @@ def get_location(
         error. If there are no differences between new values and current ones, the \
         database entity is left unchanged and the endpoint returns the `not modified` \
         message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_location(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[Location, LocationUpdate],
@@ -146,21 +143,18 @@ def put_location(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific location",
     description="Delete a specific location using its *uid*. Returns `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
-def delete_locations(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
-    item: Annotated[Location, Depends(get_location_item)],
-):
+def delete_locations(item: Annotated[Location, Depends(get_location_item)]):
     """DELETE operation to remove the location matching a specific uid.
 
     The endpoint expects the item's uid.
 
     Only authenticated users can view this endpoint.
     """
-    location_mgr.remove(db_obj=item)
+    if item is not None:
+        location_mgr.remove(db_obj=item)
 
 
 # @db.write_transaction

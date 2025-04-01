@@ -2,8 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.service.models import (
     BlockStorageService,
     ComputeService,
@@ -31,7 +30,7 @@ from fedreg.service.schemas import (
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
 from fed_reg.service.api.dependencies import (
     block_storage_service_must_exist,
@@ -120,7 +119,7 @@ def get_block_storage_services(
 
 
 @bs_router.get(
-    "/{block_storage_service_uid}",
+    "/{service_uid}",
     response_model=BlockStorageServiceReadSingle,
     summary="Read a specific block_storage_service",
     description="Retrieve a specific block_storage_service using its *uid*. If no \
@@ -150,7 +149,7 @@ def get_block_storage_service(
 
 
 @bs_router.patch(
-    "/{block_storage_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_200_OK,
     response_model=BlockStorageServiceRead | None,
     summary="Patch only specific attribute of the target block_storage_service",
@@ -162,12 +161,10 @@ def get_block_storage_service(
         endpoint raises the `conflict` error. If there are no differences between new \
         values and current ones, the database entity is left unchanged and the \
         endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_block_storage_service(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[BlockStorageService, BlockStorageServiceUpdate],
@@ -194,17 +191,15 @@ def put_block_storage_service(
 
 
 @bs_router.delete(
-    "/{block_storage_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific block_storage_service",
     description="Delete a specific block_storage_service using its *uid*. Returns \
         `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_block_storage_services(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[BlockStorageService, Depends(get_block_storage_service_item)],
 ):
     """DELETE operation to remove the block_storage_service matching a specific uid.
@@ -213,7 +208,8 @@ def delete_block_storage_services(
 
     Only authenticated users can view this endpoint.
     """
-    block_storage_service_mng.remove(db_obj=item)
+    if item is not None:
+        block_storage_service_mng.remove(db_obj=item)
 
 
 # @db.write_transaction
@@ -298,7 +294,7 @@ def get_compute_services(
 
 
 @c_router.get(
-    "/{compute_service_uid}",
+    "/{service_uid}",
     response_model=ComputeServiceReadSingle,
     summary="Read a specific compute_service",
     description="Retrieve a specific compute_service using its *uid*. If no entity \
@@ -328,7 +324,7 @@ def get_compute_service(
 
 
 @c_router.patch(
-    "/{compute_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_200_OK,
     response_model=ComputeServiceRead | None,
     summary="Patch only specific attribute of the target compute_service",
@@ -340,12 +336,10 @@ def get_compute_service(
         endpoint raises the `conflict` error. If there are no differences between new \
         values and current ones, the database entity is left unchanged and the \
         endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_compute_service(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[ComputeService, ComputeServiceUpdate],
@@ -372,17 +366,15 @@ def put_compute_service(
 
 
 @c_router.delete(
-    "/{compute_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific compute_service",
     description="Delete a specific compute_service using its *uid*. Returns \
         `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_compute_services(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[ComputeService, Depends(get_compute_service_item)],
 ):
     """DELETE operation to remove the compute_service matching a specific uid.
@@ -391,7 +383,8 @@ def delete_compute_services(
 
     Only authenticated users can view this endpoint.
     """
-    compute_service_mng.remove(db_obj=item)
+    if item is not None:
+        compute_service_mng.remove(db_obj=item)
 
 
 i_router = APIRouter(prefix="/identity_services", tags=["identity_services"])
@@ -439,7 +432,7 @@ def get_identity_services(
 
 
 @i_router.get(
-    "/{identity_service_uid}",
+    "/{service_uid}",
     response_model=IdentityServiceReadSingle,
     summary="Read a specific identity_service",
     description="Retrieve a specific identity_service using its *uid*. If no entity \
@@ -469,7 +462,7 @@ def get_identity_service(
 
 
 @i_router.patch(
-    "/{identity_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_200_OK,
     response_model=IdentityServiceRead | None,
     summary="Patch only specific attribute of the target identity_service",
@@ -481,12 +474,10 @@ def get_identity_service(
         endpoint raises the `conflict` error. If there are no differences between new \
         values and current ones, the database entity is left unchanged and the \
         endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_identity_service(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[IdentityService, IdentityServiceUpdate],
@@ -513,17 +504,15 @@ def put_identity_service(
 
 
 @i_router.delete(
-    "/{identity_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific identity_service",
     description="Delete a specific identity_service using its *uid*. Returns \
         `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_identity_services(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[IdentityService, Depends(get_identity_service_item)],
 ):
     """DELETE operation to remove the identity_service matching a specific uid.
@@ -532,7 +521,8 @@ def delete_identity_services(
 
     Only authenticated users can view this endpoint.
     """
-    identity_service_mng.remove(db_obj=item)
+    if item is not None:
+        identity_service_mng.remove(db_obj=item)
 
 
 n_router = APIRouter(prefix="/network_services", tags=["network_services"])
@@ -580,7 +570,7 @@ def get_network_services(
 
 
 @n_router.get(
-    "/{network_service_uid}",
+    "/{service_uid}",
     response_model=NetworkServiceReadSingle,
     summary="Read a specific network_service",
     description="Retrieve a specific network_service using its *uid*. If no entity \
@@ -610,7 +600,7 @@ def get_network_service(
 
 
 @n_router.patch(
-    "/{network_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_200_OK,
     response_model=NetworkServiceRead | None,
     summary="Patch only specific attribute of the target network_service",
@@ -622,12 +612,10 @@ def get_network_service(
         endpoint raises the `conflict` error. If there are no differences between new \
         values and current ones, the database entity is left unchanged and the \
         endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_network_service(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[NetworkService, NetworkServiceUpdate],
@@ -654,17 +642,15 @@ def put_network_service(
 
 
 @n_router.delete(
-    "/{network_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific network_service",
     description="Delete a specific network_service using its *uid*. Returns \
         `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_network_services(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[NetworkService, Depends(get_network_service_item)],
 ):
     """DELETE operation to remove the network_service matching a specific uid.
@@ -673,7 +659,8 @@ def delete_network_services(
 
     Only authenticated users can view this endpoint.
     """
-    network_service_mng.remove(db_obj=item)
+    if item is not None:
+        network_service_mng.remove(db_obj=item)
 
 
 os_router = APIRouter(prefix="/object_store_services", tags=["object_store_services"])
@@ -721,7 +708,7 @@ def get_object_store_services(
 
 
 @os_router.get(
-    "/{object_store_service_uid}",
+    "/{service_uid}",
     response_model=ObjectStoreServiceReadSingle,
     summary="Read a specific object_store_service",
     description="Retrieve a specific object_store_service using its *uid*. If no \
@@ -751,7 +738,7 @@ def get_object_store_service(
 
 
 @os_router.patch(
-    "/{object_store_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_200_OK,
     response_model=ObjectStoreServiceRead | None,
     summary="Patch only specific attribute of the target object_store_service",
@@ -763,12 +750,10 @@ def get_object_store_service(
         endpoint raises the `conflict` error. If there are no differences between new \
         values and current ones, the database entity is left unchanged and the \
         endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_object_store_service(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[ObjectStoreService, ObjectStoreServiceUpdate],
@@ -795,17 +780,15 @@ def put_object_store_service(
 
 
 @os_router.delete(
-    "/{object_store_service_uid}",
+    "/{service_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific object_store_service",
     description="Delete a specific object_store_service using its *uid*. Returns \
         `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_object_store_services(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[ObjectStoreService, Depends(get_object_store_service_item)],
 ):
     """DELETE operation to remove the object_store_service matching a specific uid.
@@ -814,4 +797,5 @@ def delete_object_store_services(
 
     Only authenticated users can view this endpoint.
     """
-    object_store_service_mng.remove(db_obj=item)
+    if item is not None:
+        object_store_service_mng.remove(db_obj=item)

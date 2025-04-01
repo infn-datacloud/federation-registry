@@ -2,14 +2,13 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.image.models import PrivateImage, SharedImage
 from fedreg.image.schemas import ImageQuery, ImageRead, ImageUpdate
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.image.api.dependencies import (
     get_image_item,
     image_must_exist,
@@ -106,12 +105,10 @@ def get_image(
         the `conflict` error. If there are no differences between new values and \
         current ones, the database entity is left unchanged and the endpoint returns \
         the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_image(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[PrivateImage | SharedImage, ImageUpdate],
@@ -142,12 +139,10 @@ def put_image(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific image",
     description="Delete a specific image using its *uid*. Returns `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_images(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     item: Annotated[PrivateImage | SharedImage, Depends(get_image_item)],
 ):
     """DELETE operation to remove the image matching a specific uid.
@@ -156,4 +151,5 @@ def delete_images(
 
     Only authenticated users can view this endpoint.
     """
-    image_mgr.remove(db_obj=item)
+    if item is not None:
+        image_mgr.remove(db_obj=item)

@@ -45,12 +45,13 @@ def validate_new_region_values(
     return item, new_data
 
 
-def not_last_region(item: Annotated[Region, Depends(region_must_exist)]) -> Region:
+def not_last_region(item: Annotated[Region, Depends(get_region_item)]) -> Region:
     """Check parent provider has other regions."""
-    db_provider: Region = item.provider.single()
-    if len(db_provider.regions) == 1:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"This region is the provider's {db_provider.uid} last one.",
-        )
+    if item is not None:
+        db_provider: Region = item.provider.single()
+        if len(db_provider.regions) == 1:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"This region is the provider's {db_provider.uid} last one.",
+            )
     return item

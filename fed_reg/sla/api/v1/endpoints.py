@@ -3,13 +3,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
 from fedreg.sla.models import SLA
 from fedreg.sla.schemas import SLAQuery, SLARead, SLAUpdate
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
 from fed_reg.sla.api.dependencies import (
     get_sla_item,
@@ -106,12 +105,10 @@ def get_sla(
         error. If there are no differences between new values and current ones, the \
         database entity is left unchanged and the endpoint returns the `not modified` \
         message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_sla(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[tuple[SLA, SLAUpdate], Depends(validate_new_sla_values)],
 ):
@@ -139,21 +136,18 @@ def put_sla(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific sla",
     description="Delete a specific sla using its *uid*. Returns `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
-def delete_slas(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
-    item: Annotated[SLA, Depends(get_sla_item)],
-):
+def delete_slas(request: Request, item: Annotated[SLA, Depends(get_sla_item)]):
     """DELETE operation to remove the sla matching a specific uid.
 
     The endpoint expects the item's uid.
 
     Only authenticated users can view this endpoint.
     """
-    sla_mgr.remove(db_obj=item)
+    if item is not None:
+        sla_mgr.remove(db_obj=item)
 
 
 # @db.write_transaction

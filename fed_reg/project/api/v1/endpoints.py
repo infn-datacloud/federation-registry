@@ -2,8 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, Response, Security, status
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.project.models import Project
 from fedreg.project.schemas import (
     ProjectQuery,
@@ -19,7 +18,7 @@ from fedreg.service.schemas import IdentityServiceQuery
 from flaat.user_infos import UserInfos
 from neomodel import db
 
-from fed_reg.auth import custom, flaat, get_user_infos, security
+from fed_reg.auth import custom, get_user_infos, strict_security
 from fed_reg.project.api.dependencies import (
     get_project_item,
     project_must_exist,
@@ -139,12 +138,10 @@ def get_project(
         error. If there are no differences between new values and current ones, the \
         database entity is left unchanged and the endpoint returns the `not modified` \
         message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_project(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
     response: Response,
     validated_data: Annotated[
         tuple[Project, ProjectUpdate],
@@ -175,21 +172,18 @@ def put_project(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a specific project",
     description="Delete a specific project using its *uid*. Returns `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
-def delete_projects(
-    request: Request,
-    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
-    item: Annotated[Project, Depends(get_project_item)],
-):
+def delete_projects(item: Annotated[Project, Depends(get_project_item)]):
     """DELETE operation to remove the project matching a specific uid.
 
     The endpoint expects the item's uid.
 
     Only authenticated users can view this endpoint.
     """
-    project_mgr.remove(db_obj=item)
+    if item is not None:
+        project_mgr.remove(db_obj=item)
 
 
 # @db.read_transaction
