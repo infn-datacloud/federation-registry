@@ -47,109 +47,109 @@ MOCK_ADMIN_EMAL = "admin@test.it"
 
 
 class CaseItem:
-    def case_private_flavor(self) -> tuple[PrivateFlavor, str]:
+    def case_private_flavor(self) -> tuple[str, PrivateFlavor]:
         item = PrivateFlavor(name=random_lower_string(), uuid=str(uuid4())).save()
         return "flavors", item
 
-    def case_shared_flavor(self) -> tuple[SharedFlavor, str]:
+    def case_shared_flavor(self) -> tuple[str, SharedFlavor]:
         item = SharedFlavor(name=random_lower_string(), uuid=str(uuid4())).save()
         return "flavors", item
 
-    def case_identity_provider(self) -> tuple[IdentityProvider, str]:
+    def case_identity_provider(self) -> tuple[str, IdentityProvider]:
         item = IdentityProvider(
             endpoint=random_url(), group_claim=random_lower_string()
         ).save()
         return "identity_providers", item
 
-    def case_private_image(self) -> tuple[PrivateImage, str]:
+    def case_private_image(self) -> tuple[str, PrivateImage]:
         item = PrivateImage(name=random_lower_string(), uuid=str(uuid4())).save()
         return "images", item
 
-    def case_shared_image(self) -> tuple[SharedImage, str]:
+    def case_shared_image(self) -> tuple[str, SharedImage]:
         item = SharedImage(name=random_lower_string(), uuid=str(uuid4())).save()
         return "images", item
 
-    def case_location(self) -> tuple[Location, str]:
+    def case_location(self) -> tuple[str, Location]:
         item = Location(site=random_lower_string(), country=random_country()).save()
         return "locations", item
 
-    def case_private_network(self) -> tuple[PrivateNetwork, str]:
+    def case_private_network(self) -> tuple[str, PrivateNetwork]:
         item = PrivateNetwork(name=random_lower_string(), uuid=str(uuid4())).save()
         return "networks", item
 
-    def case_shared_network(self) -> tuple[SharedNetwork, str]:
+    def case_shared_network(self) -> tuple[str, SharedNetwork]:
         item = SharedNetwork(name=random_lower_string(), uuid=str(uuid4())).save()
         return "networks", item
 
-    def case_project(self) -> tuple[Project, str]:
+    def case_project(self) -> tuple[str, Project]:
         item = Project(name=random_lower_string(), uuid=str(uuid4())).save()
         return "projects", item
 
-    @case(tags=["provider"])
-    def case_provider(self) -> tuple[Provider, str]:
+    @case(tags="provider")
+    def case_provider(self) -> tuple[str, Provider]:
         item = Provider(name=random_lower_string(), type=random_provider_type()).save()
         return "providers", item
 
-    def case_block_storage_quota(self) -> tuple[BlockStorageQuota, str]:
+    def case_block_storage_quota(self) -> tuple[str, BlockStorageQuota]:
         item = BlockStorageQuota().save()
         return "block_storage_quotas", item
 
-    def case_compute_quota(self) -> tuple[ComputeQuota, str]:
+    def case_compute_quota(self) -> tuple[str, ComputeQuota]:
         item = ComputeQuota().save()
         return "compute_quotas", item
 
-    def case_network_quota(self) -> tuple[NetworkQuota, str]:
+    def case_network_quota(self) -> tuple[str, NetworkQuota]:
         item = NetworkQuota().save()
         return "network_quotas", item
 
-    def case_object_store_quota(self) -> tuple[ObjectStoreQuota, str]:
+    def case_object_store_quota(self) -> tuple[str, ObjectStoreQuota]:
         item = ObjectStoreQuota().save()
         return "object_store_quotas", item
 
-    def case_region(self) -> tuple[Region, str]:
+    def case_region(self) -> tuple[str, Region]:
         item = Region(name=random_lower_string()).save()
         return "regions", item
 
-    def case_block_storage_service(self) -> tuple[BlockStorageService, str]:
+    def case_block_storage_service(self) -> tuple[str, BlockStorageService]:
         item = BlockStorageService(
             endpoint=str(random_url()),
             name=random_service_name(ServiceType.BLOCK_STORAGE),
         ).save()
         return "block_storage_services", item
 
-    def case_compute_service(self) -> tuple[ComputeService, str]:
+    def case_compute_service(self) -> tuple[str, ComputeService]:
         item = ComputeService(
             endpoint=str(random_url()), name=random_service_name(ServiceType.COMPUTE)
         ).save()
         return "compute_services", item
 
-    def case_identity_service(self) -> tuple[IdentityService, str]:
+    def case_identity_service(self) -> tuple[str, IdentityService]:
         item = IdentityService(
             endpoint=str(random_url()), name=random_service_name(ServiceType.IDENTITY)
         ).save()
         return "identity_services", item
 
-    def case_network_service(self) -> tuple[NetworkService, str]:
+    def case_network_service(self) -> tuple[str, NetworkService]:
         item = NetworkService(
             endpoint=str(random_url()), name=random_service_name(ServiceType.NETWORK)
         ).save()
         return "network_services", item
 
-    def case_object_store_service(self) -> tuple[ObjectStoreService, str]:
+    def case_object_store_service(self) -> tuple[str, ObjectStoreService]:
         item = ObjectStoreService(
             endpoint=str(random_url()),
             name=random_service_name(ServiceType.OBJECT_STORE),
         ).save()
         return "object_store_services", item
 
-    def case_sla(self) -> tuple[SLA, str]:
+    def case_sla(self) -> tuple[str, SLA]:
         start_date, end_date = random_start_end_dates()
         item = SLA(
             doc_uuid=str(uuid4()), start_date=start_date, end_date=end_date
         ).save()
         return "slas", item
 
-    def case_user_group(self) -> tuple[UserGroup, str]:
+    def case_user_group(self) -> tuple[str, UserGroup]:
         item = UserGroup(name=random_lower_string()).save()
         return "user_groups", item
 
@@ -303,6 +303,17 @@ def test_delete(
 
 
 @parametrize_with_cases("endpoint, item", cases=CaseItem)
+def test_patch_no_token(
+    client_without_token: TestClient, endpoint: str, item: Any
+) -> None:
+    """If not authenticated, the endpoint gives 403 `forbidden`."""
+    settings = get_settings()
+    url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
+    resp = client_without_token.patch(url, json={})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+@parametrize_with_cases("endpoint, item", cases=CaseItem)
 def test_patch_no_token_no_resource(
     client_without_token: TestClient, endpoint: str, item: Any
 ) -> None:
@@ -395,6 +406,17 @@ def test_patch_no_changes(
 
 
 @parametrize_with_cases("endpoint, item", cases=CaseItem, has_tag="provider")
+def test_post_no_token(
+    client_without_token: TestClient, endpoint: str, item: Any
+) -> None:
+    """If not authenticated, the endpoint gives 403 `forbidden`."""
+    settings = get_settings()
+    url = os.path.join(settings.API_V1_STR, endpoint)
+    resp = client_without_token.post(url, json={})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+@parametrize_with_cases("endpoint, item", cases=CaseItem, has_tag="provider")
 def test_post_no_token_no_resource(
     client_without_token: TestClient, endpoint: str, item: Provider
 ) -> None:
@@ -447,10 +469,59 @@ def test_post_no_authz_no_resource(
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
 
+# PUT Operations
+
+
+@parametrize_with_cases("endpoint, item", cases=CaseItem, has_tag="provider")
+def test_put_no_token(
+    client_without_token: TestClient, endpoint: str, item: Any
+) -> None:
+    """If not authenticated, the endpoint gives 403 `forbidden`."""
+    settings = get_settings()
+    url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
+    resp = client_without_token.put(url, json={})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+@parametrize_with_cases("endpoint, item", cases=CaseItem, has_tag="provider")
+def test_put_no_token_no_resource(
+    client_without_token: TestClient, endpoint: str, item: Provider
+) -> None:
+    """If not authenticated and resources does not exists, the endpoint still gives
+    403 `forbidden`."""
+    settings = get_settings()
+    url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
+    resp = client_without_token.put(url, json={})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+@parametrize_with_cases("endpoint, item", cases=CaseItem, has_tag="provider")
+def test_put_invalid_token(
+    client_with_token: TestClient, endpoint: str, item: Provider
+) -> None:
+    """If authenticated but not authorized, the endpoint gives 401 `unauthorized`."""
+    settings = get_settings()
+    url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
+    resp = client_with_token.put(url, json={})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+@parametrize_with_cases("endpoint, item", cases=CaseItem, has_tag="provider")
+def test_put_invalid_token_no_resource(
+    client_with_token: TestClient, endpoint: str, item: Provider
+) -> None:
+    """If authenticated but not authorized and resources does not exists, the endpoint
+    still gives 401 `unauthorized`."""
+    settings = get_settings()
+    url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
+    resp = client_with_token.put(url, json={})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
 @patch("fed_reg.auth.flaat.get_user_infos_from_request")
 @parametrize_with_cases("endpoint, item", cases=CaseItem, has_tag="provider")
-@parametrize_with_cases("user_infos", cases=CaseUserInfos, has_tag="valid")
-def test_post_conflict(
+@parametrize_with_cases("user_infos", cases=CaseUserInfos, has_tag="invalid")
+def test_put_no_authz_no_resource(
     mock_user_infos: MagicMock,
     client_with_token: TestClient,
     user_infos: UserInfos,
@@ -460,6 +531,6 @@ def test_post_conflict(
     settings = get_settings()
     settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
-    url = os.path.join(settings.API_V1_STR, endpoint)
-    resp = client_with_token.post(url, json={"name": item.name, "type": item.type})
-    assert resp.status_code == status.HTTP_409_CONFLICT
+    url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
+    resp = client_with_token.put(url, json={})
+    assert resp.status_code == status.HTTP_403_FORBIDDEN

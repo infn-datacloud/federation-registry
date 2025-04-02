@@ -8,7 +8,6 @@ from fedreg.provider.schemas import ProviderQuery
 from fedreg.region.schemas import RegionQuery
 from fedreg.user_group.models import UserGroup
 from fedreg.user_group.schemas import UserGroupQuery, UserGroupRead, UserGroupUpdate
-from fedreg.user_group.schemas_extended import UserGroupReadMulti, UserGroupReadSingle
 from flaat.user_infos import UserInfos
 from neomodel import db
 
@@ -20,7 +19,12 @@ from fed_reg.user_group.api.dependencies import (
     user_group_must_exist,
     validate_new_user_group_values,
 )
-from fed_reg.user_group.api.utils import filter_on_provider_attr, filter_on_region_attr
+from fed_reg.user_group.api.utils import (
+    UserGroupReadMulti,
+    UserGroupReadSingle,
+    filter_on_provider_attr,
+    filter_on_region_attr,
+)
 from fed_reg.user_group.crud import user_group_mgr
 
 router = APIRouter(prefix="/user_groups", tags=["user_groups"])

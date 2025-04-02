@@ -9,10 +9,6 @@ from fedreg.project.schemas import (
     ProjectRead,
     ProjectUpdate,
 )
-from fedreg.project.schemas_extended import (
-    ProjectReadMulti,
-    ProjectReadSingle,
-)
 from fedreg.region.schemas import RegionQuery
 from fedreg.service.schemas import IdentityServiceQuery
 from flaat.user_infos import UserInfos
@@ -25,6 +21,8 @@ from fed_reg.project.api.dependencies import (
     validate_new_project_values,
 )
 from fed_reg.project.api.utils import (
+    ProjectReadMulti,
+    ProjectReadSingle,
     choose_schema,
     filter_on_region_attr,
     filter_on_service_attr,
