@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter
 
-from fed_reg.config import get_settings
 from fed_reg.flavor.api.v1.endpoints import router as flavor_router_v1
 from fed_reg.identity_provider.api.v1.endpoints import (
     router as identity_provider_router_v1,
@@ -32,8 +31,6 @@ from fed_reg.service.api.v1.endpoints import (
 )
 from fed_reg.sla.api.v1.endpoints import router as sla_router_v1
 from fed_reg.user_group.api.v1.endpoints import router as user_group_router_v1
-
-settings = get_settings()
 
 router_v1 = APIRouter()
 router_v1.include_router(flavor_router_v1)
