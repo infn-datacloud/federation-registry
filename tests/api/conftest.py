@@ -4,8 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from flaat.user_infos import UserInfos
 
-from fed_reg.config import get_settings
-from fed_reg.main import app
+from fed_reg.main import app, settings
 from tests.utils import random_lower_string, random_url
 
 MOCK_ADMIN_EMAL = "admin@test.it"
@@ -23,7 +22,6 @@ def client_with_token():
 
 @pytest.fixture
 def user_infos() -> UserInfos:
-    settings = get_settings()
     settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     return UserInfos(
         access_token_info=None,

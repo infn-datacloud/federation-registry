@@ -32,7 +32,7 @@ from fedreg.user_group.models import UserGroup
 from flaat.user_infos import UserInfos
 from pytest_cases import case, parametrize_with_cases
 
-from fed_reg.config import get_settings
+from fed_reg.main import settings
 from tests.utils import (
     random_country,
     random_lower_string,
@@ -344,7 +344,6 @@ def test_patch_conflict(
     item1: Provider,
     new_data: dict[str, Any],
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item1.uid)
     resp = client_with_token.patch(url, json=new_data)
@@ -361,7 +360,6 @@ def test_put_conflict(
     item1: Provider,
     new_data: dict[str, Any],
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item1.uid)
     resp = client_with_token.put(url, json=new_data)
@@ -378,7 +376,6 @@ def test_post_conflict(
     item1: Provider,
     new_data: dict[str, Any],
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_with_token.post(url, json=new_data)

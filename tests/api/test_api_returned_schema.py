@@ -32,7 +32,7 @@ from fedreg.user_group.models import UserGroup
 from flaat.user_infos import UserInfos
 from pytest_cases import case, parametrize_with_cases
 
-from fed_reg.config import get_settings
+from fed_reg.main import settings
 from tests.api.conftest import MOCK_ADMIN_EMAL
 from tests.utils import (
     random_country,
@@ -479,7 +479,6 @@ def test_get_multi(
     with_conn: bool,
     shrunk: bool,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_with_token.get(url, params={"short": shrunk, "with_conn": with_conn})
@@ -515,7 +514,6 @@ def test_get_single(
     with_conn: bool,
     shrunk: bool,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.get(url, params={"short": shrunk, "with_conn": with_conn})

@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from flaat.user_infos import UserInfos
 from pytest_cases import case, parametrize, parametrize_with_cases
 
-from fed_reg.config import get_settings
+from fed_reg.main import settings
 
 
 class CaseEndpoint:
@@ -49,7 +49,6 @@ def test_get_missing(
     user_infos: UserInfos,
     endpoint: str,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.get(url)
@@ -64,7 +63,6 @@ def test_get_multi_missing(
     user_infos: UserInfos,
     endpoint: str,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_with_token.get(url)
@@ -80,7 +78,6 @@ def test_delete_missing(
     user_infos: UserInfos,
     endpoint: str,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.delete(url)
@@ -95,7 +92,6 @@ def test_patch_missing(
     user_infos: UserInfos,
     endpoint: str,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.patch(url, json={})
@@ -110,7 +106,6 @@ def test_put_missing(
     user_infos: UserInfos,
     endpoint: str,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.put(url, json={})

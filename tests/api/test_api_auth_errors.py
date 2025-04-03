@@ -32,7 +32,7 @@ from fedreg.user_group.models import UserGroup
 from flaat.user_infos import UserInfos
 from pytest_cases import case, parametrize_with_cases
 
-from fed_reg.config import get_settings
+from fed_reg.main import settings
 from tests.api.conftest import MOCK_ADMIN_EMAL
 from tests.utils import (
     random_country,
@@ -195,7 +195,6 @@ def test_delete_no_token(
     client_without_token: TestClient, endpoint: str, item: Any
 ) -> None:
     """If not authenticated, the endpoint gives 403 `forbidden`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_without_token.delete(url)
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -207,7 +206,6 @@ def test_delete_no_token_no_resource(
 ) -> None:
     """If not authenticated and resources does not exists, the endpoint still gives
     403 `forbidden`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_without_token.delete(url)
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -218,7 +216,6 @@ def test_delete_invalid_token(
     client_with_token: TestClient, endpoint: str, item: Any
 ) -> None:
     """If authenticated but not authorized, the endpoint gives 401 `unauthorized`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.delete(url)
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -230,7 +227,6 @@ def test_delete_invalid_token_no_resource(
 ) -> None:
     """If authenticated but not authorized and resources does not exists, the endpoint
     still gives 401 `unauthorized`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.delete(url)
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -246,7 +242,6 @@ def test_delete_no_authz_no_resource(
     endpoint: str,
     item: Any,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.delete(url)
@@ -263,7 +258,6 @@ def test_delete(
     endpoint: str,
     item: Any,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.delete(url)
@@ -278,7 +272,6 @@ def test_patch_no_token(
     client_without_token: TestClient, endpoint: str, item: Any
 ) -> None:
     """If not authenticated, the endpoint gives 403 `forbidden`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_without_token.patch(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -290,7 +283,6 @@ def test_patch_no_token_no_resource(
 ) -> None:
     """If not authenticated and resources does not exists, the endpoint still gives
     403 `forbidden`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_without_token.patch(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -301,7 +293,6 @@ def test_patch_invalid_token(
     client_with_token: TestClient, endpoint: str, item: Any
 ) -> None:
     """If authenticated but not authorized, the endpoint gives 401 `unauthorized`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.patch(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -313,7 +304,6 @@ def test_patch_invalid_token_no_resource(
 ) -> None:
     """If authenticated but not authorized and resources does not exists, the endpoint
     still gives 401 `unauthorized`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.patch(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -329,7 +319,6 @@ def test_patch_no_authz_no_resource(
     endpoint: str,
     item: Any,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.patch(url, json={})
@@ -346,7 +335,6 @@ def test_patch_no_changes(
     endpoint: str,
     item: Any,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.patch(url, json={})
@@ -361,7 +349,6 @@ def test_post_no_token(
     client_without_token: TestClient, endpoint: str, item: Any
 ) -> None:
     """If not authenticated, the endpoint gives 403 `forbidden`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_without_token.post(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -373,7 +360,6 @@ def test_post_no_token_no_resource(
 ) -> None:
     """If not authenticated and resources does not exists, the endpoint still gives
     403 `forbidden`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_without_token.post(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -384,7 +370,6 @@ def test_post_invalid_token(
     client_with_token: TestClient, endpoint: str, item: Provider
 ) -> None:
     """If authenticated but not authorized, the endpoint gives 401 `unauthorized`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_with_token.post(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -396,7 +381,6 @@ def test_post_invalid_token_no_resource(
 ) -> None:
     """If authenticated but not authorized and resources does not exists, the endpoint
     still gives 401 `unauthorized`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_with_token.post(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -412,7 +396,6 @@ def test_post_no_authz_no_resource(
     endpoint: str,
     item: Provider,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_with_token.post(url, json={})
@@ -427,7 +410,6 @@ def test_put_no_token(
     client_without_token: TestClient, endpoint: str, item: Any
 ) -> None:
     """If not authenticated, the endpoint gives 403 `forbidden`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_without_token.put(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -439,7 +421,6 @@ def test_put_no_token_no_resource(
 ) -> None:
     """If not authenticated and resources does not exists, the endpoint still gives
     403 `forbidden`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_without_token.put(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -450,7 +431,6 @@ def test_put_invalid_token(
     client_with_token: TestClient, endpoint: str, item: Provider
 ) -> None:
     """If authenticated but not authorized, the endpoint gives 401 `unauthorized`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.put(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -462,7 +442,6 @@ def test_put_invalid_token_no_resource(
 ) -> None:
     """If authenticated but not authorized and resources does not exists, the endpoint
     still gives 401 `unauthorized`."""
-    settings = get_settings()
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.put(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
@@ -478,7 +457,6 @@ def test_put_no_authz_no_resource(
     endpoint: str,
     item: Provider,
 ) -> None:
-    settings = get_settings()
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.put(url, json={})
