@@ -75,7 +75,7 @@ def test_create(item: SharedFlavorCreate, service_model: ComputeService) -> None
 
     assert db_obj is not None
     assert isinstance(db_obj, SharedFlavor)
-    assert db_obj.services.is_connected(service_model)
+    assert db_obj.service.is_connected(service_model)
 
 
 @parametrize_with_cases("item", cases=CaseFlavor)
@@ -91,7 +91,7 @@ def test_create_same_uuid_diff_provider(
 
     assert db_obj is not None
     assert isinstance(db_obj, SharedFlavor)
-    assert db_obj.services.is_connected(service_model)
+    assert db_obj.service.is_connected(service_model)
 
 
 @parametrize_with_cases("item", cases=CaseFlavor)
@@ -100,15 +100,13 @@ def test_create_already_exists(
     flavor_model: SharedFlavor,
 ) -> None:
     """A flavor with the given uuid already exists"""
-    service = flavor_model.services.single()
-    region = service.region.single()
-    provider = region.provider.single()
+    service = flavor_model.service.single()
 
     item.uuid = flavor_model.uuid
 
     msg = (
-        f"A shared flavor with uuid {item.uuid} belonging to provider "
-        f"{provider.name} already exists"
+        f"A shared flavor with uuid {item.uuid} belonging to service "
+        f"{service.endpoint} already exists"
     )
     with pytest.raises(AssertionError, match=msg):
         shared_flavor_mng.create(obj_in=item, service=service)

@@ -99,7 +99,7 @@ def test_create(
 
     assert db_obj is not None
     assert isinstance(db_obj, PrivateFlavor)
-    assert db_obj.services.is_connected(service_model)
+    assert db_obj.service.is_connected(service_model)
     assert db_obj.projects.is_connected(projects[0])
 
 
@@ -122,7 +122,7 @@ def test_create_same_uuid_diff_provider(
 
     assert db_obj is not None
     assert isinstance(db_obj, PrivateFlavor)
-    assert db_obj.services.is_connected(service_model)
+    assert db_obj.service.is_connected(service_model)
     assert db_obj.projects.is_connected(projects[0])
 
 
@@ -132,7 +132,7 @@ def test_create_already_exists(
     flavor_model: PrivateFlavor,
 ) -> None:
     """A flavor with the given uuid already exists"""
-    service = flavor_model.services.single()
+    service = flavor_model.service.single()
     region = service.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
@@ -140,8 +140,8 @@ def test_create_already_exists(
     item.uuid = flavor_model.uuid
 
     msg = (
-        f"A private flavor with uuid {item.uuid} belonging to provider "
-        f"{provider.name} already exists"
+        f"A private flavor with uuid {item.uuid} belonging to service "
+        f"{service.endpoint} already exists"
     )
     with pytest.raises(AssertionError, match=msg):
         private_flavor_mng.create(
@@ -155,7 +155,7 @@ def test_create_with_invalid_projects(
     flavor_model: PrivateFlavor,
 ) -> None:
     """None of the flavor projects belong to the target provider."""
-    service = flavor_model.services.single()
+    service = flavor_model.service.single()
     region = service.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
@@ -193,7 +193,7 @@ def test_update(
 
     Replace existing projects with new ones. Remove no more used and add new ones.
     """
-    service = flavor_model.services.single()
+    service = flavor_model.service.single()
     region = service.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
@@ -218,7 +218,7 @@ def test_update_no_changes(
     item: PrivateFlavorCreateExtended, flavor_model: PrivateFlavor
 ) -> None:
     """The new item is equal to the existing one. No changes."""
-    service = flavor_model.services.single()
+    service = flavor_model.service.single()
     region = service.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
@@ -242,7 +242,7 @@ def test_update_only_content(
 
     Keep the same project but change content.
     """
-    service = flavor_model.services.single()
+    service = flavor_model.service.single()
     region = service.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
@@ -272,7 +272,7 @@ def test_update_only_projects(
 
     Keep the same project but change content.
     """
-    service = flavor_model.services.single()
+    service = flavor_model.service.single()
     region = service.region.single()
     provider = region.provider.single()
     projects = provider.projects.all()
