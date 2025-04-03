@@ -503,7 +503,7 @@ pydantic = {version = ">=1.10.9,<2.0.0", extras = ["email"]}
 type = "git"
 url = "https://github.com/infn-datacloud/federation-registry-lib.git"
 reference = "networks-multi-projects"
-resolved_reference = "4f7d9c5f54d14c7b683245a424b1ba4dbc65d292"
+resolved_reference = "c9b7f64f536841aa021a41556acadcdda91589b2"
 
 [[package]]
 name = "filelock"

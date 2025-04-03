@@ -12,7 +12,6 @@ from flaat.user_infos import UserInfos
 from neomodel import db
 
 from fed_reg.auth import custom, get_user_infos, strict_security
-from fed_reg.project.api.utils import choose_schema
 from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
 from fed_reg.user_group.api.dependencies import (
     get_user_group_item,
@@ -22,6 +21,7 @@ from fed_reg.user_group.api.dependencies import (
 from fed_reg.user_group.api.utils import (
     UserGroupReadMulti,
     UserGroupReadSingle,
+    choose_schema,
     filter_on_provider_attr,
     filter_on_region_attr,
 )

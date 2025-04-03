@@ -3,7 +3,6 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
-import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from fedreg.flavor.models import PrivateFlavor, SharedFlavor
@@ -42,21 +41,6 @@ from tests.utils import (
     random_start_end_dates,
     random_url,
 )
-
-MOCK_ADMIN_EMAL = "admin@test.it"
-
-
-@pytest.fixture
-def user_infos() -> UserInfos:
-    return UserInfos(
-        access_token_info=None,
-        user_info={
-            "email": MOCK_ADMIN_EMAL,
-            "iss": random_url(),
-            "sub": random_lower_string(),
-        },
-        introspection_info=None,
-    )
 
 
 class CaseItem:
@@ -361,7 +345,6 @@ def test_patch_conflict(
     new_data: dict[str, Any],
 ) -> None:
     settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item1.uid)
     resp = client_with_token.patch(url, json=new_data)
@@ -379,7 +362,6 @@ def test_put_conflict(
     new_data: dict[str, Any],
 ) -> None:
     settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item1.uid)
     resp = client_with_token.put(url, json=new_data)
@@ -397,7 +379,6 @@ def test_post_conflict(
     new_data: dict[str, Any],
 ) -> None:
     settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_with_token.post(url, json=new_data)

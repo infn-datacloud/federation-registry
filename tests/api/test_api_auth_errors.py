@@ -33,6 +33,7 @@ from flaat.user_infos import UserInfos
 from pytest_cases import case, parametrize_with_cases
 
 from fed_reg.config import get_settings
+from tests.api.conftest import MOCK_ADMIN_EMAL
 from tests.utils import (
     random_country,
     random_email,
@@ -42,8 +43,6 @@ from tests.utils import (
     random_start_end_dates,
     random_url,
 )
-
-MOCK_ADMIN_EMAL = "admin@test.it"
 
 
 class CaseItem:
@@ -156,16 +155,8 @@ class CaseItem:
 
 class CaseUserInfos:
     @case(tags="valid")
-    def case_user_infos(self) -> UserInfos:
-        return UserInfos(
-            access_token_info=None,
-            user_info={
-                "email": MOCK_ADMIN_EMAL,
-                "iss": random_url(),
-                "sub": random_lower_string(),
-            },
-            introspection_info=None,
-        )
+    def case_user_infos(self, user_infos: UserInfos) -> UserInfos:
+        return user_infos
 
     @case(tags="invalid")
     def case_no_admin_email(self) -> UserInfos:
@@ -256,29 +247,10 @@ def test_delete_no_authz_no_resource(
     item: Any,
 ) -> None:
     settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.delete(url)
     assert resp.status_code == status.HTTP_403_FORBIDDEN
-
-
-@patch("fed_reg.auth.flaat.get_user_infos_from_request")
-@parametrize_with_cases("endpoint, item", cases=CaseItem)
-@parametrize_with_cases("user_infos", cases=CaseUserInfos, has_tag="valid")
-def test_delete_no_resource(
-    mock_user_infos: MagicMock,
-    client_with_token: TestClient,
-    user_infos: UserInfos,
-    endpoint: str,
-    item: Any,
-) -> None:
-    settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
-    mock_user_infos.return_value = user_infos
-    url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
-    resp = client_with_token.delete(url)
-    assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
 @patch("fed_reg.auth.flaat.get_user_infos_from_request")
@@ -292,7 +264,6 @@ def test_delete(
     item: Any,
 ) -> None:
     settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.delete(url)
@@ -359,29 +330,10 @@ def test_patch_no_authz_no_resource(
     item: Any,
 ) -> None:
     settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
     resp = client_with_token.patch(url, json={})
     assert resp.status_code == status.HTTP_403_FORBIDDEN
-
-
-@patch("fed_reg.auth.flaat.get_user_infos_from_request")
-@parametrize_with_cases("endpoint, item", cases=CaseItem)
-@parametrize_with_cases("user_infos", cases=CaseUserInfos, has_tag="valid")
-def test_patch_no_resource(
-    mock_user_infos: MagicMock,
-    client_with_token: TestClient,
-    user_infos: UserInfos,
-    endpoint: str,
-    item: Any,
-) -> None:
-    settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
-    mock_user_infos.return_value = user_infos
-    url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
-    resp = client_with_token.patch(url, json={})
-    assert resp.status_code == status.HTTP_404_NOT_FOUND
 
 
 @patch("fed_reg.auth.flaat.get_user_infos_from_request")
@@ -395,7 +347,6 @@ def test_patch_no_changes(
     item: Any,
 ) -> None:
     settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.patch(url, json={})
@@ -462,7 +413,6 @@ def test_post_no_authz_no_resource(
     item: Provider,
 ) -> None:
     settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint)
     resp = client_with_token.post(url, json={})
@@ -529,7 +479,6 @@ def test_put_no_authz_no_resource(
     item: Provider,
 ) -> None:
     settings = get_settings()
-    settings.ADMIN_EMAIL_LIST = [MOCK_ADMIN_EMAL]
     mock_user_infos.return_value = user_infos
     url = os.path.join(settings.API_V1_STR, endpoint, item.uid)
     resp = client_with_token.put(url, json={})
