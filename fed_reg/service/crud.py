@@ -268,13 +268,9 @@ class CRUDComputeService(
                 obj_in=quota, service=db_obj, provider_projects=provider_projects
             )
         for flavor in obj_in.flavors:
-            db_flavor = image_mgr.get(uuid=flavor.uuid)
-            if db_flavor is None:
-                flavor_mgr.create(
-                    obj_in=flavor, service=db_obj, provider_projects=provider_projects
-                )
-            else:
-                db_obj.flavors.connect(db_flavor)
+            flavor_mgr.create(
+                obj_in=flavor, service=db_obj, provider_projects=provider_projects
+            )
         for image in obj_in.images:
             db_image = image_mgr.get(uuid=image.uuid)
             if db_image is None:
