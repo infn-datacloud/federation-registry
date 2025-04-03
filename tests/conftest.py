@@ -3,9 +3,7 @@
 import os
 
 import pytest
-from neomodel import db
-
-from fed_reg.main import settings
+from neomodel import config, db
 
 
 def pytest_addoption(parser):
@@ -31,7 +29,7 @@ def setup_neo4j_session(request):
     :param request: The request object. Please see <https://docs.pytest.org/en/latest/reference.html#_pytest.hookspec.pytest_sessionstart>`_
     :type Request object: For more information please see <https://docs.pytest.org/en/latest/reference.html#request>`_
     """
-    settings.NEO4J_DB_URL = os.environ.get(
+    config.DATABASE_URL = os.environ.get(
         "NEO4J_TEST_URL", "bolt://neo4j:password@localhost:7687"
     )
 
