@@ -33,29 +33,18 @@ class CRUDPrivateFlavor(
         """
         assert len(provider_projects) > 0, "The provider's projects list is empty"
 
-        db_obj = self.get(uuid=obj_in.uuid)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-        else:
-            # It's indifferent which service, we want to reach the provider
-            db_service = db_obj.services.single()
-            db_region = db_service.region.single()
-            db_provider1 = db_region.provider.single()
-            db_region = service.region.single()
-            db_provider2 = db_region.provider.single()
-            assert db_provider1 != db_provider2, (
-                f"A private flavor with uuid {obj_in.uuid} belonging to provider "
-                f"{db_provider1.name} already exists"
-            )
-            db_obj = super().create(obj_in=obj_in)
-
-        db_obj.services.connect(service)
+        db_obj = service.flavors.get_or_none(uuid=obj_in.uuid)
+        assert not db_obj, (
+            f"A private flavor with uuid {obj_in.uuid} belonging to service "
+            f"{service.endpoint} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.service.connect(service)
         self._connect_projects(
             db_obj=db_obj,
             input_uuids=obj_in.projects,
             provider_projects=provider_projects,
         )
-
         return db_obj
 
 
@@ -73,24 +62,13 @@ class CRUDSharedFlavor(CRUDBase[SharedFlavor, SharedFlavorCreate, FlavorUpdate])
         flavor. In any case connect the flavor to the given service and to any received
         project.
         """
-        db_obj = self.get(uuid=obj_in.uuid)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-        else:
-            # It's indifferent which service, we want to reach the provider
-            db_service = db_obj.services.single()
-            db_region = db_service.region.single()
-            db_provider1 = db_region.provider.single()
-            db_region = service.region.single()
-            db_provider2 = db_region.provider.single()
-            assert db_provider1 != db_provider2, (
-                f"A shared flavor with uuid {obj_in.uuid} belonging to provider "
-                f"{db_provider1.name} already exists"
-            )
-            db_obj = super().create(obj_in=obj_in)
-
-        db_obj.services.connect(service)
-
+        db_obj = service.flavors.get_or_none(uuid=obj_in.uuid)
+        assert not db_obj, (
+            f"A shared flavor with uuid {obj_in.uuid} belonging to service "
+            f"{service.endpoint} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.service.connect(service)
         return db_obj
 
 

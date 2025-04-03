@@ -36,11 +36,11 @@ def validate_new_flavor_values(
     Return the current item and the schema with the new data.
     """
     if new_data.uuid is not None and new_data.uuid != item.uuid:
-        for service in item.services:
-            db_item = service.flavors.get_or_none(uuid=new_data.uuid)
-            if db_item is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Flavor with uuid '{item.uuid}' already registered",
-                )
+        service = item.service.single()
+        db_item = service.flavors.get_or_none(uuid=new_data.uuid)
+        if db_item is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Flavor with uuid '{item.uuid}' already registered",
+            )
     return item, new_data

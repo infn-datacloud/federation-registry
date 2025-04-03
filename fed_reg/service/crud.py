@@ -268,13 +268,21 @@ class CRUDComputeService(
                 obj_in=quota, service=db_obj, provider_projects=provider_projects
             )
         for flavor in obj_in.flavors:
-            flavor_mgr.create(
-                obj_in=flavor, service=db_obj, provider_projects=provider_projects
-            )
+            db_flavor = image_mgr.get(uuid=flavor.uuid)
+            if db_flavor is None:
+                flavor_mgr.create(
+                    obj_in=flavor, service=db_obj, provider_projects=provider_projects
+                )
+            else:
+                db_obj.flavors.connect(db_flavor)
         for image in obj_in.images:
-            image_mgr.create(
-                obj_in=image, service=db_obj, provider_projects=provider_projects
-            )
+            db_image = image_mgr.get(uuid=image.uuid)
+            if db_image is None:
+                image_mgr.create(
+                    obj_in=image, service=db_obj, provider_projects=provider_projects
+                )
+            else:
+                db_obj.images.connect(db_image)
 
         return db_obj
 
@@ -340,12 +348,7 @@ class CRUDComputeService(
                     edit = True
 
         for db_item in db_items.values():
-            if len(db_item.services) == 1:
-                flavor_mgr.remove(db_obj=db_item)
-            else:
-                # TODO in futura flavors will belong to only one service.
-                # This else case will be removed.
-                db_obj.flavors.disconnect(db_item)
+            flavor_mgr.remove(db_obj=db_item)
             edit = True
 
         return edit

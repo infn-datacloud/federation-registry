@@ -22,6 +22,7 @@ def provider_must_not_exist(item: ProviderCreateExtended) -> ProviderCreateExten
     if db_item is not None:
         msg = f"Provider with name '{item.name}' and type '{item.type}' already exists."
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
+    return item
 
 
 def get_provider_item(provider_uid: str) -> Provider:
@@ -31,8 +32,8 @@ def get_provider_item(provider_uid: str) -> Provider:
 
 def validate_new_provider_values(
     item: Annotated[Provider, Depends(provider_must_exist)],
-    new_data: ProviderUpdate | ProviderCreateExtended,
-) -> tuple[Provider, ProviderUpdate | ProviderCreateExtended]:
+    new_data: ProviderCreateExtended | ProviderUpdate,
+) -> tuple[Provider, ProviderCreateExtended | ProviderUpdate]:
     """Check given data are valid ones.
 
     Check there are no other providers with the same site name. Avoid to change
