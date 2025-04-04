@@ -44,14 +44,14 @@ class Pagination(BaseModel):
         size (int): Chunk size.
     """
 
-    size: int = Field(default=0, ge=1, description="Chunk size.")
+    size: int = Field(default=None, ge=1, description="Chunk size.")
     page: int = Field(default=0, ge=0, description="Divide the list in chunks")
 
     @validator("page", pre=True)
     @classmethod
     def set_page_to_0(cls, v: int, values: dict[str, Any]) -> int:
         """If chunk size is 0 set page index to 0."""
-        if values.get("size", 0) == 0:
+        if values.get("size", None) is None:
             return 0
         return v
 
