@@ -70,10 +70,13 @@ def get_projects(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
     if provider_uid:
-        items = filter(lambda x: x.provider.single().uid == provider_uid, items)
+        items = list(filter(lambda x: x.provider.single().uid == provider_uid, items))
     if user_group_uid:
-        items = filter(
-            lambda x: x.sla.single().user_group.single().uid == user_group_uid, items
+        items = list(
+            filter(
+                lambda x: x.sla.single().user_group.single().uid == user_group_uid,
+                items,
+            )
         )
     region_query = RegionQuery(name=region_name)
     items = filter_on_region_attr(items=items, region_query=region_query)
@@ -86,9 +89,11 @@ def get_projects(
     )
     if provider_uid and shape.with_conn:
         for item in items:
-            item.sla.user_group.identity_provider.providers = filter(
-                lambda x: x.uid == item.provider.uid,
-                item.sla.user_group.identity_provider.providers,
+            item.sla.user_group.identity_provider.providers = list(
+                filter(
+                    lambda x: x.uid == item.provider.uid,
+                    item.sla.user_group.identity_provider.providers,
+                )
             )
     return items
 
