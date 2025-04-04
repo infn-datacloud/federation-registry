@@ -44,7 +44,7 @@ class Pagination(BaseModel):
         size (int): Chunk size.
     """
 
-    size: int = Field(default=10, ge=1, description="Chunk size.")
+    size: int = Field(default=0, ge=1, description="Chunk size.")
     page: int = Field(default=0, ge=0, description="Divide the list in chunks")
 
     @validator("page", pre=True)
