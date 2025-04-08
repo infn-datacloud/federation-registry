@@ -272,7 +272,9 @@ class CRUDComputeService(
                 obj_in=flavor, service=db_obj, provider_projects=provider_projects
             )
         for image in obj_in.images:
-            db_image = image_mgr.get(uuid=image.uuid)
+            db_image = next(
+                filter(lambda x: x.uuid == image.uuid, db_provider.images()), None
+            )
             if db_image is None:
                 image_mgr.create(
                     obj_in=image, service=db_obj, provider_projects=provider_projects
@@ -363,13 +365,21 @@ class CRUDComputeService(
         """
         edit = False
         db_items = {db_item.uuid: db_item for db_item in db_obj.images}
+        region = db_obj.region.single()
+        provider = region.provider.single()
+        provider_images = {i.uuid: i for i in provider.images()}
         for item in input_images:
             db_item = db_items.pop(item.uuid, None)
 
             if not db_item:
-                image_mgr.create(
-                    obj_in=item, service=db_obj, provider_projects=provider_projects
-                )
+                db_item = provider_images.pop(item.uuid, None)
+                if db_item is not None:
+                    image_mgr.patch(db_obj=db_item, obj_in=item)
+                    db_obj.images.connect(db_item)
+                else:
+                    image_mgr.create(
+                        obj_in=item, service=db_obj, provider_projects=provider_projects
+                    )
                 edit = True
             else:
                 updated_db_item = image_mgr.update(
