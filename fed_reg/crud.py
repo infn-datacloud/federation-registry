@@ -296,8 +296,8 @@ class CRUDMultiProject(
 
 PrivateModelType = TypeVar("PrivateModelType", bound=StructuredNode)
 SharedModelType = TypeVar("SharedModelType", bound=StructuredNode)
-PrivateCRUDType = TypeVar("PrivateModelType", bound=CRUDBase)
-SharedCRUDType = TypeVar("SharedModelType", bound=CRUDBase)
+PrivateCRUDType = TypeVar("PrivateCRUDType", bound=CRUDBase)
+SharedCRUDType = TypeVar("SharedCRUDType", bound=CRUDBase)
 PrivateCreateSchemaType = TypeVar("PrivateCreateSchemaType", bound=BaseNodeCreate)
 SharedCreateSchemaType = TypeVar("SharedCreateSchemaType", bound=BaseNodeCreate)
 
