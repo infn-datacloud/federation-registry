@@ -1,5 +1,7 @@
 """Service REST API dependencies."""
 
+from typing import Annotated, Any
+
 from fastapi import Depends, HTTPException, status
 from fedreg.service.models import (
     BlockStorageService,
@@ -9,18 +11,14 @@ from fedreg.service.models import (
     ObjectStoreService,
 )
 from fedreg.service.schemas import (
-    BlockStorageServiceCreate,
     BlockStorageServiceUpdate,
-    ComputeServiceCreate,
     ComputeServiceUpdate,
-    IdentityServiceCreate,
     IdentityServiceUpdate,
-    NetworkServiceCreate,
     NetworkServiceUpdate,
-    ObjectStoreServiceCreate,
     ObjectStoreServiceUpdate,
 )
 
+from fed_reg.dependencies import valid_id
 from fed_reg.service.crud import (
     block_storage_service_mng,
     compute_service_mng,
@@ -30,381 +28,139 @@ from fed_reg.service.crud import (
 )
 
 
-def valid_block_storage_service_id(
-    service_uid: str,
-) -> BlockStorageService:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        service_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        Service: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = block_storage_service_mng.get(uid=service_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Block Storage Service '{service_uid}' not found",
-        )
-    return item
+def block_storage_service_must_exist(service_uid: str) -> BlockStorageService:
+    """The target service must exists otherwise raises `not found` error."""
+    return valid_id(mgr=block_storage_service_mng, item_id=service_uid)
 
 
-def valid_block_storage_service_endpoint(
-    item: BlockStorageServiceCreate | BlockStorageServiceUpdate,
-) -> None:
-    """Check there are no other services with the same endpoint.
-
-    Args:
-    ----
-        item (ServiceCreate | ServiceUpdate): new data.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    db_item = block_storage_service_mng.get(endpoint=item.endpoint)
-    if db_item is not None:
-        msg = (
-            f"Block Storage Service with endpoint '{item.endpoint}' already registered."
-        )
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+def get_block_storage_service_item(service_uid: str) -> BlockStorageService:
+    """Retrieve the target service. If not found, return None."""
+    return valid_id(mgr=block_storage_service_mng, item_id=service_uid, error=False)
 
 
 def validate_new_block_storage_service_values(
-    update_data: BlockStorageServiceUpdate,
-    item: BlockStorageService = Depends(valid_block_storage_service_id),
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other services with the same endpoint.
-
-    Args:
-    ----
-        update_data (FlavorUpdate): new data.
-        item (Flavor): DB entity to update.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    if str(update_data.endpoint) != item.endpoint:
-        valid_block_storage_service_endpoint(update_data)
+    item: Annotated[BlockStorageService, Depends(block_storage_service_must_exist)],
+    new_data: BlockStorageServiceUpdate,
+) -> tuple[BlockStorageService, BlockStorageServiceUpdate]:
+    """Check given data are valid ones."""
+    return validate_new_service_values(
+        mgr=block_storage_service_mng, item=item, new_data=new_data
+    )
 
 
-def valid_compute_service_id(
-    service_uid: str,
-) -> ComputeService:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        service_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        Service: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = compute_service_mng.get(uid=service_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Compute Service '{service_uid}' not found",
-        )
-    return item
+def compute_service_must_exist(service_uid: str) -> ComputeService:
+    """The target service must exists otherwise raises `not found` error."""
+    return valid_id(mgr=compute_service_mng, item_id=service_uid)
 
 
-def valid_compute_service_endpoint(
-    item: ComputeServiceCreate | ComputeServiceUpdate,
-) -> None:
-    """Check there are no other services with the same endpoint.
-
-    Args:
-    ----
-        item (ServiceCreate | ServiceUpdate): new data.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    db_item = compute_service_mng.get(endpoint=item.endpoint)
-    if db_item is not None:
-        msg = f"Compute Service with endpoint '{item.endpoint}' already registered."
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+def get_compute_service_item(service_uid: str) -> ComputeService:
+    """Retrieve the target service. If not found, return None."""
+    return valid_id(mgr=compute_service_mng, item_id=service_uid, error=False)
 
 
 def validate_new_compute_service_values(
-    update_data: ComputeServiceUpdate,
-    item: ComputeService = Depends(valid_compute_service_id),
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other services with the same endpoint.
-
-    Args:
-    ----
-        update_data (FlavorUpdate): new data.
-        item (Flavor): DB entity to update.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    if str(update_data.endpoint) != item.endpoint:
-        valid_compute_service_endpoint(update_data)
+    item: Annotated[ComputeService, Depends(compute_service_must_exist)],
+    new_data: ComputeServiceUpdate,
+) -> tuple[ComputeService, ComputeServiceUpdate]:
+    """Check given data are valid ones."""
+    return validate_new_service_values(
+        mgr=compute_service_mng, item=item, new_data=new_data
+    )
 
 
-def valid_identity_service_id(
-    service_uid: str,
-) -> IdentityService:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        service_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        Service: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = identity_service_mng.get(uid=service_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Identity Service '{service_uid}' not found",
-        )
-    return item
+def identity_service_must_exist(service_uid: str) -> IdentityService:
+    """The target service must exists otherwise raises `not found` error."""
+    return valid_id(mgr=identity_service_mng, item_id=service_uid)
 
 
-def valid_identity_service_endpoint(
-    item: IdentityServiceCreate | IdentityServiceUpdate,
-) -> None:
-    """Check there are no other services with the same endpoint.
-
-    Args:
-    ----
-        item (ServiceCreate | ServiceUpdate): new data.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    db_item = identity_service_mng.get(endpoint=item.endpoint)
-    if db_item is not None:
-        msg = f"Identity Service with endpoint '{item.endpoint}' already registered."
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+def get_identity_service_item(service_uid: str) -> IdentityService:
+    """Retrieve the target service. If not found, return None."""
+    return valid_id(mgr=identity_service_mng, item_id=service_uid, error=False)
 
 
 def validate_new_identity_service_values(
-    update_data: IdentityServiceUpdate,
-    item: IdentityService = Depends(valid_identity_service_id),
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other services with the same endpoint.
-
-    Args:
-    ----
-        update_data (FlavorUpdate): new data.
-        item (Flavor): DB entity to update.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    if str(update_data.endpoint) != item.endpoint:
-        valid_identity_service_endpoint(update_data)
+    item: Annotated[IdentityService, Depends(identity_service_must_exist)],
+    new_data: IdentityServiceUpdate,
+) -> tuple[IdentityService, IdentityServiceUpdate]:
+    """Check given data are valid ones."""
+    return validate_new_service_values(
+        mgr=identity_service_mng, item=item, new_data=new_data
+    )
 
 
-def valid_network_service_id(
-    service_uid: str,
-) -> NetworkService:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        service_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        Service: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = network_service_mng.get(uid=service_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Network Service '{service_uid}' not found",
-        )
-    return item
+def network_service_must_exist(service_uid: str) -> NetworkService:
+    """The target service must exists otherwise raises `not found` error."""
+    return valid_id(mgr=network_service_mng, item_id=service_uid)
 
 
-def valid_network_service_endpoint(
-    item: NetworkServiceCreate | NetworkServiceUpdate,
-) -> None:
-    """Check there are no other services with the same endpoint.
-
-    Args:
-    ----
-        item (ServiceCreate | ServiceUpdate): new data.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    db_item = network_service_mng.get(endpoint=item.endpoint)
-    if db_item is not None:
-        msg = f"Network Service with endpoint '{item.endpoint}' already registered."
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+def get_network_service_item(service_uid: str) -> NetworkService:
+    """Retrieve the target service. If not found, return None."""
+    return valid_id(mgr=network_service_mng, item_id=service_uid, error=False)
 
 
 def validate_new_network_service_values(
-    update_data: NetworkServiceUpdate,
-    item: NetworkService = Depends(valid_network_service_id),
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other services with the same endpoint.
-
-    Args:
-    ----
-        update_data (FlavorUpdate): new data.
-        item (Flavor): DB entity to update.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    if str(update_data.endpoint) != item.endpoint:
-        valid_network_service_endpoint(update_data)
+    item: Annotated[NetworkService, Depends(network_service_must_exist)],
+    new_data: NetworkServiceUpdate,
+) -> tuple[NetworkService, NetworkServiceUpdate]:
+    """Check given data are valid ones."""
+    return validate_new_service_values(
+        mgr=network_service_mng, item=item, new_data=new_data
+    )
 
 
-def valid_object_store_service_id(
-    service_uid: str,
-) -> ObjectStoreService:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        service_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        Service: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = object_store_service_mng.get(uid=service_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Object Storage Service '{service_uid}' not found",
-        )
-    return item
+def object_store_service_must_exist(service_uid: str) -> ObjectStoreService:
+    """The target service must exists otherwise raises `not found` error."""
+    return valid_id(mgr=object_store_service_mng, item_id=service_uid)
 
 
-def valid_object_store_service_endpoint(
-    item: ObjectStoreServiceCreate | ObjectStoreServiceUpdate,
-) -> None:
-    """Check there are no other services with the same endpoint.
-
-    Args:
-    ----
-        item (ServiceCreate | ServiceUpdate): new data.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    db_item = object_store_service_mng.get(endpoint=item.endpoint)
-    if db_item is not None:
-        msg = (
-            "Object Storage Service with endpoint "
-            + f"'{item.endpoint}' already registered."
-        )
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+def get_object_store_service_item(service_uid: str) -> ObjectStoreService:
+    """Retrieve the target service. If not found, return None."""
+    return valid_id(mgr=object_store_service_mng, item_id=service_uid, error=False)
 
 
 def validate_new_object_store_service_values(
-    update_data: ObjectStoreServiceUpdate,
-    item: ObjectStoreService = Depends(valid_object_store_service_id),
-) -> None:
+    item: Annotated[ObjectStoreService, Depends(object_store_service_must_exist)],
+    new_data: ObjectStoreServiceUpdate,
+) -> tuple[ObjectStoreService, ObjectStoreServiceUpdate]:
+    """Check given data are valid ones."""
+    return validate_new_service_values(
+        mgr=object_store_service_mng, item=item, new_data=new_data
+    )
+
+
+def validate_new_service_values(
+    mgr: Any,
+    item: BlockStorageService
+    | ComputeService
+    | IdentityService
+    | NetworkService
+    | ObjectStoreService,
+    new_data: BlockStorageServiceUpdate
+    | ComputeServiceUpdate
+    | IdentityService
+    | NetworkServiceUpdate
+    | ObjectStoreServiceUpdate,
+) -> (
+    tuple[BlockStorageService, BlockStorageServiceUpdate]
+    | tuple[ComputeService, ComputeServiceUpdate]
+    | tuple[IdentityService, IdentityServiceUpdate]
+    | tuple[NetworkService, NetworkServiceUpdate]
+    | tuple[ObjectStoreService, ObjectStoreServiceUpdate]
+):
     """Check given data are valid ones.
 
-    Check there are no other services with the same endpoint.
+    Check there are no other services with the same site name. Avoid to change
+    service visibility.
 
-    Args:
-    ----
-        update_data (FlavorUpdate): new data.
-        item (Flavor): DB entity to update.
+    Raises `not found` error if the target entity does not exists.
+    It raises `conflict` error if a DB entity with identical uuid, belonging to the same
+    provider, already exists.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given endpoint already exists.
+    Return the current item and the schema with the new data.
     """
-    if str(update_data.endpoint) != item.endpoint:
-        valid_object_store_service_endpoint(update_data)
+    if new_data.endpoint is not None and str(new_data.endpoint) != item.endpoint:
+        db_item = mgr.get(endpoint=item.endpoint)
+        if db_item is not None:
+            msg = f"{mgr.model} with endpoint '{item.endpoint}' already registered."
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
+    return item, new_data

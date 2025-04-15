@@ -1,10 +1,16 @@
 """Authentication and authorization rules."""
 
+from typing import Annotated
+
 from fastapi import HTTPException, Request, Security, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBasicCredentials,
+    HTTPBearer,
+)
 from flaat import AuthWorkflow
 from flaat.config import AccessLevel
-from flaat.exceptions import FlaatUnauthenticated
+from flaat.exceptions import FlaatForbidden, FlaatUnauthenticated
 from flaat.fastapi import Flaat
 from flaat.requirements import AllOf, HasSubIss, IsTrue
 from flaat.user_infos import UserInfos
@@ -18,7 +24,10 @@ lazy_security = HTTPBearer(auto_error=False)
 def has_write_access(user_infos: UserInfos) -> bool:
     """Target user has write access on Federation-Registry."""
     settings = get_settings()
-    return user_infos.user_info.get("email") in settings.ADMIN_EMAIL_LIST
+    email = user_infos.user_info.get("email", None)
+    if email is not None:
+        return email in settings.ADMIN_EMAIL_LIST
+    return False
 
 
 flaat = Flaat()
@@ -41,5 +50,22 @@ def get_user_infos(
         try:
             return flaat.get_user_infos_from_request(request)
         except FlaatUnauthenticated as e:
-            raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail=e.render()) from e
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail=e.render()) from e
     return None
+
+
+def strict_security(
+    request: Request,
+    client_credentials: Annotated[HTTPBasicCredentials, Security(security)],
+):
+    """Check security"""
+    user_infos = flaat.get_user_infos_from_request(request)
+    if user_infos is None:
+        msg = "Invalid token. Empty user infos"
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=msg)
+
+    auth_workflow = AuthWorkflow(flaat, flaat._get_access_level_requirement("write"))
+    try:
+        auth_workflow.check_user_authorization(user_infos=user_infos)
+    except FlaatForbidden as e:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=e.render()) from e

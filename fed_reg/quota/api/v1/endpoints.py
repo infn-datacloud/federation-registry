@@ -1,17 +1,8 @@
 """Quotas endpoints to execute POST, GET, PUT, PATCH, DELETE operations."""
 
-from typing import Optional
+from typing import Annotated
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Request,
-    Response,
-    Security,
-    status,
-)
-from fastapi.security import HTTPBasicCredentials
+from fastapi import APIRouter, Depends, Response, Security, status
 from fedreg.quota.models import (
     BlockStorageQuota,
     ComputeQuota,
@@ -32,7 +23,26 @@ from fedreg.quota.schemas import (
     ObjectStoreQuotaRead,
     ObjectStoreQuotaUpdate,
 )
-from fedreg.quota.schemas_extended import (
+from flaat.user_infos import UserInfos
+from neomodel import db
+
+from fed_reg.auth import custom, get_user_infos, strict_security
+from fed_reg.query import DbQueryCommonParams, Pagination, SchemaShape, paginate
+from fed_reg.quota.api.dependencies import (
+    block_storage_quota_must_exist,
+    compute_quota_must_exist,
+    get_block_storage_quota_item,
+    get_compute_quota_item,
+    get_network_quota_item,
+    get_object_store_quota_item,
+    network_quota_must_exist,
+    object_store_quota_must_exist,
+    validate_new_block_storage_quota_values,
+    validate_new_compute_quota_values,
+    validate_new_network_quota_values,
+    validate_new_object_store_quota_values,
+)
+from fed_reg.quota.api.utils import (
     BlockStorageQuotaReadMulti,
     BlockStorageQuotaReadSingle,
     ComputeQuotaReadMulti,
@@ -41,21 +51,10 @@ from fedreg.quota.schemas_extended import (
     NetworkQuotaReadSingle,
     ObjectStoreQuotaReadMulti,
     ObjectStoreQuotaReadSingle,
-)
-from flaat.user_infos import UserInfos
-from neomodel import db
-
-from fed_reg.auth import custom, flaat, get_user_infos, security
-from fed_reg.query import DbQueryCommonParams, Pagination, SchemaSize
-from fed_reg.quota.api.dependencies import (
-    valid_block_storage_quota_id,
-    valid_compute_quota_id,
-    valid_network_quota_id,
-    valid_object_store_quota_id,
-    validate_new_block_storage_quota_values,
-    validate_new_compute_quota_values,
-    validate_new_network_quota_values,
-    validate_new_object_store_quota_values,
+    choose_block_storage_schema,
+    choose_compute_schema,
+    choose_network_schema,
+    choose_object_store_schema,
 )
 from fed_reg.quota.crud import (
     block_storage_quota_mng,
@@ -70,41 +69,136 @@ bs_router = APIRouter(prefix="/block_storage_quotas", tags=["block_storage_quota
 @bs_router.get(
     "/",
     response_model=BlockStorageQuotaReadMulti,
-    summary="Read all quotas",
-    description="Retrieve all quotas stored in the database. \
-        It is possible to filter on quotas attributes and other \
+    summary="Read all block_storage_quotas",
+    description="Retrieve all block_storage_quotas stored in the database. \
+        It is possible to filter on block_storage_quotas attributes and other \
         common query parameters.",
 )
 @custom.decorate_view_func
 @db.read_transaction
 def get_block_storage_quotas(
-    comm: DbQueryCommonParams = Depends(),
-    page: Pagination = Depends(),
-    size: SchemaSize = Depends(),
-    item: BlockStorageQuotaQuery = Depends(),
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    comm: Annotated[DbQueryCommonParams, Depends()],
+    page: Annotated[Pagination, Depends()],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[BlockStorageQuotaQuery, Depends()],
 ):
-    """GET operation to retrieve all block storage quotas.
+    """GET operation to retrieve all block_storage_quotas.
 
     It can receive the following group op parameters:
     - comm: parameters common to all DB queries to limit, skip or sort results.
     - page: parameters to limit and select the number of results to return to the user.
-    - size: parameters to define the number of information contained in each result.
+    - shape: parameters to define the number of information contained in each result.
     - item: parameters specific for this item typology. Used to apply filters.
 
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
     """
     items = block_storage_quota_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = block_storage_quota_mng.paginate(
-        items=items, page=page.page, size=page.size
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_block_storage_schema(
+        items,
+        auth=user_infos is not None,
+        short=shape.short,
+        with_conn=shape.with_conn,
     )
-    return block_storage_quota_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+
+
+@bs_router.get(
+    "/{quota_uid}",
+    response_model=BlockStorageQuotaReadSingle,
+    summary="Read a specific block_storage_quota",
+    description="Retrieve a specific block_storage_quota using its *uid*. If no entity \
+        matches the given *uid*, the endpoint raises a `not found` error.",
+)
+@custom.decorate_view_func
+@db.read_transaction
+def get_block_storage_quota(
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[BlockStorageQuota, Depends(block_storage_quota_must_exist)],
+):
+    """GET operation to retrieve the block_storage_quota matching a specific uid.
+
+    The endpoint expects a uid and uses a dependency to check its existence.
+
+    It can receive the following group op parameters:
+    - shape: parameters to define the number of information contained in each result.
+
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
+    """
+    return choose_block_storage_schema(
+        item, auth=user_infos is not None, short=shape.short, with_conn=shape.with_conn
     )
+
+
+@bs_router.patch(
+    "/{quota_uid}",
+    status_code=status.HTTP_200_OK,
+    response_model=BlockStorageQuotaRead | None,
+    summary="Patch only specific attribute of the target block_storage_quota",
+    description="Update only the received attribute values of a specific block storage \
+        quota. The target block_storage_quota is identified using its *uid*. If no \
+        entity matches the given *uid*, the endpoint raises a `not found` error. At \
+        first, the endpoint validates the new block_storage_quota values checking \
+        there are no other items with the given *uuid* and *name*. In that case, the \
+        endpoint raises the `conflict` error. If there are no differences between new \
+        values and current ones, the database entity is left unchanged and the \
+        endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
+)
+@db.write_transaction
+def put_block_storage_quota(
+    response: Response,
+    validated_data: Annotated[
+        tuple[BlockStorageQuota, BlockStorageQuotaUpdate],
+        Depends(validate_new_block_storage_quota_values),
+    ],
+):
+    """PATCH operation to update the block_storage_quota matching a specific uid.
+
+    The endpoint expects the item's uid and uses a dependency to check its existence.
+    It expects the new data to write in the database.
+    It updates only the received attributes. It leaves unchanged the other item's
+    attributes and its relationships.
+
+    If new data equals current data, no update is performed and the endpoint returns a
+    response with an empty body and the 304 status code.
+
+    Only authenticated users can view this function.
+    """
+    item, update_data = validated_data
+    db_item = block_storage_quota_mng.patch(db_obj=item, obj_in=update_data)
+    if not db_item:
+        response.status_code = status.HTTP_304_NOT_MODIFIED
+    return db_item
+
+
+@bs_router.delete(
+    "/{quota_uid}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a specific block_storage_quota",
+    description="Delete a specific block_storage_quota using its *uid*. Returns \
+        `no content`.",
+    dependencies=[Security(strict_security)],
+)
+@db.write_transaction
+def delete_block_storage_quotas(
+    item: Annotated[BlockStorageQuota, Depends(get_block_storage_quota_item)],
+):
+    """DELETE operation to remove the block_storage_quota matching a specific uid.
+
+    The endpoint expects the item's uid.
+
+    Only authenticated users can view this endpoint.
+    """
+    if item is not None:
+        block_storage_quota_mng.remove(db_obj=item)
 
 
 # @db.write_transaction
@@ -144,254 +238,117 @@ def get_block_storage_quotas(
 #     )
 
 
-@bs_router.get(
-    "/{quota_uid}",
-    response_model=BlockStorageQuotaReadSingle,
-    summary="Read a specific quota",
-    description="Retrieve a specific quota using its *uid*. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error.",
-)
-@custom.decorate_view_func
-@db.read_transaction
-def get_block_storage_quota(
-    size: SchemaSize = Depends(),
-    item: BlockStorageQuota = Depends(valid_block_storage_quota_id),
-    user_infos: UserInfos | None = Security(get_user_infos),
-):
-    """GET operation to retrieve the block storage quota matching a specific uid.
-
-    The endpoints expect a uid and uses a dependency to check its existence.
-
-    It can receive the following group op parameters:
-    - size: parameters to define the number of information contained in each result.
-
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
-    """
-    return block_storage_quota_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
-    )[0]
-
-
-@bs_router.patch(
-    "/{quota_uid}",
-    status_code=status.HTTP_200_OK,
-    response_model=Optional[BlockStorageQuotaRead],
-    dependencies=[
-        Depends(validate_new_block_storage_quota_values),
-    ],
-    summary="Edit a specific quota",
-    description="Update attribute values of a specific quota. \
-        The target quota is identified using its uid. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. If new values equal \
-        current ones, the database entity is left unchanged \
-        and the endpoint returns the `not modified` message.",
-)
-@flaat.access_level("write")
-@db.write_transaction
-def put_block_storage_quota(
-    request: Request,
-    update_data: BlockStorageQuotaUpdate,
-    response: Response,
-    item: BlockStorageQuota = Depends(valid_block_storage_quota_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
-):
-    """PATCH operation to update the block storage quota matching a specific uid.
-
-    The endpoints expect a uid and uses a dependency to check its existence. It also
-    expects the new data to write in the database. It updates only the item attributes,
-    not its relationships.
-
-    If the new data equals the current data, no update is performed and the function
-    returns a response with an empty body and the 304 status code.
-
-    Only authenticated users can view this function.
-    """
-    db_item = block_storage_quota_mng.update(db_obj=item, obj_in=update_data)
-    if not db_item:
-        response.status_code = status.HTTP_304_NOT_MODIFIED
-    return db_item
-
-
-@bs_router.delete(
-    "/{quota_uid}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a specific quota",
-    description="Delete a specific quota using its *uid*. \
-        Returns `no content`. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. \
-        If the deletion procedure fails, raises a `internal \
-        server` error",
-)
-@flaat.access_level("write")
-@db.write_transaction
-def delete_block_storage_quotas(
-    request: Request,
-    item: BlockStorageQuota = Depends(valid_block_storage_quota_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
-):
-    """DELETE operation to remove the block storage quota matching a specific uid.
-
-    The endpoints expect a uid and uses a dependency to check its existence.
-
-    Only authenticated users can view this function.
-    """
-    if not block_storage_quota_mng.remove(db_obj=item):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete item",
-        )
-
-
 c_router = APIRouter(prefix="/compute_quotas", tags=["compute_quotas"])
 
 
 @c_router.get(
     "/",
     response_model=ComputeQuotaReadMulti,
-    summary="Read all compute quotas",
-    description="Retrieve all compute quotas stored in the database. \
-        It is possible to filter on quotas attributes and other \
+    summary="Read all compute_quotas",
+    description="Retrieve all compute_quotas stored in the database. \
+        It is possible to filter on compute_quotas attributes and other \
         common query parameters.",
 )
 @custom.decorate_view_func
 @db.read_transaction
 def get_compute_quotas(
-    comm: DbQueryCommonParams = Depends(),
-    page: Pagination = Depends(),
-    size: SchemaSize = Depends(),
-    item: ComputeQuotaQuery = Depends(),
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    comm: Annotated[DbQueryCommonParams, Depends()],
+    page: Annotated[Pagination, Depends()],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[ComputeQuotaQuery, Depends()],
 ):
-    """GET operation to retrieve all compute quotas.
+    """GET operation to retrieve all compute_quotas.
 
     It can receive the following group op parameters:
     - comm: parameters common to all DB queries to limit, skip or sort results.
     - page: parameters to limit and select the number of results to return to the user.
-    - size: parameters to define the number of information contained in each result.
+    - shape: parameters to define the number of information contained in each result.
     - item: parameters specific for this item typology. Used to apply filters.
 
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
     """
     items = compute_quota_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = compute_quota_mng.paginate(items=items, page=page.page, size=page.size)
-    return compute_quota_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_compute_schema(
+        items,
+        auth=user_infos is not None,
+        short=shape.short,
+        with_conn=shape.with_conn,
     )
-
-
-# @db.write_transaction
-# @c_router.post(
-#     "/",
-#     status_code=status.HTTP_201_CREATED,
-#     response_model=ComputeQuotaReadExtended,
-#
-#     summary="Create compute quota",
-#     description="Create a compute quota and connect it to its related entities: \
-#         project and service. \
-#         At first verify that target project and service exist. \
-#         Then verify project does not already have an equal quota type and \
-#         check service and project belong to the same provider.",
-# )
-# def post_compute_quota(
-#     project: Project = Depends(valid_project_id),
-#     service: Service = Depends(valid_service_id),
-#     item: ComputeQuotaCreate = Body(),
-# ):
-#     # Check project does not have duplicated quota types
-#     # for q in project.quotas.all():
-#     #     if q.type == item.type and q.service.single() == service:
-#     #         msg = f"Project '{project.name}' already has a quota "
-#     #         msg += f"with type '{item.type}' on service '{service.endpoint}'."
-#     #         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
-#     # Check Project provider and service provider are equals
-#     proj_prov = project.provider.single()
-#     serv_prov = service.provider.single()
-#     if proj_prov != serv_prov:
-#         msg = f"Project provider '{proj_prov.name}' and service provider "
-#         msg += f"'{serv_prov.name}' do not match."
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
-
-#     return compute_quota.create(
-#         obj_in=item, project=project, service=service, force=True
-#     )
 
 
 @c_router.get(
     "/{quota_uid}",
     response_model=ComputeQuotaReadSingle,
-    summary="Read a specific quota",
-    description="Retrieve a specific quota using its *uid*. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error.",
+    summary="Read a specific compute_quota",
+    description="Retrieve a specific compute_quota using its *uid*. If no entity \
+        matches the given *uid*, the endpoint raises a `not found` error.",
 )
 @custom.decorate_view_func
 @db.read_transaction
 def get_compute_quota(
-    size: SchemaSize = Depends(),
-    item: ComputeQuota = Depends(valid_compute_quota_id),
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[ComputeQuota, Depends(compute_quota_must_exist)],
 ):
-    """GET operation to retrieve the compute quota matching a specific uid.
+    """GET operation to retrieve the compute_quota matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence.
+    The endpoint expects a uid and uses a dependency to check its existence.
 
     It can receive the following group op parameters:
-    - size: parameters to define the number of information contained in each result.
+    - shape: parameters to define the number of information contained in each result.
 
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
     """
-    return compute_quota_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
-    )[0]
+    return choose_compute_schema(
+        item, auth=user_infos is not None, short=shape.short, with_conn=shape.with_conn
+    )
 
 
 @c_router.patch(
     "/{quota_uid}",
     status_code=status.HTTP_200_OK,
-    response_model=Optional[ComputeQuotaRead],
-    dependencies=[
-        Depends(validate_new_compute_quota_values),
-    ],
-    summary="Edit a specific quota",
-    description="Update attribute values of a specific quota. \
-        The target quota is identified using its uid. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. If new values equal \
-        current ones, the database entity is left unchanged \
-        and the endpoint returns the `not modified` message.",
+    response_model=ComputeQuotaRead | None,
+    summary="Patch only specific attribute of the target compute_quota",
+    description="Update only the received attribute values of a specific compute \
+        quota. The target compute_quota is identified using its *uid*. If no entity \
+        matches the given *uid*, the endpoint raises a `not found` error.  At first, \
+        the endpoint validates the new compute_quota values checking there are no \
+        other items with the given *uuid* and *name*. In that case, the endpoint \
+        raises the `conflict` error. If there are no differences between new values \
+        and current ones, the database entity is left unchanged and the endpoint \
+        returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_compute_quota(
-    request: Request,
-    update_data: ComputeQuotaUpdate,
     response: Response,
-    item: ComputeQuota = Depends(valid_compute_quota_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
+    validated_data: Annotated[
+        tuple[ComputeQuota, ComputeQuotaUpdate],
+        Depends(validate_new_compute_quota_values),
+    ],
 ):
-    """PATCH operation to update the compute quota matching a specific uid.
+    """PATCH operation to update the compute_quota matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence. It also
-    expects the new data to write in the database. It updates only the item attributes,
-    not its relationships.
+    The endpoint expects the item's uid and uses a dependency to check its existence.
+    It expects the new data to write in the database.
+    It updates only the received attributes. It leaves unchanged the other item's
+    attributes and its relationships.
 
-    If the new data equals the current data, no update is performed and the function
-    returns a response with an empty body and the 304 status code.
+    If new data equals current data, no update is performed and the endpoint returns a
+    response with an empty body and the 304 status code.
 
     Only authenticated users can view this function.
     """
-    db_item = compute_quota_mng.update(db_obj=item, obj_in=update_data)
+    item, update_data = validated_data
+    db_item = compute_quota_mng.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -400,32 +357,23 @@ def put_compute_quota(
 @c_router.delete(
     "/{quota_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a specific quota",
-    description="Delete a specific quota using its *uid*. \
-        Returns `no content`. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. \
-        If the deletion procedure fails, raises a `internal \
-        server` error",
+    summary="Delete a specific compute_quota",
+    description="Delete a specific compute_quota using its *uid*. Returns \
+        `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_compute_quotas(
-    request: Request,
-    item: ComputeQuota = Depends(valid_compute_quota_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
+    item: Annotated[ComputeQuota, Depends(get_compute_quota_item)],
 ):
-    """DELETE operation to remove the compute quota matching a specific uid.
+    """DELETE operation to remove the compute_quota matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence.
+    The endpoint expects the item's uid.
 
-    Only authenticated users can view this function.
+    Only authenticated users can view this endpoint.
     """
-    if not compute_quota_mng.remove(db_obj=item):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete item",
-        )
+    if item is not None:
+        compute_quota_mng.remove(db_obj=item)
 
 
 n_router = APIRouter(prefix="/network_quotas", tags=["network_quotas"])
@@ -434,108 +382,111 @@ n_router = APIRouter(prefix="/network_quotas", tags=["network_quotas"])
 @n_router.get(
     "/",
     response_model=NetworkQuotaReadMulti,
-    summary="Read all network quotas",
-    description="Retrieve all network quotas stored in the database. \
-        It is possible to filter on quotas attributes and other \
+    summary="Read all network_quotas",
+    description="Retrieve all network_quotas stored in the database. \
+        It is possible to filter on network_quotas attributes and other \
         common query parameters.",
 )
 @custom.decorate_view_func
 @db.read_transaction
 def get_network_quotas(
-    comm: DbQueryCommonParams = Depends(),
-    page: Pagination = Depends(),
-    size: SchemaSize = Depends(),
-    item: NetworkQuotaQuery = Depends(),
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    comm: Annotated[DbQueryCommonParams, Depends()],
+    page: Annotated[Pagination, Depends()],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[NetworkQuotaQuery, Depends()],
 ):
-    """GET operation to retrieve all network quotas.
+    """GET operation to retrieve all network_quotas.
 
     It can receive the following group op parameters:
     - comm: parameters common to all DB queries to limit, skip or sort results.
     - page: parameters to limit and select the number of results to return to the user.
-    - size: parameters to define the number of information contained in each result.
+    - shape: parameters to define the number of information contained in each result.
     - item: parameters specific for this item typology. Used to apply filters.
 
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
     """
     items = network_quota_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = network_quota_mng.paginate(items=items, page=page.page, size=page.size)
-    return network_quota_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_network_schema(
+        items,
+        auth=user_infos is not None,
+        short=shape.short,
+        with_conn=shape.with_conn,
     )
 
 
 @n_router.get(
     "/{quota_uid}",
     response_model=NetworkQuotaReadSingle,
-    summary="Read a specific quota",
-    description="Retrieve a specific quota using its *uid*. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error.",
+    summary="Read a specific network_quota",
+    description="Retrieve a specific network_quota using its *uid*. If no entity \
+        matches the given *uid*, the endpoint raises a `not found` error.",
 )
 @custom.decorate_view_func
 @db.read_transaction
 def get_network_quota(
-    size: SchemaSize = Depends(),
-    item: NetworkQuota = Depends(valid_network_quota_id),
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[NetworkQuota, Depends(network_quota_must_exist)],
 ):
-    """GET operation to retrieve the network quota matching a specific uid.
+    """GET operation to retrieve the network_quota matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence.
+    The endpoint expects a uid and uses a dependency to check its existence.
 
     It can receive the following group op parameters:
-    - size: parameters to define the number of information contained in each result.
+    - shape: parameters to define the number of information contained in each result.
 
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
     """
-    return network_quota_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
-    )[0]
+    return choose_network_schema(
+        item, auth=user_infos is not None, short=shape.short, with_conn=shape.with_conn
+    )
 
 
 @n_router.patch(
     "/{quota_uid}",
     status_code=status.HTTP_200_OK,
-    response_model=Optional[NetworkQuotaRead],
-    dependencies=[
-        Depends(validate_new_network_quota_values),
-    ],
-    summary="Edit a specific quota",
-    description="Update attribute values of a specific quota. \
-        The target quota is identified using its uid. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. If new values equal \
-        current ones, the database entity is left unchanged \
-        and the endpoint returns the `not modified` message.",
+    response_model=NetworkQuotaRead | None,
+    summary="Patch only specific attribute of the target network_quota",
+    description="Update only the received attribute values of a specific network \
+        quota. The target network_quota is identified using its *uid*. If no entity \
+        matches the given *uid*, the endpoint raises a `not found` error.  At first, \
+        the endpoint validates the new network_quota values checking there are no \
+        other items with the given *uuid* and *name*. In that case, the endpoint \
+        raises the `conflict` error. If there are no differences between new values \
+        and current ones, the database entity is left unchanged and the endpoint \
+        returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_network_quota(
-    request: Request,
-    update_data: NetworkQuotaUpdate,
     response: Response,
-    item: NetworkQuota = Depends(valid_network_quota_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
+    validated_data: Annotated[
+        tuple[NetworkQuota, NetworkQuotaUpdate],
+        Depends(validate_new_network_quota_values),
+    ],
 ):
-    """PATCH operation to update the network quota matching a specific uid.
+    """PATCH operation to update the network_quota matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence. It also
-    expects the new data to write in the database. It updates only the item attributes,
-    not its relationships.
+    The endpoint expects the item's uid and uses a dependency to check its existence.
+    It expects the new data to write in the database.
+    It updates only the received attributes. It leaves unchanged the other item's
+    attributes and its relationships.
 
-    If the new data equals the current data, no update is performed and the function
-    returns a response with an empty body and the 304 status code.
+    If new data equals current data, no update is performed and the endpoint returns a
+    response with an empty body and the 304 status code.
 
     Only authenticated users can view this function.
     """
-    db_item = network_quota_mng.update(db_obj=item, obj_in=update_data)
+    item, update_data = validated_data
+    db_item = network_quota_mng.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -544,32 +495,23 @@ def put_network_quota(
 @n_router.delete(
     "/{quota_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a specific quota",
-    description="Delete a specific quota using its *uid*. \
-        Returns `no content`. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. \
-        If the deletion procedure fails, raises a `internal \
-        server` error",
+    summary="Delete a specific network_quota",
+    description="Delete a specific network_quota using its *uid*. Returns \
+        `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_network_quotas(
-    request: Request,
-    item: NetworkQuota = Depends(valid_network_quota_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
+    item: Annotated[NetworkQuota, Depends(get_network_quota_item)],
 ):
-    """DELETE operation to remove the network quota matching a specific uid.
+    """DELETE operation to remove the network_quota matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence.
+    The endpoint expects the item's uid.
 
-    Only authenticated users can view this function.
+    Only authenticated users can view this endpoint.
     """
-    if not network_quota_mng.remove(db_obj=item):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete item",
-        )
+    if item is not None:
+        network_quota_mng.remove(db_obj=item)
 
 
 os_router = APIRouter(prefix="/object_store_quotas", tags=["object_store_quotas"])
@@ -578,145 +520,111 @@ os_router = APIRouter(prefix="/object_store_quotas", tags=["object_store_quotas"
 @os_router.get(
     "/",
     response_model=ObjectStoreQuotaReadMulti,
-    summary="Read all quotas",
-    description="Retrieve all quotas stored in the database. \
-        It is possible to filter on quotas attributes and other \
+    summary="Read all object_store_quotas",
+    description="Retrieve all object_store_quotas stored in the database. \
+        It is possible to filter on object_store_quotas attributes and other \
         common query parameters.",
 )
 @custom.decorate_view_func
 @db.read_transaction
 def get_object_store_quotas(
-    comm: DbQueryCommonParams = Depends(),
-    page: Pagination = Depends(),
-    size: SchemaSize = Depends(),
-    item: ObjectStoreQuotaQuery = Depends(),
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    comm: Annotated[DbQueryCommonParams, Depends()],
+    page: Annotated[Pagination, Depends()],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[ObjectStoreQuotaQuery, Depends()],
 ):
-    """GET operation to retrieve all object storage quotas.
+    """GET operation to retrieve all object_store_quotas.
 
     It can receive the following group op parameters:
     - comm: parameters common to all DB queries to limit, skip or sort results.
     - page: parameters to limit and select the number of results to return to the user.
-    - size: parameters to define the number of information contained in each result.
+    - shape: parameters to define the number of information contained in each result.
     - item: parameters specific for this item typology. Used to apply filters.
 
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
     """
     items = object_store_quota_mng.get_multi(
         **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
     )
-    items = object_store_quota_mng.paginate(items=items, page=page.page, size=page.size)
-    return object_store_quota_mng.choose_out_schema(
-        items=items, auth=user_infos, short=size.short, with_conn=size.with_conn
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_object_store_schema(
+        items,
+        auth=user_infos is not None,
+        short=shape.short,
+        with_conn=shape.with_conn,
     )
-
-
-# @db.write_transaction
-# @os_router.post(
-#     "/",
-#     status_code=status.HTTP_201_CREATED,
-#     response_model=ObjectStoreQuotaReadExtended,
-#
-#     summary="Create quota",
-#     description="Create a quota and connect it to its related entities: \
-#         project and service. \
-#         At first verify that target project and service exist. \
-#         Then verify project does not already have an equal quota type and \
-#         check service and project belong to the same provider.",
-# )
-# def post_object_store_quota(
-#     project: Project = Depends(valid_project_id),
-#     service: Service = Depends(valid_service_id),
-#     item: ObjectStoreQuotaCreate = Body(),
-# ):
-#     # Check project does not have duplicated quota types
-#     # for q in project.quotas.all():
-#     #     if q.type == item.type and q.service.single() == service:
-#     #         msg = f"Project '{project.name}' already has a quota "
-#     #         msg += f"with type '{item.type}' on service '{service.endpoint}'."
-#     #         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
-#     # Check Project provider and service provider are equals
-#     proj_prov = project.provider.single()
-#     serv_prov = service.provider.single()
-#     if proj_prov != serv_prov:
-#         msg = f"Project provider '{proj_prov.name}' and service provider "
-#         msg += f"'{serv_prov.name}' do not match."
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
-
-#     return object_store_quota.create(
-#         obj_in=item, project=project, service=service, force=True
-#     )
 
 
 @os_router.get(
     "/{quota_uid}",
     response_model=ObjectStoreQuotaReadSingle,
-    summary="Read a specific quota",
-    description="Retrieve a specific quota using its *uid*. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error.",
+    summary="Read a specific object_store_quota",
+    description="Retrieve a specific object_store_quota using its *uid*. If no entity \
+        matches the given *uid*, the endpoint raises a `not found` error.",
 )
 @custom.decorate_view_func
 @db.read_transaction
 def get_object_store_quota(
-    size: SchemaSize = Depends(),
-    item: ObjectStoreQuota = Depends(valid_object_store_quota_id),
-    user_infos: UserInfos | None = Security(get_user_infos),
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[ObjectStoreQuota, Depends(object_store_quota_must_exist)],
 ):
-    """GET operation to retrieve the object storage quota matching a specific uid.
+    """GET operation to retrieve the object_store_quota matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence.
+    The endpoint expects a uid and uses a dependency to check its existence.
 
     It can receive the following group op parameters:
-    - size: parameters to define the number of information contained in each result.
+    - shape: parameters to define the number of information contained in each result.
 
-    Non-authenticated users can view this function. If the user is authenticated the
-    user_infos object is not None and it is used to determine the data to return to the
-    user.
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
     """
-    return object_store_quota_mng.choose_out_schema(
-        items=[item], auth=user_infos, short=size.short, with_conn=size.with_conn
-    )[0]
+    return choose_object_store_schema(
+        item, auth=user_infos is not None, short=shape.short, with_conn=shape.with_conn
+    )
 
 
 @os_router.patch(
     "/{quota_uid}",
     status_code=status.HTTP_200_OK,
-    response_model=Optional[ObjectStoreQuotaRead],
-    dependencies=[
-        Depends(validate_new_object_store_quota_values),
-    ],
-    summary="Edit a specific quota",
-    description="Update attribute values of a specific quota. \
-        The target quota is identified using its uid. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. If new values equal \
-        current ones, the database entity is left unchanged \
-        and the endpoint returns the `not modified` message.",
+    response_model=ObjectStoreQuotaRead | None,
+    summary="Patch only specific attribute of the target object_store_quota",
+    description="Update only the received attribute values of a specific object store \
+        quota. The target object_store_quota is identified using its *uid*. If no \
+        entity matches the given *uid*, the endpoint raises a `not found` error. At \
+        first, the endpoint validates the new object_store_quota values checking there \
+        are no other items with the given *uuid* and *name*. In that case, the \
+        endpoint raises the `conflict` error. If there are no differences between new \
+        values and current ones, the database entity is left unchanged and the \
+        endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def put_object_store_quota(
-    request: Request,
-    update_data: ObjectStoreQuotaUpdate,
     response: Response,
-    item: ObjectStoreQuota = Depends(valid_object_store_quota_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
+    validated_data: Annotated[
+        tuple[ObjectStoreQuota, ObjectStoreQuotaUpdate],
+        Depends(validate_new_object_store_quota_values),
+    ],
 ):
-    """PATCH operation to update the object storage quota matching a specific uid.
+    """PATCH operation to update the object_store_quota matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence. It also
-    expects the new data to write in the database. It updates only the item attributes,
-    not its relationships.
+    The endpoint expects the item's uid and uses a dependency to check its existence.
+    It expects the new data to write in the database.
+    It updates only the received attributes. It leaves unchanged the other item's
+    attributes and its relationships.
 
-    If the new data equals the current data, no update is performed and the function
-    returns a response with an empty body and the 304 status code.
+    If new data equals current data, no update is performed and the endpoint returns a
+    response with an empty body and the 304 status code.
 
     Only authenticated users can view this function.
     """
-    db_item = object_store_quota_mng.update(db_obj=item, obj_in=update_data)
+    item, update_data = validated_data
+    db_item = object_store_quota_mng.patch(db_obj=item, obj_in=update_data)
     if not db_item:
         response.status_code = status.HTTP_304_NOT_MODIFIED
     return db_item
@@ -725,29 +633,20 @@ def put_object_store_quota(
 @os_router.delete(
     "/{quota_uid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a specific quota",
-    description="Delete a specific quota using its *uid*. \
-        Returns `no content`. \
-        If no entity matches the given *uid*, the endpoint \
-        raises a `not found` error. \
-        If the deletion procedure fails, raises a `internal \
-        server` error",
+    summary="Delete a specific object_store_quota",
+    description="Delete a specific object_store_quota using its *uid*. Returns \
+        `no content`.",
+    dependencies=[Security(strict_security)],
 )
-@flaat.access_level("write")
 @db.write_transaction
 def delete_object_store_quotas(
-    request: Request,
-    item: ObjectStoreQuota = Depends(valid_object_store_quota_id),
-    client_credentials: HTTPBasicCredentials = Security(security),
+    item: Annotated[ObjectStoreQuota, Depends(get_object_store_quota_item)],
 ):
-    """DELETE operation to remove the object storage quota matching a specific uid.
+    """DELETE operation to remove the object_store_quota matching a specific uid.
 
-    The endpoints expect a uid and uses a dependency to check its existence.
+    The endpoint expects the item's uid.
 
-    Only authenticated users can view this function.
+    Only authenticated users can view this endpoint.
     """
-    if not object_store_quota_mng.remove(db_obj=item):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete item",
-        )
+    if item is not None:
+        object_store_quota_mng.remove(db_obj=item)

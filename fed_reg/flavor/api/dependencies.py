@@ -1,157 +1,46 @@
 """Flavor REST API dependencies."""
 
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, status
-from fedreg.flavor.models import Flavor
-from fedreg.flavor.schemas import FlavorCreate, FlavorUpdate
-from fedreg.service.models import ComputeService
+from fedreg.flavor.models import PrivateFlavor, SharedFlavor
+from fedreg.flavor.schemas import FlavorUpdate
 
-from fed_reg.flavor.crud import flavor_mng
-from fed_reg.service.api.dependencies import valid_compute_service_id
-
-
-def valid_flavor_id(flavor_uid: str) -> Flavor:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        flavor_uid (str): uid of the target DB entity.
-
-    Returns:
-    -------
-        Flavor: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = flavor_mng.get(uid=flavor_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Flavor '{flavor_uid}' not found",
-        )
-    return item
+from fed_reg.dependencies import valid_id
+from fed_reg.flavor.crud import flavor_mgr
 
 
-def valid_flavor_name(
-    item: FlavorCreate | FlavorUpdate,
-    services: list[ComputeService],
-) -> None:
-    """Check no duplicate name.
-
-    Check there are no other flavors, belonging to the same service, with the same
-    name.
-
-    Args:
-    ----
-        item (FlavorCreate | FlavorUpdate): new data.
-        services (list of ComputeService): list of services to inspect.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with identical name,
-            belonging to the same service, already exists.
-    """
-    for service in services:
-        service = valid_compute_service_id(service.uid)
-        db_item = service.flavors.get_or_none(name=item.name)
-        if db_item is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Flavor with name '{item.name}' already registered",
-            )
+def flavor_must_exist(flavor_uid: str) -> PrivateFlavor | SharedFlavor:
+    """The target flavor must exists otherwise raises `not found` error."""
+    return valid_id(mgr=flavor_mgr, item_id=flavor_uid)
 
 
-def valid_flavor_uuid(
-    item: FlavorCreate | FlavorUpdate,
-    services: list[ComputeService] = Depends(valid_compute_service_id),
-) -> None:
-    """Check no duplicate UUID.
-
-    Check there are no other flavors, belonging to the same service, with the same
-    uuid.
-
-    Args:
-    ----
-        item (FlavorCreate | FlavorUpdate): new data.
-        services (list of ComputeService): list of services to inspect.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with identical uuid,
-            belonging to the same service, already exists.
-    """
-    for service in services:
-        service = valid_compute_service_id(service.uid)
-        db_item = service.flavors.get_or_none(uuid=item.uuid)
-        if db_item is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Flavor with uuid '{item.uuid}' already registered",
-            )
+def get_flavor_item(flavor_uid: str) -> PrivateFlavor | SharedFlavor:
+    """Retrieve the target flavor. If not found, return None."""
+    return valid_id(mgr=flavor_mgr, item_id=flavor_uid, error=False)
 
 
 def validate_new_flavor_values(
-    update_data: FlavorUpdate, item: Flavor = Depends(valid_flavor_id)
-) -> None:
+    item: Annotated[PrivateFlavor | SharedFlavor, Depends(flavor_must_exist)],
+    new_data: FlavorUpdate,
+) -> tuple[PrivateFlavor | SharedFlavor, FlavorUpdate]:
     """Check given data are valid ones.
 
     Check there are no other flavors, belonging to the same service, with the same uuid
     and name. Avoid to change flavor visibility.
 
-    Args:
-    ----
-        update_data (FlavorUpdate): new data.
-        item (Flavor): DB entity to update.
+    Raises `not found` error if the target entity does not exists.
+    It raises `conflict` error if a DB entity with identical uuid and belonging to the
+    same service already exists.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with identical name or uuid,
-            belonging to the same service, already exists.
+    Return the current item and the schema with the new data.
     """
-    # if update_data.name != item.name:
-    #     valid_flavor_name(item=update_data, services=item.services.all())
-    if update_data.uuid != item.uuid:
-        valid_flavor_uuid(item=update_data, services=item.services.all())
-    if update_data.is_public != item.is_public:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Flavor visibility can't be changed",
-        )
-
-
-def is_private_flavor(item: Flavor = Depends(valid_flavor_id)) -> Flavor:
-    """Check given flavor has private or shared visibility.
-
-    Args:
-    ----
-        item (Flavor): entity to validate.
-
-    Returns:
-    -------
-        Flavor: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity has not valid visibility
-    """
-    if item.is_public:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Flavor {item.uid} is a public flavor",
-        )
-    return item
+    if new_data.uuid is not None and new_data.uuid != item.uuid:
+        service = item.service.single()
+        db_item = service.flavors.get_or_none(uuid=new_data.uuid)
+        if db_item is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Flavor with uuid '{item.uuid}' already registered",
+            )
+    return item, new_data

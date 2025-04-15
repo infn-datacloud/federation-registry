@@ -1,5 +1,7 @@
 """Quota REST API dependencies."""
 
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, status
 from fedreg.quota.models import (
     BlockStorageQuota,
@@ -14,6 +16,7 @@ from fedreg.quota.schemas import (
     ObjectStoreQuotaUpdate,
 )
 
+from fed_reg.dependencies import valid_id
 from fed_reg.quota.crud import (
     block_storage_quota_mng,
     compute_quota_mng,
@@ -22,249 +25,114 @@ from fed_reg.quota.crud import (
 )
 
 
-def valid_block_storage_quota_id(quota_uid: str) -> BlockStorageQuota:
-    """Check given uid corresponds to an entity in the DB.
+def block_storage_quota_must_exist(quota_uid: str) -> BlockStorageQuota:
+    """The target quota must exists otherwise raises `not found` error."""
+    return valid_id(mgr=block_storage_quota_mng, item_id=quota_uid)
 
-    Args:
-    ----
-        quota_uid (UUID4): uid of the target DB entity.
 
-    Returns:
-    -------
-        Service: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = block_storage_quota_mng.get(uid=quota_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Block Storage Quota '{quota_uid}' not found",
-        )
-    return item
+def get_block_storage_quota_item(quota_uid: str) -> BlockStorageQuota:
+    """Retrieve the target quota. If not found, return None."""
+    return valid_id(mgr=block_storage_quota_mng, item_id=quota_uid, error=False)
 
 
 def validate_new_block_storage_quota_values(
-    update_data: BlockStorageQuotaUpdate,
-    item: BlockStorageQuota = Depends(valid_block_storage_quota_id),
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other quotas, belonging to the same project, with the same type
-    and per_user flag, pointing to the same service.
-
-    Args:
-    ----
-        update_data (BlockStorageQuotaUpdate): new data.
-        item (BlockStorageQuota): DB entity to update.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with identical name or uuid,
-            belonging to the same service, already exists.
-    """
-    if update_data.per_user != item.per_user:
-        db_project = item.project.single()
-        db_service = item.service.single()
-        proj_quotas = db_project.quotas.filter(type=update_data.type)
-        serv_quotas_matching_proj = db_service.quotas.filter(
-            uid__in=[i.uid for i in proj_quotas], per_user=update_data.per_user
-        )
-        if len(serv_quotas_matching_proj.all()) > 0:
-            s = "" if update_data.per_user else "not"
-            msg = f"Duplicated Block Storage Quota, to {s} apply to each user, on "
-            msg += f"Project '{db_project.uid}' and Service {db_service.uid}"
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+    item: Annotated[BlockStorageQuota, Depends(block_storage_quota_must_exist)],
+    new_data: BlockStorageQuotaUpdate,
+) -> tuple[BlockStorageQuota, BlockStorageQuotaUpdate]:
+    """Check given data are valid ones."""
+    return validate_new_quota_values(item=item, new_data=new_data)
 
 
-def valid_compute_quota_id(quota_uid: str) -> ComputeQuota:
-    """Check given uid corresponds to an entity in the DB.
+def compute_quota_must_exist(quota_uid: str) -> ComputeQuota:
+    """The target quota must exists otherwise raises `not found` error."""
+    return valid_id(mgr=compute_quota_mng, item_id=quota_uid)
 
-    Args:
-    ----
-        quota_uid (UUID4): uid of the target DB entity.
 
-    Returns:
-    -------
-        Service: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = compute_quota_mng.get(uid=quota_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Compute Quota '{quota_uid}' not found",
-        )
-    return item
+def get_compute_quota_item(quota_uid: str) -> ComputeQuota:
+    """Retrieve the target quota. If not found, return None."""
+    return valid_id(mgr=compute_quota_mng, item_id=quota_uid, error=False)
 
 
 def validate_new_compute_quota_values(
-    update_data: ComputeQuotaUpdate,
-    item: ComputeQuota = Depends(valid_compute_quota_id),
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other quotas, belonging to the same project, with the same type
-    and per_user flag, pointing to the same service.
-
-    Args:
-    ----
-        update_data (ComputeQuotaUpdate): new data.
-        item (ComputeQuota): DB entity to update.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with identical name or uuid,
-            belonging to the same service, already exists.
-    """
-    if update_data.per_user != item.per_user:
-        db_project = item.project.single()
-        db_service = item.service.single()
-        proj_quotas = db_project.quotas.filter(type=update_data.type)
-        serv_quotas_matching_proj = db_service.quotas.filter(
-            uid__in=[i.uid for i in proj_quotas], per_user=update_data.per_user
-        )
-        if len(serv_quotas_matching_proj.all()) > 0:
-            s = "" if update_data.per_user else "not"
-            msg = f"Duplicated Compute Quota, to {s} apply to each user, on "
-            msg += f"Project '{db_project.uid}' and Service {db_service.uid}"
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+    item: Annotated[ComputeQuota, Depends(compute_quota_must_exist)],
+    new_data: ComputeQuotaUpdate,
+) -> tuple[ComputeQuota, ComputeQuotaUpdate]:
+    """Check given data are valid ones."""
+    return validate_new_quota_values(item=item, new_data=new_data)
 
 
-def valid_network_quota_id(quota_uid: str) -> NetworkQuota:
-    """Check given uid corresponds to an entity in the DB.
+def network_quota_must_exist(quota_uid: str) -> NetworkQuota:
+    """The target quota must exists otherwise raises `not found` error."""
+    return valid_id(mgr=network_quota_mng, item_id=quota_uid)
 
-    Args:
-    ----
-        quota_uid (UUID4): uid of the target DB entity.
 
-    Returns:
-    -------
-        Service: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = network_quota_mng.get(uid=quota_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Network Quota '{quota_uid}' not found",
-        )
-    return item
+def get_network_quota_item(quota_uid: str) -> NetworkQuota:
+    """Retrieve the target quota. If not found, return None."""
+    return valid_id(mgr=network_quota_mng, item_id=quota_uid, error=False)
 
 
 def validate_new_network_quota_values(
-    update_data: NetworkQuotaUpdate,
-    item: NetworkQuota = Depends(valid_network_quota_id),
-) -> None:
-    """Check given data are valid ones.
-
-    Check there are no other quotas, belonging to the same project, with the same type
-    and per_user flag, pointing to the same service.
-
-    Args:
-    ----
-        update_data (NetworkQuotaUpdate): new data.
-        item (NetworkQuota): DB entity to update.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with identical name or uuid,
-            belonging to the same service, already exists.
-    """
-    if update_data.per_user != item.per_user:
-        db_project = item.project.single()
-        db_service = item.service.single()
-        proj_quotas = db_project.quotas.filter(type=update_data.type)
-        serv_quotas_matching_proj = db_service.quotas.filter(
-            uid__in=[i.uid for i in proj_quotas], per_user=update_data.per_user
-        )
-        if len(serv_quotas_matching_proj.all()) > 0:
-            s = "" if update_data.per_user else "not"
-            msg = f"Duplicated Network Quota, to {s} apply to each user, on "
-            msg += f"Project '{db_project.uid}' and Service {db_service.uid}"
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+    item: Annotated[NetworkQuota, Depends(network_quota_must_exist)],
+    new_data: NetworkQuotaUpdate,
+) -> tuple[NetworkQuota, NetworkQuotaUpdate]:
+    """Check given data are valid ones."""
+    return validate_new_quota_values(item=item, new_data=new_data)
 
 
-def valid_object_store_quota_id(quota_uid: str) -> ObjectStoreQuota:
-    """Check given uid corresponds to an entity in the DB.
+def object_store_quota_must_exist(quota_uid: str) -> ObjectStoreQuota:
+    """The target quota must exists otherwise raises `not found` error."""
+    return valid_id(mgr=object_store_quota_mng, item_id=quota_uid)
 
-    Args:
-    ----
-        quota_uid (UUID4): uid of the target DB entity.
 
-    Returns:
-    -------
-        Service: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = object_store_quota_mng.get(uid=quota_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Object Storage Quota '{quota_uid}' not found",
-        )
-    return item
+def get_object_store_quota_item(quota_uid: str) -> ObjectStoreQuota:
+    """Retrieve the target quota. If not found, return None."""
+    return valid_id(mgr=object_store_quota_mng, item_id=quota_uid, error=False)
 
 
 def validate_new_object_store_quota_values(
-    update_data: ObjectStoreQuotaUpdate,
-    item: ObjectStoreQuota = Depends(valid_object_store_quota_id),
-) -> None:
+    item: Annotated[ObjectStoreQuota, Depends(object_store_quota_must_exist)],
+    new_data: ObjectStoreQuotaUpdate,
+) -> tuple[ObjectStoreQuota, ObjectStoreQuotaUpdate]:
+    """Check given data are valid ones."""
+    return validate_new_quota_values(item=item, new_data=new_data)
+
+
+def validate_new_quota_values(
+    item: BlockStorageQuota | ComputeQuota | NetworkQuota | ObjectStoreQuota,
+    new_data: BlockStorageQuotaUpdate
+    | ComputeQuotaUpdate
+    | NetworkQuotaUpdate
+    | ObjectStoreQuotaUpdate,
+) -> (
+    tuple[BlockStorageQuota, BlockStorageQuotaUpdate]
+    | tuple[ComputeQuota, ComputeQuotaUpdate]
+    | tuple[NetworkQuota, NetworkQuotaUpdate]
+    | tuple[ObjectStoreQuota, ObjectStoreQuotaUpdate]
+):
     """Check given data are valid ones.
 
-    Check there are no other quotas, belonging to the same project, with the same type
-    and per_user flag, pointing to the same service.
+    Check there are no other quotas with the same site name. Avoid to change
+    quota visibility.
 
-    Args:
-    ----
-        update_data (ObjectStoreQuotaUpdate): new data.
-        item (ObjectStoreQuota): DB entity to update.
+    Raises `not found` error if the target entity does not exists.
+    It raises `conflict` error if a DB entity with identical uuid, belonging to the same
+    provider, already exists.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with identical name or uuid,
-            belonging to the same service, already exists.
+    Return the current item and the schema with the new data.
     """
-    if update_data.per_user != item.per_user:
+    if new_data.per_user != item.per_user or new_data.usage != item.usage:
         db_project = item.project.single()
         db_service = item.service.single()
-        proj_quotas = db_project.quotas.filter(type=update_data.type)
-        serv_quotas_matching_proj = db_service.quotas.filter(
-            uid__in=[i.uid for i in proj_quotas], per_user=update_data.per_user
+        proj_quotas = db_project.quotas.filter(
+            type=new_data.type, per_user=new_data.per_user
         )
-        if len(serv_quotas_matching_proj.all()) > 0:
-            s = "" if update_data.per_user else "not"
-            msg = f"Duplicated Object Storage Quota, to {s} apply to each user, on "
+        serv_quotas = db_service.quotas.filter(per_user=new_data.per_user)
+        serv_quotas_matching_proj = set([i.uid for i in proj_quotas]).intersection(
+            set([i.uid for i in serv_quotas])
+        )
+        if len(serv_quotas_matching_proj) > 0:
+            s = "" if new_data.per_user else "not"
+            msg = f"Duplicated {type(item)}, to {s} apply to each user, on "
             msg += f"Project '{db_project.uid}' and Service {db_service.uid}"
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
+    return item, new_data

@@ -1,79 +1,112 @@
+import os
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 from fastapi import status
+from fastapi.testclient import TestClient
+from flaat.user_infos import UserInfos
 from pytest_cases import case, parametrize, parametrize_with_cases
 
+from fed_reg.main import settings
 
-class CaseItemNameEndpoint:
+
+class CaseEndpoint:
     @parametrize(
-        **{
-            "item, endpoint": [
-                ("Flavor", "flavors"),
-                ("Identity Provider", "identity_providers"),
-                ("Image", "images"),
-                ("Location", "locations"),
-                ("Network", "networks"),
-                ("Project", "projects"),
-                ("Provider", "providers"),
-                ("Block Storage Quota", "block_storage_quotas"),
-                ("Compute Quota", "compute_quotas"),
-                ("Network Quota", "network_quotas"),
-                ("Object Storage Quota", "object_store_quotas"),
-                ("Region", "regions"),
-                ("Block Storage Service", "block_storage_services"),
-                ("Compute Service", "compute_services"),
-                ("Identity Service", "identity_services"),
-                ("Network Service", "network_services"),
-                ("Object Storage Service", "object_store_services"),
-                ("SLA", "slas"),
-                ("User Group", "user_groups"),
-            ]
-        }
+        endpoint=(
+            "flavors",
+            "identity_providers",
+            "images",
+            "locations",
+            "networks",
+            "projects",
+            "block_storage_quotas",
+            "compute_quotas",
+            "network_quotas",
+            "object_store_quotas",
+            "regions",
+            "block_storage_services",
+            "compute_services",
+            "identity_services",
+            "network_services",
+            "object_store_services",
+            "slas",
+            "user_groups",
+        )
     )
-    def case_item_endpoint(self, item: str, endpoint: str) -> tuple[str, str]:
-        return item, endpoint
+    def case_endpoint(self, endpoint: str) -> str:
+        return endpoint
 
-    @case(tags=["provider"])
-    def case_provider(self) -> tuple[str, str]:
-        return "Provider", "providers"
+    @case(tags="provider")
+    def case_provider(self) -> str:
+        return "providers"
 
 
-@parametrize_with_cases("item, endpoint", cases=CaseItemNameEndpoint)
-def test_get_missing(client_no_authn, item: str, endpoint: str):
-    uid = uuid4()
-    resp = client_no_authn.get(f"/api/v1/{endpoint}/{uid}")
+@patch("fed_reg.auth.flaat.get_user_infos_from_request")
+@parametrize_with_cases("endpoint", cases=CaseEndpoint)
+def test_get_missing(
+    mock_user_infos: MagicMock,
+    client_with_token: TestClient,
+    user_infos: UserInfos,
+    endpoint: str,
+) -> None:
+    mock_user_infos.return_value = user_infos
+    url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
+    resp = client_with_token.get(url)
     assert resp.status_code == status.HTTP_404_NOT_FOUND
-    assert resp.json().get("detail") == f"{item} '{uid}' not found"
 
 
-@parametrize_with_cases("item, endpoint", cases=CaseItemNameEndpoint)
-def test_patch_missing(client_no_authn, item: str, endpoint: str):
-    uid = uuid4()
-    resp = client_no_authn.patch(f"/api/v1/{endpoint}/{uid}")
-    assert resp.status_code == status.HTTP_404_NOT_FOUND
-    assert resp.json().get("detail") == f"{item} '{uid}' not found"
-
-
-@parametrize_with_cases(
-    "item, endpoint", cases=CaseItemNameEndpoint, has_tag="provider"
-)
-def test_put_missing(client_no_authn, item: str, endpoint: str):
-    uid = uuid4()
-    resp = client_no_authn.put(f"/api/v1/{endpoint}/{uid}")
-    assert resp.status_code == status.HTTP_404_NOT_FOUND
-    assert resp.json().get("detail") == f"{item} '{uid}' not found"
-
-
-@parametrize_with_cases("item, endpoint", cases=CaseItemNameEndpoint)
-def test_delete_missing(client_no_authn, item: str, endpoint: str):
-    uid = uuid4()
-    resp = client_no_authn.delete(f"/api/v1/{endpoint}/{uid}")
-    assert resp.status_code == status.HTTP_404_NOT_FOUND
-    assert resp.json().get("detail") == f"{item} '{uid}' not found"
-
-
-@parametrize_with_cases("item, endpoint", cases=CaseItemNameEndpoint)
-def test_get_multi_empty(client_no_authn, item: str, endpoint: str):
-    resp = client_no_authn.get(f"/api/v1/{endpoint}/")
+@patch("fed_reg.auth.flaat.get_user_infos_from_request")
+@parametrize_with_cases("endpoint", cases=CaseEndpoint)
+def test_get_multi_missing(
+    mock_user_infos: MagicMock,
+    client_with_token: TestClient,
+    user_infos: UserInfos,
+    endpoint: str,
+) -> None:
+    mock_user_infos.return_value = user_infos
+    url = os.path.join(settings.API_V1_STR, endpoint)
+    resp = client_with_token.get(url)
     assert resp.status_code == status.HTTP_200_OK
     assert len(resp.json()) == 0
+
+
+@patch("fed_reg.auth.flaat.get_user_infos_from_request")
+@parametrize_with_cases("endpoint", cases=CaseEndpoint)
+def test_delete_missing(
+    mock_user_infos: MagicMock,
+    client_with_token: TestClient,
+    user_infos: UserInfos,
+    endpoint: str,
+) -> None:
+    mock_user_infos.return_value = user_infos
+    url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
+    resp = client_with_token.delete(url)
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
+
+
+@patch("fed_reg.auth.flaat.get_user_infos_from_request")
+@parametrize_with_cases("endpoint", cases=CaseEndpoint)
+def test_patch_missing(
+    mock_user_infos: MagicMock,
+    client_with_token: TestClient,
+    user_infos: UserInfos,
+    endpoint: str,
+) -> None:
+    mock_user_infos.return_value = user_infos
+    url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
+    resp = client_with_token.patch(url, json={})
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+
+@patch("fed_reg.auth.flaat.get_user_infos_from_request")
+@parametrize_with_cases("endpoint", cases=CaseEndpoint, has_tag="provider")
+def test_put_missing(
+    mock_user_infos: MagicMock,
+    client_with_token: TestClient,
+    user_infos: UserInfos,
+    endpoint: str,
+) -> None:
+    mock_user_infos.return_value = user_infos
+    url = os.path.join(settings.API_V1_STR, endpoint, str(uuid4()))
+    resp = client_with_token.put(url, json={})
+    assert resp.status_code == status.HTTP_404_NOT_FOUND

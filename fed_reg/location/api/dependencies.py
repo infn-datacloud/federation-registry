@@ -1,80 +1,44 @@
 """Location REST API dependencies."""
 
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, status
 from fedreg.location.models import Location
-from fedreg.location.schemas import LocationCreate, LocationUpdate
+from fedreg.location.schemas import LocationUpdate
 
-from fed_reg.location.crud import location_mng
-
-
-def valid_location_id(location_uid: str) -> Location:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        location_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        Location: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = location_mng.get(uid=location_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Location '{location_uid}' not found",
-        )
-    return item
+from fed_reg.dependencies import valid_id
+from fed_reg.location.crud import location_mgr
 
 
-def valid_location_site(item: LocationCreate | LocationUpdate) -> None:
-    """Check there are no other locations with the same site.
+def location_must_exist(location_uid: str) -> Location:
+    """The target location must exists otherwise raises `not found` error."""
+    return valid_id(mgr=location_mgr, item_id=location_uid)
 
-    Args:
-    ----
-        item (LocationCreate | LocationUpdate): input data.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given site already exists.
-    """
-    db_item = location_mng.get(site=item.site)
-    if db_item is not None:
-        msg = f"Location with site '{item.site}' already registered"
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=msg,
-        )
+def get_location_item(location_uid: str) -> Location:
+    """Retrieve the target location. If not found, return None."""
+    return valid_id(mgr=location_mgr, item_id=location_uid, error=False)
 
 
 def validate_new_location_values(
-    update_data: LocationUpdate, item: Location = Depends(valid_location_id)
-) -> None:
+    item: Annotated[Location, Depends(location_must_exist)],
+    new_data: LocationUpdate,
+) -> tuple[Location, LocationUpdate]:
     """Check given data are valid ones.
 
-    Check there are no other locations with the same site.
+    Check there are no other locations with the same site name. Avoid to change
+    location visibility.
 
-    Args:
-    ----
-        update_data (FlavorUpdate): new data.
-        item (Flavor): DB entity to update.
+    Raises `not found` error if the target entity does not exists.
+    It raises `conflict` error if a DB entity with identical site name already exists.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given site already exists.
+    Return the current item and the schema with the new data.
     """
-    if update_data.site != item.site:
-        valid_location_site(update_data)
+    if new_data.site is not None and new_data.site != item.site:
+        db_item = location_mgr.get(site=new_data.site)
+        if db_item is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Location with site '{item.site}' already registered",
+            )
+    return item, new_data

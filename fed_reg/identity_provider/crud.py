@@ -1,24 +1,15 @@
 """Module with Create, Read, Update and Delete operations for an Identity Provider."""
 
-from typing import Optional
-
 from fedreg.identity_provider.models import IdentityProvider
 from fedreg.identity_provider.schemas import (
     IdentityProviderCreate,
-    IdentityProviderRead,
-    IdentityProviderReadPublic,
     IdentityProviderUpdate,
 )
-from fedreg.identity_provider.schemas_extended import (
-    IdentityProviderReadExtended,
-    IdentityProviderReadExtendedPublic,
-)
-from fedreg.project.models import Project
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas_extended import IdentityProviderCreateExtended
 
 from fed_reg.crud import CRUDBase
-from fed_reg.user_group.crud import user_group_mng
+from fed_reg.user_group.crud import user_group_mgr
 
 
 class CRUDIdentityProvider(
@@ -26,16 +17,15 @@ class CRUDIdentityProvider(
         IdentityProvider,
         IdentityProviderCreate,
         IdentityProviderUpdate,
-        IdentityProviderRead,
-        IdentityProviderReadPublic,
-        IdentityProviderReadExtended,
-        IdentityProviderReadExtendedPublic,
     ]
 ):
     """Identity Provider Create, Read, Update and Delete operations."""
 
     def create(
-        self, *, obj_in: IdentityProviderCreateExtended, provider: Provider
+        self,
+        *,
+        obj_in: IdentityProviderCreateExtended,
+        provider: Provider | None = None,
     ) -> IdentityProvider:
         """Create a new Identity Provider.
 
@@ -55,78 +45,33 @@ class CRUDIdentityProvider(
         user groups.
         """
         db_obj = self.get(endpoint=obj_in.endpoint)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
+        assert db_obj is None, (
+            f"Identity provider with endpoint {obj_in.endpoint} already exists."
+        )
+        db_obj = super().create(obj_in=obj_in)
 
-        db_obj.providers.connect(provider, obj_in.relationship.dict())
+        if provider is not None:
+            db_obj.providers.connect(provider, obj_in.relationship.dict())
 
         for item in obj_in.user_groups:
-            db_user_group = db_obj.user_groups.get_or_none(name=item.name)
-            if db_user_group:
-                user_group_mng.update(
-                    db_obj=db_user_group,
-                    obj_in=item,
-                    projects=provider.projects,
-                    force=True,
-                )
-            else:
-                user_group_mng.create(
-                    obj_in=item, identity_provider=db_obj, projects=provider.projects
-                )
+            user_group_mgr.create(obj_in=item, identity_provider=db_obj)
 
         return db_obj
 
-    def remove(self, *, db_obj: IdentityProvider) -> bool:
-        """Delete an existing identity provider and all its relationships.
-
-        At first delete its user groups. Finally delete the identity provider.
-        """
-        for item in db_obj.user_groups:
-            user_group_mng.remove(db_obj=item)
-        return super().remove(db_obj=db_obj)
-
     def update(
-        self,
-        *,
-        db_obj: IdentityProvider,
-        obj_in: IdentityProviderUpdate | IdentityProviderCreateExtended,
-        projects: Optional[list[Project]] = None,
-        provider: Optional[Provider] = None,
-        force: bool = False,
-    ) -> Optional[IdentityProvider]:
+        self, *, db_obj: IdentityProvider, obj_in: IdentityProviderCreateExtended
+    ) -> IdentityProvider | None:
         """Update Identity Provider attributes.
 
         By default do not update relationships or default values. If force is True,
         update linked user groups and apply default values when explicit.
         """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            edit = self.__update_user_groups(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            if provider is not None:
-                rel = db_obj.providers.relationship(provider)
-                if (
-                    rel.protocol != obj_in.relationship.protocol
-                    or rel.idp_name != obj_in.relationship.idp_name
-                ):
-                    db_obj.providers.replace(provider, obj_in.relationship.dict())
-                    edit = True
-
-        if isinstance(obj_in, IdentityProviderCreateExtended):
-            obj_in = IdentityProviderUpdate.parse_obj(obj_in)
-
-        updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else updated_data
+        edit = self.__update_user_groups(db_obj=db_obj, obj_in=obj_in)
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return db_obj.save() if edit or edit_content else None
 
     def __update_user_groups(
-        self,
-        *,
-        obj_in: IdentityProviderCreateExtended,
-        db_obj: IdentityProvider,
-        provider_projects: list[Project],
+        self, *, obj_in: IdentityProviderCreateExtended, db_obj: IdentityProvider
     ) -> bool:
         """Update identity provider linked user groups.
 
@@ -138,29 +83,21 @@ class CRUDIdentityProvider(
         for item in obj_in.user_groups:
             db_item = db_items.pop(item.name, None)
             if not db_item:
-                user_group_mng.create(
-                    obj_in=item, identity_provider=db_obj, projects=provider_projects
-                )
+                user_group_mgr.create(obj_in=item, identity_provider=db_obj)
                 edit = True
             else:
-                updated_data = user_group_mng.update(
-                    db_obj=db_item, obj_in=item, projects=provider_projects, force=True
-                )
-                if not edit and updated_data is not None:
-                    edit = True
-        # User groups in the DB not involved in the current provider
+                updated_data = user_group_mgr.update(db_obj=db_item, obj_in=item)
+                edit = edit or updated_data is not None
+        # Remove identity provider's user groups without SLAs
         for db_item in db_items.values():
             if len(db_item.slas) == 0:
-                user_group_mng.remove(db_obj=db_item)
+                user_group_mgr.remove(db_obj=db_item)
                 edit = True
         return edit
 
 
-identity_provider_mng = CRUDIdentityProvider(
+identity_provider_mgr = CRUDIdentityProvider(
     model=IdentityProvider,
     create_schema=IdentityProviderCreate,
-    read_schema=IdentityProviderRead,
-    read_public_schema=IdentityProviderReadPublic,
-    read_extended_schema=IdentityProviderReadExtended,
-    read_extended_public_schema=IdentityProviderReadExtendedPublic,
+    update_schema=IdentityProviderUpdate,
 )

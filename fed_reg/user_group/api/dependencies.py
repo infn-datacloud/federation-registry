@@ -1,92 +1,56 @@
-"""User Group REST API dependencies."""
+"""UserGroup REST API dependencies."""
+
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
-from fedreg.identity_provider.models import IdentityProvider
 from fedreg.user_group.models import UserGroup
-from fedreg.user_group.schemas import UserGroupCreate, UserGroupUpdate
+from fedreg.user_group.schemas import UserGroupUpdate
+from neomodel.exceptions import CardinalityViolation
 
-from fed_reg.identity_provider.api.dependencies import valid_identity_provider_id
-from fed_reg.user_group.crud import user_group_mng
-
-
-def valid_user_group_id(user_group_uid: str) -> UserGroup:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        user_group_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        UserGroup: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = user_group_mng.get(uid=user_group_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User Group '{user_group_uid}' not found",
-        )
-    return item
+from fed_reg.dependencies import valid_id
+from fed_reg.user_group.crud import user_group_mgr
 
 
-def is_unique_user_group(
-    item: UserGroupCreate | UserGroupUpdate,
-    identity_provider: IdentityProvider = Depends(valid_identity_provider_id),
-) -> None:
-    """Check given data are valid ones.
+def user_group_must_exist(user_group_uid: str) -> UserGroup:
+    """The target user group must exists otherwise raises `not found` error."""
+    return valid_id(mgr=user_group_mgr, item_id=user_group_uid)
 
-    Check there are no other user groups, belonging to the same identity provider,
-    with the same name.
 
-    Args:
-    ----
-        item (UserGroupCreate | UserGroupUpdate): new data.
-        identity_provider (IdentityProvider): hosting identity provider.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given name already exists.
-    """
-    db_item = identity_provider.user_groups.get_or_none(name=item.name)
-    if db_item is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"User Group with name '{item.name}' already registered",
-        )
+def get_user_group_item(user_group_uid: str) -> UserGroup:
+    """Retrieve the target user group. If not found, return None."""
+    return valid_id(mgr=user_group_mgr, item_id=user_group_uid, error=False)
 
 
 def validate_new_user_group_values(
-    update_data: UserGroupUpdate,
-    item: UserGroup = Depends(valid_user_group_id),
-) -> None:
+    item: Annotated[UserGroup, Depends(user_group_must_exist)],
+    new_data: UserGroupUpdate,
+) -> tuple[UserGroup, UserGroupUpdate]:
     """Check given data are valid ones.
 
-    Check there are no other user groups, belonging to the same identity provider, with
-    the same name.
+    Check there are no other user_groups, belonging to the same identity provider, with
+    the same name. Avoid to change user group visibility.
 
-    Args:
-    ----
-        update_data (UserGroupUpdate): new data.
-        item (UserGroup): DB entity to update.
+    Raises `not found` error if the target entity does not exists.
+    It raises `conflict` error if a DB entity with identical name and belonging to the
+    same identity provider already exists.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given name already exists.
+    Return the current item and the schema with the new data.
     """
-    if update_data.name != item.name:
-        is_unique_user_group(
-            item=update_data, identity_provider=item.identity_provider.single()
-        )
+    if new_data.name is not None and new_data.name != item.name:
+        try:
+            idp = item.identity_provider.single()
+        except CardinalityViolation as e:
+            msg = (
+                f"Corrupted DB: User group with uuid '{item.uuid}' has no linked "
+                "identity provider"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=msg
+            ) from e
+        db_item = idp.user_groups.get_or_none(name=new_data.name)
+        if db_item is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"User group with name '{item.name}' already registered",
+            )
+    return item, new_data

@@ -1,13 +1,23 @@
 """Module with Create, Read, Update and Delete operations for a Services."""
 
-from typing import Any, Optional
+from typing import Generic, Literal, TypeVar
 
+from fedreg.flavor.schemas import SharedFlavorCreate
+from fedreg.image.schemas import SharedImageCreate
+from fedreg.network.schemas import SharedNetworkCreate
 from fedreg.project.models import Project
 from fedreg.provider.schemas_extended import (
+    BlockStorageQuotaCreateExtended,
     BlockStorageServiceCreateExtended,
+    ComputeQuotaCreateExtended,
     ComputeServiceCreateExtended,
+    NetworkQuotaCreateExtended,
     NetworkServiceCreateExtended,
+    ObjectStoreQuotaCreateExtended,
     ObjectStoreServiceCreateExtended,
+    PrivateFlavorCreateExtended,
+    PrivateImageCreateExtended,
+    PrivateNetworkCreateExtended,
 )
 from fedreg.region.models import Region
 from fedreg.service.models import (
@@ -19,78 +29,156 @@ from fedreg.service.models import (
 )
 from fedreg.service.schemas import (
     BlockStorageServiceCreate,
-    BlockStorageServiceRead,
-    BlockStorageServiceReadPublic,
     BlockStorageServiceUpdate,
     ComputeServiceCreate,
-    ComputeServiceRead,
-    ComputeServiceReadPublic,
     ComputeServiceUpdate,
     IdentityServiceCreate,
-    IdentityServiceRead,
-    IdentityServiceReadPublic,
     IdentityServiceUpdate,
     NetworkServiceCreate,
-    NetworkServiceRead,
-    NetworkServiceReadPublic,
     NetworkServiceUpdate,
     ObjectStoreServiceCreate,
-    ObjectStoreServiceRead,
-    ObjectStoreServiceReadPublic,
     ObjectStoreServiceUpdate,
 )
-from fedreg.service.schemas_extended import (
-    BlockStorageServiceReadExtended,
-    BlockStorageServiceReadExtendedPublic,
-    ComputeServiceReadExtended,
-    ComputeServiceReadExtendedPublic,
-    IdentityServiceReadExtended,
-    IdentityServiceReadExtendedPublic,
-    NetworkServiceReadExtended,
-    NetworkServiceReadExtendedPublic,
-    ObjectStoreServiceReadExtended,
-    ObjectStoreServiceReadExtendedPublic,
-)
 
-from fed_reg.crud import CRUDBase
-from fed_reg.flavor.crud import flavor_mng
-from fed_reg.image.crud import image_mng
-from fed_reg.network.crud import network_mng
+from fed_reg.crud import (
+    CreateSchemaType,
+    CRUDBase,
+    SkipLimit,
+    UpdateSchemaType,
+)
+from fed_reg.flavor.crud import CRUDPrivateFlavor, CRUDSharedFlavor, flavor_mgr
+from fed_reg.image.crud import (
+    CRUDPrivateImage,
+    CRUDSharedImage,
+    image_mgr,
+)
+from fed_reg.network.crud import (
+    CRUDPrivateNetwork,
+    CRUDSharedNetwork,
+    network_mgr,
+)
 from fed_reg.quota.crud import (
+    CRUDBlockStorageQuota,
+    CRUDComputeQuota,
+    CRUDNetworkQuota,
+    CRUDObjectStoreQuota,
     block_storage_quota_mng,
     compute_quota_mng,
     network_quota_mng,
     object_store_quota_mng,
 )
 
+ModelType = TypeVar(
+    "ModelType",
+    bound=BlockStorageService | ComputeService | NetworkService | ObjectStoreService,
+)
+QuotaCreateExtendedSchemaType = TypeVar(
+    "QuotaCreateExtendedSchemaType",
+    bound=BlockStorageQuotaCreateExtended
+    | ComputeQuotaCreateExtended
+    | NetworkQuotaCreateExtended
+    | ObjectStoreQuotaCreateExtended,
+)
+QuotaCRUDType = TypeVar(
+    "QuotaCRUDType",
+    bound=CRUDBlockStorageQuota
+    | CRUDComputeQuota
+    | CRUDNetworkQuota
+    | CRUDObjectStoreQuota,
+)
+ResourceCreateExtendedSchemaType = TypeVar(
+    "ResourceCreateExtendedSchema",
+    bound=SharedFlavorCreate
+    | PrivateFlavorCreateExtended
+    | SharedImageCreate
+    | PrivateImageCreateExtended
+    | SharedNetworkCreate
+    | PrivateNetworkCreateExtended,
+)
+ResourceCRUDType = TypeVar(
+    "ResourceCRUDType",
+    bound=CRUDSharedFlavor
+    | CRUDPrivateFlavor
+    | CRUDSharedImage
+    | CRUDPrivateImage
+    | CRUDSharedNetwork
+    | CRUDPrivateNetwork,
+)
 
-def split_quota(quotas: list[Any]) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Split quotas in usage, per-user, per-project."""
-    db_items_usage = {
-        db_item.project.single().uuid: db_item
-        for db_item in filter(lambda x: x.usage, quotas)
-    }
-    db_items_per_user = {
-        db_item.project.single().uuid: db_item
-        for db_item in filter(lambda x: x.per_user and not x.usage, quotas)
-    }
-    db_items_per_project = {
-        db_item.project.single().uuid: db_item
-        for db_item in filter(lambda x: not x.per_user and not x.usage, quotas)
-    }
-    return (db_items_usage, db_items_per_user, db_items_per_project)
+
+class CRUDMultiQuota(
+    CRUDBase[ModelType, CreateSchemaType, UpdateSchemaType],
+    Generic[
+        ModelType,
+        CreateSchemaType,
+        UpdateSchemaType,
+        QuotaCRUDType,
+        QuotaCreateExtendedSchemaType,
+    ],
+):
+    """Class with the function to merge new projects into current ones."""
+
+    def __init__(self, quota_mgr: QuotaCRUDType, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.quota_mgr = quota_mgr
+
+    def _update_quotas(
+        self,
+        *,
+        db_obj: ModelType,
+        input_quotas: list[QuotaCreateExtendedSchemaType],
+        provider_projects: list[Project],
+    ) -> bool:
+        """Update service linked quotas.
+
+        Connect new quotas not already connect and delete old ones no more connected to
+        the service. If the project already has a quota of that type, update that quota
+        with the new received values.
+        """
+        edit = False
+        seen_items = []
+        for item in input_quotas:
+            db_quotas = db_obj.quotas.filter(usage=item.usage, per_user=item.per_user)
+            db_item = next(
+                filter(lambda q: q.project.single().uuid == item.project, db_quotas),
+                None,
+            )
+
+            if not db_item:
+                updated_db_item = self.quota_mgr.create(
+                    obj_in=item,
+                    service=db_obj,
+                    provider_projects=provider_projects,
+                )
+                seen_items.append(updated_db_item)
+                edit = True
+            else:
+                updated_db_item = self.quota_mgr.update(
+                    db_obj=db_item,
+                    obj_in=item,
+                    provider_projects=provider_projects,
+                )
+                if updated_db_item:
+                    seen_items.append(updated_db_item)
+                    edit = True
+                seen_items.append(db_item)
+
+        for db_item in db_obj.quotas:
+            if db_item not in seen_items:
+                self.quota_mgr.remove(db_obj=db_item)
+                edit = True
+
+        return edit
 
 
 class CRUDBlockStorageService(
-    CRUDBase[
+    CRUDMultiQuota[
         BlockStorageService,
         BlockStorageServiceCreate,
         BlockStorageServiceUpdate,
-        BlockStorageServiceRead,
-        BlockStorageServiceReadPublic,
-        BlockStorageServiceReadExtended,
-        BlockStorageServiceReadExtendedPublic,
-    ]
+        CRUDBlockStorageQuota,
+        BlockStorageQuotaCreateExtended,
+    ],
 ):
     """Block Storage Service Create, Read, Update and Delete operations."""
 
@@ -99,165 +187,56 @@ class CRUDBlockStorageService(
         *,
         obj_in: BlockStorageServiceCreateExtended,
         region: Region,
-        projects: Optional[list[Project]] = None,
+        provider_projects: list[Project] | None = None,
     ) -> BlockStorageService:
         """Create a new Block Storage Service.
 
-        Connect the service to the given region and create all relative quotas. Filter
-        projects based on received ones and target one. It must be exactly one.
+        Connect the service to the given region and create all relative quotas.
         """
-        if projects is None:
-            projects = []
-        db_obj = region.services.filter(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        for item in obj_in.quotas:
-            db_projects = list(filter(lambda x: x.uuid == item.project, projects))
-            if len(db_projects) == 1:
-                block_storage_quota_mng.create(
-                    obj_in=item, service=db_obj, project=db_projects[0]
-                )
+        if provider_projects is None:
+            provider_projects = []
+        db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
+        db_provider = region.provider.single()
+        assert db_obj is None, (
+            f"A block storage service with endpoint {obj_in.endpoint} "
+            f"belonging to provider {db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
+
+        for quota in obj_in.quotas:
+            self.quota_mgr.create(
+                obj_in=quota, service=db_obj, provider_projects=provider_projects
+            )
         return db_obj
-
-    def remove(self, *, db_obj: BlockStorageService) -> bool:
-        """Delete an existing service and all its relationships.
-
-        At first delete its quotas. Finally delete the service.
-        """
-        for item in db_obj.quotas:
-            block_storage_quota_mng.remove(db_obj=item)
-        return super().remove(db_obj=db_obj)
 
     def update(
         self,
         *,
         db_obj: BlockStorageService,
-        obj_in: BlockStorageServiceCreateExtended | BlockStorageServiceUpdate,
-        projects: Optional[list[Project]] = None,
-        force: bool = False,
-    ) -> Optional[BlockStorageService]:
-        """Update Block Storage Service attributes.
-
-        By default do not update relationships or default values. If force is True,
-        update linked quotas and apply default values when explicit.
-        """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            edit = self.__update_quotas(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-
-        if isinstance(obj_in, BlockStorageServiceCreateExtended):
-            obj_in = BlockStorageServiceUpdate.parse_obj(obj_in)
-
-        update_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else update_data
-
-    def __update_quotas(  # noqa: C901
-        self,
-        *,
-        db_obj: BlockStorageService,
         obj_in: BlockStorageServiceCreateExtended,
-        provider_projects: list[Project],
-    ) -> bool:
-        """Update service linked quotas.
-
-        Connect new quotas not already connect, leave untouched already linked ones and
-        delete old ones no more connected to the service.
-
-        Split quotas in usage, per_user and per_project. For each one of them, check the
-        linked project. If the project already has a quota of that type, update that
-        quota with the new received values.
-        """
-        edit = False
-
-        db_items_usage, db_items_per_user, db_items_per_project = split_quota(
-            db_obj.quotas
+        provider_projects: list[Project] | None,
+    ) -> BlockStorageService | None:
+        """Update Block Storage Service attributes. Update linked quotas."""
+        if provider_projects is None:
+            provider_projects = []
+        edit = self._update_quotas(
+            db_obj=db_obj,
+            input_quotas=obj_in.quotas,
+            provider_projects=provider_projects,
         )
-        db_projects = {db_item.uuid: db_item for db_item in provider_projects}
-
-        for item in obj_in.quotas:
-            if item.usage:
-                db_item = db_items_usage.pop(item.project, None)
-                if not db_item:
-                    block_storage_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = block_storage_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            elif item.per_user:
-                db_item = db_items_per_user.pop(item.project, None)
-                if not db_item:
-                    block_storage_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = block_storage_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            else:
-                db_item = db_items_per_project.pop(item.project, None)
-                if not db_item:
-                    block_storage_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = block_storage_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-
-        for db_item in db_items_usage.values():
-            block_storage_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_user.values():
-            block_storage_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_project.values():
-            block_storage_quota_mng.remove(db_obj=db_item)
-            edit = True
-
-        return edit
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return db_obj.save() if edit or edit_content else None
 
 
 class CRUDComputeService(
-    CRUDBase[
+    CRUDMultiQuota[
         ComputeService,
         ComputeServiceCreate,
         ComputeServiceUpdate,
-        ComputeServiceRead,
-        ComputeServiceReadPublic,
-        ComputeServiceReadExtended,
-        ComputeServiceReadExtendedPublic,
-    ]
+        CRUDComputeQuota,
+        ComputeQuotaCreateExtended,
+    ],
 ):
     """Compute Service Create, Read, Update and Delete operations."""
 
@@ -266,90 +245,82 @@ class CRUDComputeService(
         *,
         obj_in: ComputeServiceCreateExtended,
         region: Region,
-        projects: Optional[list[Project]] = None,
+        provider_projects: list[Project] | None = None,
     ) -> ComputeService:
         """Create a new Block Storage Service.
 
         Connect the service to the given region and create all relative flavors, images
-        and quotas. Filter projects based on received ones and target one. For quotas it
-        must be exactly one.
+        and quotas.
         """
-        if projects is None:
-            projects = []
-        db_obj = region.services.filter(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        for item in obj_in.flavors:
-            db_projects = list(filter(lambda x: x.uuid in item.projects, projects))
-            flavor_mng.create(obj_in=item, service=db_obj, projects=db_projects)
-        for item in obj_in.images:
-            db_projects = list(filter(lambda x: x.uuid in item.projects, projects))
-            image_mng.create(obj_in=item, service=db_obj, projects=db_projects)
-        for item in obj_in.quotas:
-            db_projects = list(filter(lambda x: x.uuid == item.project, projects))
-            if len(db_projects) == 1:
-                compute_quota_mng.create(
-                    obj_in=item, service=db_obj, project=db_projects[0]
+        if provider_projects is None:
+            provider_projects = []
+        db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
+        db_provider = region.provider.single()
+        assert db_obj is None, (
+            f"A compute service with endpoint {obj_in.endpoint} "
+            f"belonging to provider {db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
+
+        for quota in obj_in.quotas:
+            self.quota_mgr.create(
+                obj_in=quota, service=db_obj, provider_projects=provider_projects
+            )
+        for flavor in obj_in.flavors:
+            flavor_mgr.create(
+                obj_in=flavor, service=db_obj, provider_projects=provider_projects
+            )
+        for image in obj_in.images:
+            db_image = next(
+                filter(lambda x: x.uuid == image.uuid, db_provider.images()), None
+            )
+            if db_image is None:
+                image_mgr.create(
+                    obj_in=image, service=db_obj, provider_projects=provider_projects
                 )
+            else:
+                db_obj.images.connect(db_image)
+
         return db_obj
-
-    def remove(self, *, db_obj: ComputeService) -> bool:
-        """Delete an existing service and all its relationships.
-
-        At first delete its quotas. Then delete the flavors and images connected only to
-        this service. Finally delete the service.
-        """
-        for item in db_obj.quotas:
-            compute_quota_mng.remove(db_obj=item)
-        for item in db_obj.flavors:
-            if len(item.services) == 1:
-                flavor_mng.remove(db_obj=item)
-        for item in db_obj.images:
-            if len(item.services) == 1:
-                image_mng.remove(db_obj=item)
-        result = super().remove(db_obj=db_obj)
-        return result
 
     def update(
         self,
         *,
         db_obj: ComputeService,
-        obj_in: ComputeServiceCreateExtended | ComputeServiceUpdate,
-        projects: Optional[list[Project]] = None,
-        force: bool = False,
-    ) -> Optional[ComputeService]:
+        obj_in: ComputeServiceCreateExtended,
+        provider_projects: list[Project] | None,
+    ) -> ComputeService | None:
         """Update Compute Service attributes.
 
-        By default do not update relationships or default values. If force is True,
-        update linked flavors, images, quotas and apply default values when explicit.
+        Update linked quotas, flavors and images.
         """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            flavors_updated = self.__update_flavors(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            images_updated = self.__update_images(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            quotas_updated = self.__update_quotas(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            edit = flavors_updated or images_updated or quotas_updated
+        if provider_projects is None:
+            provider_projects = []
+        edit1 = self.__update_flavors(
+            db_obj=db_obj,
+            input_flavors=obj_in.flavors,
+            provider_projects=provider_projects,
+        )
+        edit2 = self.__update_images(
+            db_obj=db_obj,
+            input_images=obj_in.images,
+            provider_projects=provider_projects,
+        )
+        edit3 = self._update_quotas(
+            db_obj=db_obj,
+            input_quotas=obj_in.quotas,
+            provider_projects=provider_projects,
+        )
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
-        if isinstance(obj_in, ComputeServiceCreateExtended):
-            obj_in = ComputeServiceUpdate.parse_obj(obj_in)
-
-        updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else updated_data
+        return db_obj.save() if edit1 or edit2 or edit3 or edit_content else None
 
     def __update_flavors(
         self,
         *,
         db_obj: ComputeService,
-        obj_in: ComputeServiceCreateExtended,
+        input_flavors: list[SharedFlavorCreate | PrivateFlavorCreateExtended],
         provider_projects: list[Project],
     ) -> bool:
         """Update service linked flavors.
@@ -359,33 +330,32 @@ class CRUDComputeService(
         """
         edit = False
         db_items = {db_item.uuid: db_item for db_item in db_obj.flavors}
-        for item in obj_in.flavors:
+        for item in input_flavors:
             db_item = db_items.pop(item.uuid, None)
-            db_projects = list(
-                filter(lambda x: x.uuid in item.projects, provider_projects)
-            )
+
             if not db_item:
-                flavor_mng.create(obj_in=item, service=db_obj, projects=db_projects)
+                flavor_mgr.create(
+                    obj_in=item, service=db_obj, provider_projects=provider_projects
+                )
                 edit = True
             else:
-                updated_data = flavor_mng.update(
-                    db_obj=db_item, obj_in=item, projects=db_projects
+                updated_db_item = flavor_mgr.update(
+                    db_obj=db_item, obj_in=item, provider_projects=provider_projects
                 )
-                if not edit and updated_data is not None:
+                if updated_db_item:
                     edit = True
+
         for db_item in db_items.values():
-            if len(db_item.services) == 1:
-                flavor_mng.remove(db_obj=db_item)
-            else:
-                db_obj.flavors.disconnect(db_item)
+            flavor_mgr.remove(db_obj=db_item)
             edit = True
+
         return edit
 
     def __update_images(
         self,
         *,
         db_obj: ComputeService,
-        obj_in: ComputeServiceCreateExtended,
+        input_images: list[SharedImageCreate | PrivateImageCreateExtended],
         provider_projects: list[Project],
     ) -> bool:
         """Update service linked images.
@@ -395,130 +365,41 @@ class CRUDComputeService(
         """
         edit = False
         db_items = {db_item.uuid: db_item for db_item in db_obj.images}
-        for item in obj_in.images:
+        region = db_obj.region.single()
+        provider = region.provider.single()
+        provider_images = {i.uuid: i for i in provider.images()}
+        for item in input_images:
             db_item = db_items.pop(item.uuid, None)
-            db_projects = list(
-                filter(lambda x: x.uuid in item.projects, provider_projects)
-            )
+
             if not db_item:
-                image_mng.create(obj_in=item, service=db_obj, projects=db_projects)
+                db_item = provider_images.pop(item.uuid, None)
+                if db_item is not None:
+                    image_mgr.patch(db_obj=db_item, obj_in=item)
+                    db_obj.images.connect(db_item)
+                else:
+                    image_mgr.create(
+                        obj_in=item, service=db_obj, provider_projects=provider_projects
+                    )
                 edit = True
             else:
-                updated_data = image_mng.update(
-                    db_obj=db_item, obj_in=item, projects=db_projects
+                updated_db_item = image_mgr.update(
+                    db_obj=db_item, obj_in=item, provider_projects=provider_projects
                 )
-                if not edit and updated_data is not None:
+                if updated_db_item:
                     edit = True
+
         for db_item in db_items.values():
             if len(db_item.services) == 1:
-                image_mng.remove(db_obj=db_item)
+                image_mgr.remove(db_obj=db_item)
             else:
                 db_obj.images.disconnect(db_item)
-            edit = True
-        return edit
-
-    def __update_quotas(  # noqa: C901
-        self,
-        *,
-        db_obj: ComputeService,
-        obj_in: ComputeServiceCreateExtended,
-        provider_projects: list[Project],
-    ) -> bool:
-        """Update service linked quotas.
-
-        Connect new quotas not already connect, leave untouched already linked ones and
-        delete old ones no more connected to the service.
-
-        Split quotas in per_user and total. For each one of them, check the linked
-        project. If the project already has a quota of that type, update that quota with
-        the new received values.
-        """
-        edit = False
-
-        db_items_usage, db_items_per_user, db_items_per_project = split_quota(
-            db_obj.quotas
-        )
-        db_projects = {db_item.uuid: db_item for db_item in provider_projects}
-
-        for item in obj_in.quotas:
-            if item.usage:
-                db_item = db_items_usage.pop(item.project, None)
-                if not db_item:
-                    compute_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = compute_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            elif item.per_user:
-                db_item = db_items_per_user.pop(item.project, None)
-                if not db_item:
-                    compute_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = compute_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            else:
-                db_item = db_items_per_project.pop(item.project, None)
-                if not db_item:
-                    compute_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = compute_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-
-        for db_item in db_items_usage.values():
-            compute_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_user.values():
-            compute_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_project.values():
-            compute_quota_mng.remove(db_obj=db_item)
             edit = True
 
         return edit
 
 
 class CRUDIdentityService(
-    CRUDBase[
-        IdentityService,
-        IdentityServiceCreate,
-        IdentityServiceUpdate,
-        IdentityServiceRead,
-        IdentityServiceReadPublic,
-        IdentityServiceReadExtended,
-        IdentityServiceReadExtendedPublic,
-    ]
+    CRUDBase[IdentityService, IdentityServiceCreate, IdentityServiceUpdate]
 ):
     """Identity Service Create, Read, Update and Delete operations."""
 
@@ -529,27 +410,24 @@ class CRUDIdentityService(
 
         Connect the service to the given region.
         """
-        db_obj = region.services.filter(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        else:
-            updated_data = self.update(db_obj=db_obj, obj_in=obj_in)
-            if updated_data:
-                db_obj = updated_data
+        db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
+        assert db_obj is None, (
+            f"An identity service with endpoint {obj_in.endpoint} "
+            f"belonging to region {region.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
         return db_obj
 
 
 class CRUDNetworkService(
-    CRUDBase[
+    CRUDMultiQuota[
         NetworkService,
         NetworkServiceCreate,
         NetworkServiceUpdate,
-        NetworkServiceRead,
-        NetworkServiceReadPublic,
-        NetworkServiceReadExtended,
-        NetworkServiceReadExtendedPublic,
-    ]
+        CRUDNetworkQuota,
+        NetworkQuotaCreateExtended,
+    ],
 ):
     """Network Service Create, Read, Update and Delete operations."""
 
@@ -558,82 +436,63 @@ class CRUDNetworkService(
         *,
         obj_in: NetworkServiceCreateExtended,
         region: Region,
-        projects: Optional[list[Project]] = None,
+        provider_projects: list[Project] | None = None,
     ) -> NetworkService:
         """Create a new Block Storage Service.
 
-        Connect the service to the given region and create all relative networks. Filter
-        projects based on received ones and target one. It must be exactly one.
+        Connect the service to the given region and create all relative networks.
         """
-        if projects is None:
-            projects = []
-        db_obj = region.services.filter(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        for item in obj_in.networks:
-            db_projects = list(filter(lambda x: x.uuid == item.project, projects))
-            db_project = None
-            if len(db_projects) == 1:
-                db_project = db_projects[0]
-            network_mng.create(obj_in=item, service=db_obj, project=db_project)
-        for item in obj_in.quotas:
-            db_projects = list(filter(lambda x: x.uuid == item.project, projects))
-            if len(db_projects) == 1:
-                network_quota_mng.create(
-                    obj_in=item, service=db_obj, project=db_projects[0]
-                )
+        if provider_projects is None:
+            provider_projects = []
+        db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
+        db_provider = region.provider.single()
+        assert db_obj is None, (
+            f"A network service with endpoint {obj_in.endpoint} "
+            f"belonging to provider {db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
+
+        for quota in obj_in.quotas:
+            self.quota_mgr.create(
+                obj_in=quota, service=db_obj, provider_projects=provider_projects
+            )
+        for network in obj_in.networks:
+            network_mgr.create(
+                obj_in=network, service=db_obj, provider_projects=provider_projects
+            )
         return db_obj
-
-    def remove(self, *, db_obj: NetworkService) -> bool:
-        """Delete an existing service and all its relationships.
-
-        At first delete its quotas. Then delete the flavors and images connected only to
-        this service. Finally delete the service.
-        """
-        for item in db_obj.quotas:
-            network_quota_mng.remove(db_obj=item)
-        for item in db_obj.networks:
-            network_mng.remove(db_obj=item)
-        result = super().remove(db_obj=db_obj)
-        return result
 
     def update(
         self,
         *,
         db_obj: NetworkService,
-        obj_in: NetworkServiceCreateExtended | NetworkServiceUpdate,
-        projects: Optional[list[Project]] = None,
-        force: bool = False,
-    ) -> Optional[NetworkService]:
-        """Update Network Service attributes.
+        obj_in: NetworkServiceCreateExtended,
+        provider_projects: list[Project] | None,
+    ) -> NetworkService | None:
+        """Update Network Service attributes. Update linked quotas and networks."""
+        if provider_projects is None:
+            provider_projects = []
 
-        By default do not update relationships or default values. If force is True,
-        update linked networks and apply default values when explicit.
-        """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            networks_updated = self.__update_networks(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            quotas_updated = self.__update_quotas(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
-            edit = networks_updated or quotas_updated
+        edit1 = self._update_quotas(
+            db_obj=db_obj,
+            input_quotas=obj_in.quotas,
+            provider_projects=provider_projects,
+        )
+        edit2 = self.__update_networks(
+            db_obj=db_obj,
+            input_networks=obj_in.networks,
+            provider_projects=provider_projects,
+        )
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
 
-        if isinstance(obj_in, NetworkServiceCreateExtended):
-            obj_in = NetworkServiceUpdate.parse_obj(obj_in)
-
-        updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else updated_data
+        return db_obj.save() if edit1 or edit2 or edit_content else None
 
     def __update_networks(
         self,
         *,
         db_obj: NetworkService,
-        obj_in: NetworkServiceCreateExtended,
+        input_networks: list[SharedNetworkCreate | PrivateNetworkCreateExtended],
         provider_projects: list[Project],
     ) -> bool:
         """Update service linked networks.
@@ -643,128 +502,36 @@ class CRUDNetworkService(
         """
         edit = False
         db_items = {db_item.uuid: db_item for db_item in db_obj.networks}
-        for item in obj_in.networks:
+        for item in input_networks:
             db_item = db_items.pop(item.uuid, None)
-            db_projects = list(
-                filter(lambda x: x.uuid == item.project, provider_projects)
-            )
+
             if not db_item:
-                project = None if len(db_projects) == 0 else db_projects[0]
-                network_mng.create(obj_in=item, service=db_obj, project=project)
+                network_mgr.create(
+                    obj_in=item, service=db_obj, provider_projects=provider_projects
+                )
                 edit = True
             else:
-                updated_data = network_mng.update(
-                    db_obj=db_item, obj_in=item, projects=db_projects
+                updated_data = network_mgr.update(
+                    db_obj=db_item, obj_in=item, provider_projects=provider_projects
                 )
-                if not edit and updated_data is not None:
+                if updated_data:
                     edit = True
+
         for db_item in db_items.values():
-            network_mng.remove(db_obj=db_item)
-            edit = True
-        return edit
-
-    def __update_quotas(  # noqa: C901
-        self,
-        *,
-        db_obj: NetworkService,
-        obj_in: NetworkServiceCreateExtended,
-        provider_projects: list[Project],
-    ) -> bool:
-        """Update service linked quotas.
-
-        Connect new quotas not already connect, leave untouched already linked ones and
-        delete old ones no more connected to the service.
-
-        Split quotas in per_user and total. For each one of them, check the linked
-        project. If the project already has a quota of that type, update that quota with
-        the new received values.
-        """
-        edit = False
-
-        db_items_usage, db_items_per_user, db_items_per_project = split_quota(
-            db_obj.quotas
-        )
-        db_projects = {db_item.uuid: db_item for db_item in provider_projects}
-
-        for item in obj_in.quotas:
-            if item.usage:
-                db_item = db_items_usage.pop(item.project, None)
-                if not db_item:
-                    network_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = network_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            elif item.per_user:
-                db_item = db_items_per_user.pop(item.project, None)
-                if not db_item:
-                    network_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = network_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            else:
-                db_item = db_items_per_project.pop(item.project, None)
-                if not db_item:
-                    network_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = network_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-
-        for db_item in db_items_usage.values():
-            network_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_user.values():
-            network_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_project.values():
-            network_quota_mng.remove(db_obj=db_item)
+            network_mgr.remove(db_obj=db_item)
             edit = True
 
         return edit
 
 
 class CRUDObjectStoreService(
-    CRUDBase[
+    CRUDMultiQuota[
         ObjectStoreService,
         ObjectStoreServiceCreate,
         ObjectStoreServiceUpdate,
-        ObjectStoreServiceRead,
-        ObjectStoreServiceReadPublic,
-        ObjectStoreServiceReadExtended,
-        ObjectStoreServiceReadExtendedPublic,
-    ]
+        CRUDObjectStoreQuota,
+        ObjectStoreQuotaCreateExtended,
+    ],
 ):
     """Object Storage Service Create, Read, Update and Delete operations."""
 
@@ -773,192 +540,310 @@ class CRUDObjectStoreService(
         *,
         obj_in: ObjectStoreServiceCreateExtended,
         region: Region,
-        projects: Optional[list[Project]] = None,
+        provider_projects: list[Project] | None = None,
     ) -> ObjectStoreService:
         """Create a new Object Storage Service.
 
-        Connect the service to the given region and create all relative quotas. Filter
-        projects based on received ones and target one. It must be exactly one.
+        Connect the service to the given region and create all relative quotas.
         """
-        if projects is None:
-            projects = []
-        db_obj = region.services.filter(endpoint=obj_in.endpoint, type=obj_in.type)
-        if not db_obj:
-            db_obj = super().create(obj_in=obj_in)
-            db_obj.region.connect(region)
-        for item in obj_in.quotas:
-            db_projects = list(filter(lambda x: x.uuid == item.project, projects))
-            if len(db_projects) == 1:
-                object_store_quota_mng.create(
-                    obj_in=item, service=db_obj, project=db_projects[0]
-                )
+        if provider_projects is None:
+            provider_projects = []
+        db_obj = region.services.get_or_none(endpoint=obj_in.endpoint, type=obj_in.type)
+        db_provider = region.provider.single()
+        assert db_obj is None, (
+            f"An object store service with endpoint {obj_in.endpoint} "
+            f"belonging to provider {db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
+        db_obj.region.connect(region)
+
+        for quota in obj_in.quotas:
+            self.quota_mgr.create(
+                obj_in=quota, service=db_obj, provider_projects=provider_projects
+            )
         return db_obj
-
-    def remove(self, *, db_obj: ObjectStoreService) -> bool:
-        """Delete an existing service and all its relationships.
-
-        At first delete its quotas. Finally delete the service.
-        """
-        for item in db_obj.quotas:
-            object_store_quota_mng.remove(db_obj=item)
-        return super().remove(db_obj=db_obj)
 
     def update(
         self,
         *,
         db_obj: ObjectStoreService,
-        obj_in: ObjectStoreServiceCreateExtended | ObjectStoreServiceUpdate,
-        projects: Optional[list[Project]] = None,
-        force: bool = False,
-    ) -> Optional[ObjectStoreService]:
+        obj_in: ObjectStoreServiceCreateExtended,
+        provider_projects: list[Project] | None,
+    ) -> ObjectStoreService | None:
         """Update Object Storage Service attributes.
 
         By default do not update relationships or default values. If force is True,
         update linked quotas and apply default values when explicit.
         """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            edit = self.__update_quotas(
-                db_obj=db_obj, obj_in=obj_in, provider_projects=projects
-            )
+        if provider_projects is None:
+            provider_projects = []
+        edit = self._update_quotas(
+            db_obj=db_obj,
+            input_quotas=obj_in.quotas,
+            provider_projects=provider_projects,
+        )
+        edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
+        return db_obj.save() if edit or edit_content else None
 
-        if isinstance(obj_in, ObjectStoreServiceCreateExtended):
-            obj_in = ObjectStoreServiceUpdate.parse_obj(obj_in)
 
-        update_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else update_data
+class CRUDServiceDispatcher(
+    SkipLimit[
+        BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService
+    ],
+):
+    """Flavor (both shared and private) Create, Read, Update and Delete operations."""
 
-    def __update_quotas(  # noqa: C901
+    def __init__(
         self,
         *,
-        db_obj: ObjectStoreService,
-        obj_in: ObjectStoreServiceCreateExtended,
-        provider_projects: list[Project],
-    ) -> bool:
-        """Update service linked quotas.
+        block_storage_mgr: CRUDBlockStorageService,
+        compute_mgr: CRUDComputeService,
+        identity_mgr: CRUDIdentityService,
+        network_mgr: CRUDNetworkService,
+        object_store_mgr: CRUDObjectStoreService,
+    ):
+        self.__block_storage_mgr = block_storage_mgr
+        self.__compute_mgr = compute_mgr
+        self.__identity_mgr = identity_mgr
+        self.__network_mgr = network_mgr
+        self.__object_store_mgr = object_store_mgr
 
-        Connect new quotas not already connect, leave untouched already linked ones and
-        delete old ones no more connected to the service.
+    # def get(
+    #     self, **kwargs
+    # ) -> (
+    #     BlockStorageService
+    #     | ComputeService
+    #     | IdentityService
+    #     | NetworkService
+    #     | ObjectStoreService
+    #     | None
+    # ):
+    #     """Get a single resource. Return None if the resource is not found."""
+    #     item = self.__block_storage_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+    #     item = self.__compute_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+    #     item = self.__identity_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+    #     item = self.__network_mgr.get(**kwargs)
+    #     if item:
+    #         return item
+    #     item = self.__object_store_mgr.get(**kwargs)
+    #     if item:
+    #         return item
 
-        Split quotas in per_user and total. For each one of them, check the linked
-        project. If the project already has a quota of that type, update that quota with
-        the new received values.
-        """
-        edit = False
+    # def get_multi(
+    #     self, skip: int = 0, limit: int | None = None, sort: str | None = None,
+    # **kwargs
+    # ) -> list[
+    #     BlockStorageService
+    #     | ComputeService
+    #     | IdentityService
+    #     | NetworkService
+    #     | ObjectStoreService
+    # ]:
+    #     """Get list of resources."""
+    #     req_is_shared = kwargs.get("is_shared", None)
 
-        db_items_usage, db_items_per_user, db_items_per_project = split_quota(
-            db_obj.quotas
-        )
-        db_projects = {db_item.uuid: db_item for db_item in provider_projects}
+    #     if req_is_shared is None:
+    #         shared_items = self.__compute_mgr.get_multi(**kwargs)
+    #         private_items = self.__block_storage_mgr.get_multi(**kwargs)
 
-        for item in obj_in.quotas:
-            if item.usage:
-                db_item = db_items_usage.pop(item.project, None)
-                if not db_item:
-                    object_store_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = object_store_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            elif item.per_user:
-                db_item = db_items_per_user.pop(item.project, None)
-                if not db_item:
-                    object_store_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = object_store_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
-            else:
-                db_item = db_items_per_project.pop(item.project, None)
-                if not db_item:
-                    object_store_quota_mng.create(
-                        obj_in=item,
-                        service=db_obj,
-                        project=db_projects.get(item.project),
-                    )
-                    edit = True
-                else:
-                    updated_data = object_store_quota_mng.update(
-                        db_obj=db_item,
-                        obj_in=item,
-                        projects=provider_projects,
-                        force=True,
-                    )
-                    if not edit and updated_data is not None:
-                        edit = True
+    #         if sort:
+    #             if sort.startswith("-"):
+    #                 sort = sort[1:]
+    #                 reverse = True
+    #             sorting = [sort, "uid"]
+    #             items = sorted(
+    #                 [*shared_items, *private_items],
+    #                 key=lambda x: (x.__getattribute__(k) for k in sorting),
+    #                 reverse=reverse,
+    #             )
 
-        for db_item in db_items_usage.values():
-            object_store_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_user.values():
-            object_store_quota_mng.remove(db_obj=db_item)
-            edit = True
-        for db_item in db_items_per_project.values():
-            object_store_quota_mng.remove(db_obj=db_item)
-            edit = True
+    #         return self._apply_limit_and_skip(items=items, skip=skip, limit=limit)
 
-        return edit
+    #     if req_is_shared:
+    #         return self.__compute_mgr.get_multi(
+    #             skip=skip, limit=limit, sort=sort, **kwargs
+    #         )
+    #     return self.__block_storage_mgr.get_multi(
+    #         skip=skip, limit=limit, sort=sort, **kwargs
+    #     )
+
+    def create(
+        self,
+        *,
+        obj_in: BlockStorageServiceCreateExtended
+        | ComputeServiceCreateExtended
+        | IdentityServiceCreate
+        | NetworkServiceCreateExtended
+        | ObjectStoreServiceCreateExtended,
+        provider_projects: list[Project] | None = None,
+        **kwargs,
+    ) -> (
+        BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService
+    ):
+        """Create a new service."""
+        if isinstance(obj_in, BlockStorageServiceCreateExtended):
+            return self.__block_storage_mgr.create(
+                obj_in=obj_in, provider_projects=provider_projects, **kwargs
+            )
+        if isinstance(obj_in, ComputeServiceCreateExtended):
+            return self.__compute_mgr.create(
+                obj_in=obj_in, provider_projects=provider_projects, **kwargs
+            )
+        if isinstance(obj_in, IdentityServiceCreate):
+            return self.__identity_mgr.create(obj_in=obj_in, **kwargs)
+        if isinstance(obj_in, NetworkServiceCreateExtended):
+            return self.__network_mgr.create(
+                obj_in=obj_in, provider_projects=provider_projects, **kwargs
+            )
+        if isinstance(obj_in, ObjectStoreServiceCreateExtended):
+            return self.__object_store_mgr.create(
+                obj_in=obj_in, provider_projects=provider_projects, **kwargs
+            )
+        raise ValueError(f"Not supported service type {obj_in.type}")
+
+    def update(
+        self,
+        *,
+        db_obj: BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService,
+        obj_in: BlockStorageServiceCreateExtended
+        | ComputeServiceCreateExtended
+        | IdentityServiceCreate
+        | NetworkServiceCreateExtended
+        | ObjectStoreServiceCreateExtended,
+        provider_projects: list[Project] | None = None,
+    ) -> (
+        BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService
+        | None
+    ):
+        """Update and existing service."""
+        if isinstance(db_obj, BlockStorageService):
+            return self.__block_storage_mgr.update(
+                obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
+            )
+        if isinstance(db_obj, ComputeService):
+            return self.__compute_mgr.update(
+                obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
+            )
+        if isinstance(db_obj, IdentityService):
+            return self.__identity_mgr.update(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, NetworkService):
+            return self.__network_mgr.update(
+                obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
+            )
+        if isinstance(db_obj, ObjectStoreService):
+            return self.__object_store_mgr.update(
+                obj_in=obj_in, db_obj=db_obj, provider_projects=provider_projects
+            )
+        raise ValueError(f"Not supported service type {db_obj.type}")
+
+    def patch(
+        self,
+        *,
+        db_obj: BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService,
+        obj_in: UpdateSchemaType,
+    ) -> (
+        BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService
+        | None
+    ):
+        """Patch an existing service."""
+        if isinstance(db_obj, BlockStorageService):
+            return self.__block_storage_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, ComputeService):
+            return self.__compute_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, IdentityService):
+            return self.__identity_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, NetworkService):
+            return self.__network_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        if isinstance(db_obj, ObjectStoreService):
+            return self.__object_store_mgr.patch(obj_in=obj_in, db_obj=db_obj)
+        raise ValueError(f"Not supported service type {db_obj.type}")
+
+    def remove(
+        self,
+        *,
+        db_obj: BlockStorageService
+        | ComputeService
+        | IdentityService
+        | NetworkService
+        | ObjectStoreService,
+    ) -> Literal[True]:
+        """Remove an existing service."""
+        if isinstance(db_obj, BlockStorageService):
+            return self.__block_storage_mgr.remove(db_obj=db_obj)
+        if isinstance(db_obj, ComputeService):
+            return self.__compute_mgr.remove(db_obj=db_obj)
+        if isinstance(db_obj, IdentityService):
+            return self.__identity_mgr.remove(db_obj=db_obj)
+        if isinstance(db_obj, NetworkService):
+            return self.__network_mgr.remove(db_obj=db_obj)
+        if isinstance(db_obj, ObjectStoreService):
+            return self.__object_store_mgr.remove(db_obj=db_obj)
+        raise ValueError(f"Not supported service type {db_obj.type}")
 
 
-compute_service_mng = CRUDComputeService(
-    model=ComputeService,
-    create_schema=ComputeServiceCreate,
-    read_schema=ComputeServiceRead,
-    read_public_schema=ComputeServiceReadPublic,
-    read_extended_schema=ComputeServiceReadExtended,
-    read_extended_public_schema=ComputeServiceReadExtendedPublic,
-)
 block_storage_service_mng = CRUDBlockStorageService(
     model=BlockStorageService,
     create_schema=BlockStorageServiceCreate,
-    read_schema=BlockStorageServiceRead,
-    read_public_schema=BlockStorageServiceReadPublic,
-    read_extended_schema=BlockStorageServiceReadExtended,
-    read_extended_public_schema=BlockStorageServiceReadExtendedPublic,
+    update_schema=BlockStorageServiceUpdate,
+    quota_mgr=block_storage_quota_mng,
+)
+compute_service_mng = CRUDComputeService(
+    model=ComputeService,
+    create_schema=ComputeServiceCreate,
+    update_schema=ComputeServiceUpdate,
+    quota_mgr=compute_quota_mng,
 )
 identity_service_mng = CRUDIdentityService(
     model=IdentityService,
     create_schema=IdentityServiceCreate,
-    read_schema=IdentityServiceRead,
-    read_public_schema=IdentityServiceReadPublic,
-    read_extended_schema=IdentityServiceReadExtended,
-    read_extended_public_schema=IdentityServiceReadExtendedPublic,
+    update_schema=IdentityServiceUpdate,
 )
 network_service_mng = CRUDNetworkService(
     model=NetworkService,
     create_schema=NetworkServiceCreate,
-    read_schema=NetworkServiceRead,
-    read_public_schema=NetworkServiceReadPublic,
-    read_extended_schema=NetworkServiceReadExtended,
-    read_extended_public_schema=NetworkServiceReadExtendedPublic,
+    update_schema=NetworkServiceUpdate,
+    quota_mgr=network_quota_mng,
 )
 object_store_service_mng = CRUDObjectStoreService(
     model=ObjectStoreService,
     create_schema=ObjectStoreServiceCreate,
-    read_schema=ObjectStoreServiceRead,
-    read_public_schema=ObjectStoreServiceReadPublic,
-    read_extended_schema=ObjectStoreServiceReadExtended,
-    read_extended_public_schema=ObjectStoreServiceReadExtendedPublic,
+    update_schema=ObjectStoreServiceUpdate,
+    quota_mgr=object_store_quota_mng,
+)
+service_mgr = CRUDServiceDispatcher(
+    block_storage_mgr=block_storage_service_mng,
+    compute_mgr=compute_service_mng,
+    identity_mgr=identity_service_mng,
+    network_mgr=network_service_mng,
+    object_store_mgr=object_store_service_mng,
 )

@@ -1,88 +1,46 @@
-"""Identity Provider REST API dependencies."""
+"""IdentityProvider REST API dependencies."""
+
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fedreg.identity_provider.models import IdentityProvider
-from fedreg.identity_provider.schemas import (
-    IdentityProviderCreate,
-    IdentityProviderUpdate,
-)
+from fedreg.identity_provider.schemas import IdentityProviderUpdate
 
-from fed_reg.identity_provider.crud import identity_provider_mng
+from fed_reg.dependencies import valid_id
+from fed_reg.identity_provider.crud import identity_provider_mgr
 
 
-def valid_identity_provider_id(identity_provider_uid: str) -> IdentityProvider:
-    """Check given uid corresponds to an entity in the DB.
-
-    Args:
-    ----
-        identity_provider_uid (UUID4): uid of the target DB entity.
-
-    Returns:
-    -------
-        IdentityProvider: DB entity with given uid.
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-    """
-    item = identity_provider_mng.get(uid=identity_provider_uid.replace("-", ""))
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Identity Provider '{identity_provider_uid}' not found",
-        )
-    return item
+def identity_provider_must_exist(identity_provider_uid: str) -> IdentityProvider:
+    """The target identity provider must exists otherwise raises `not found` error."""
+    return valid_id(mgr=identity_provider_mgr, item_id=identity_provider_uid)
 
 
-def valid_identity_provider_endpoint(
-    item: IdentityProviderCreate | IdentityProviderUpdate,
-) -> None:
-    """Check there are no other identity providers with the same endpoint.
-
-    Args:
-    ----
-        item (IdentityProviderCreate | IdentityProviderUpdate): input data.
-
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        BadRequestError: DB entity with given endpoint already exists.
-    """
-    db_item = identity_provider_mng.get(endpoint=item.endpoint)
-    if db_item is not None:
-        msg = f"Identity Provider with endpoint '{item.endpoint}' "
-        msg += "already registered"
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=msg,
-        )
+def get_identity_provider_item(identity_provider_uid: str) -> IdentityProvider:
+    """Retrieve the target identity provider. If not found, return None."""
+    return valid_id(
+        mgr=identity_provider_mgr, item_id=identity_provider_uid, error=False
+    )
 
 
 def validate_new_identity_provider_values(
-    update_data: IdentityProviderUpdate,
-    item: IdentityProvider = Depends(valid_identity_provider_id),
-) -> None:
+    item: Annotated[IdentityProvider, Depends(identity_provider_must_exist)],
+    new_data: IdentityProviderUpdate,
+) -> tuple[IdentityProvider, IdentityProviderUpdate]:
     """Check given data are valid ones.
 
-    Check there are no other identity providers with
-    the same endpoint.
+    Check there are no other identity providers with the same endpoint.
+    Avoid to change identity provider visibility.
 
-    Args:
-    ----
-        update_data (IdentityProviderUpdate): new data.
-        item (IdentityProvider): DB entity to update.
+    Raises `not found` error if the target entity does not exists.
+    It raises `conflict` error if a DB entity with identical endpoint already exists.
 
-    Returns:
-    -------
-        None
-
-    Raises:
-    ------
-        NotFoundError: DB entity with given uid not found.
-        BadRequestError: DB entity with given endpoint already exists.
+    Return the current item and the schema with the new data.
     """
-    if str(update_data.endpoint) != item.endpoint:
-        valid_identity_provider_endpoint(update_data)
+    if new_data.endpoint is not None and str(new_data.endpoint) != item.endpoint:
+        db_item = identity_provider_mgr.get(endpoint=new_data.endpoint)
+        if db_item is not None:
+            msg = (
+                f"Identity Provider with endpoint '{item.endpoint}' already registered"
+            )
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
+    return item, new_data

@@ -1,8 +1,62 @@
-"""Utilities used in User Group endpoints."""
+"""UserGroup REST API utils."""
 
 from fedreg.provider.schemas import ProviderQuery
 from fedreg.region.schemas import RegionQuery
 from fedreg.user_group.models import UserGroup
+from fedreg.user_group.schemas import UserGroupRead, UserGroupReadPublic
+from fedreg.user_group.schemas_extended import (
+    UserGroupReadExtended,
+    UserGroupReadExtendedPublic,
+)
+from pydantic import BaseModel, Field
+
+from fed_reg.query import choose_out_schema
+
+
+class UserGroupReadSingle(BaseModel):
+    __root__: (
+        UserGroupReadExtended
+        | UserGroupRead
+        | UserGroupReadExtendedPublic
+        | UserGroupReadPublic
+    ) = Field(..., discriminator="schema_type")
+
+
+class UserGroupReadMulti(BaseModel):
+    __root__: (
+        list[UserGroupReadExtended]
+        | list[UserGroupRead]
+        | list[UserGroupReadExtendedPublic]
+        | list[UserGroupReadPublic]
+    ) = Field(..., discriminator="schema_type")
+
+
+def choose_schema(
+    items: list[UserGroup],
+    *,
+    auth: bool,
+    with_conn: bool,
+    short: bool,
+) -> (
+    list[UserGroupRead]
+    | list[UserGroupReadPublic]
+    | list[UserGroupReadExtended]
+    | list[UserGroupReadExtendedPublic]
+    | UserGroupRead
+    | UserGroupReadPublic
+    | UserGroupReadExtended
+    | UserGroupReadExtendedPublic
+):
+    return choose_out_schema(
+        items=items,
+        auth=auth,
+        short=short,
+        with_conn=with_conn,
+        read_private_schema=UserGroupRead,
+        read_public_schema=UserGroupReadPublic,
+        read_private_extended_schema=UserGroupReadExtended,
+        read_public_extended_schema=UserGroupReadExtendedPublic,
+    )
 
 
 def filter_on_provider_attr(

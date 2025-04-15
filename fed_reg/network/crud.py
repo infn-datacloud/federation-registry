@@ -1,94 +1,122 @@
 """Module with Create, Read, Update and Delete operations for a Network."""
 
-from typing import Optional
-
-from fedreg.network.models import Network
+from fedreg.network.models import Network, PrivateNetwork, SharedNetwork
 from fedreg.network.schemas import (
-    NetworkCreate,
-    NetworkRead,
-    NetworkReadPublic,
     NetworkUpdate,
-)
-from fedreg.network.schemas_extended import (
-    NetworkReadExtended,
-    NetworkReadExtendedPublic,
+    PrivateNetworkCreate,
+    SharedNetworkCreate,
 )
 from fedreg.project.models import Project
-from fedreg.provider.schemas_extended import NetworkCreateExtended
+from fedreg.provider.schemas_extended import PrivateNetworkCreateExtended
 from fedreg.service.models import NetworkService
 
-from fed_reg.crud import CRUDBase
+from fed_reg.crud import CRUDBase, CRUDMultiProject, CRUDPrivateSharedDispatcher
 
 
-class CRUDNetwork(
-    CRUDBase[
-        Network,
-        NetworkCreate,
+class CRUDPrivateNetwork(
+    CRUDMultiProject[
+        PrivateNetwork,
+        PrivateNetworkCreate,
+        PrivateNetworkCreateExtended,
         NetworkUpdate,
-        NetworkRead,
-        NetworkReadPublic,
-        NetworkReadExtended,
-        NetworkReadExtendedPublic,
     ]
 ):
-    """Network Create, Read, Update and Delete operations."""
+    """Private Network Create, Read, Update and Delete operations."""
 
     def create(
         self,
         *,
-        obj_in: NetworkCreate,
+        obj_in: PrivateNetworkCreateExtended,
         service: NetworkService,
-        project: Optional[Project] = None,
-    ) -> Network:
+        provider_projects: list[Project],
+    ) -> PrivateNetwork:
         """Create a new Network.
 
-        Connect the network to the given service and to the optional received project.
+        At first check that a network with the given UUID does not already exist. If it
+        does not exist create it. Otherwise check the provider of the existing one. If
+        it is the same of the received service, do nothing, otherwise create a new
+        network. In any case connect the network to the given service and to any
+        received project.
         """
+        assert len(provider_projects) > 0, "The provider's projects list is empty"
+
+        db_obj = service.networks.get_or_none(uuid=obj_in.uuid)
+        db_region = service.region.single()
+        db_provider = db_region.provider.single()
+        assert db_obj is None, (
+            f"A private network with uuid {obj_in.uuid} belonging to provider "
+            f"{db_provider.name} already exists"
+        )
         db_obj = super().create(obj_in=obj_in)
+
         db_obj.service.connect(service)
-        if project is not None:
-            db_obj.project.connect(project)
+        self._connect_projects(
+            db_obj=db_obj,
+            input_uuids=obj_in.projects,
+            provider_projects=provider_projects,
+        )
+
         return db_obj
 
-    def update(
-        self,
-        *,
-        db_obj: Network,
-        obj_in: NetworkUpdate | NetworkCreateExtended,
-        projects: Optional[list[Project]] = None,
-        force: bool = False,
-    ) -> Optional[Network]:
-        """Update Network attributes.
 
-        By default do not update relationships or default values. If force is True,
-        update linked project and apply default values when explicit.
+class CRUDSharedNetwork(CRUDBase[SharedNetwork, SharedNetworkCreate, NetworkUpdate]):
+    """Network Create, Read, Update and Delete operations."""
+
+    def create(
+        self, *, obj_in: SharedNetworkCreate, service: NetworkService
+    ) -> SharedNetwork:
+        """Create a new Network.
+
+        At first check that a network with the given UUID does not already exist. If it
+        does not exist create it. Otherwise check the provider of the existing one. If
+        it is the same of the received service, do nothing, otherwise create a new
+        network. In any case connect the network to the given service and to any
+        received project.
         """
-        if projects is None:
-            projects = []
-        edit = False
-        if force:
-            db_projects = {db_item.uuid: db_item for db_item in projects}
-            db_proj = db_obj.project.single()
-            if not obj_in.project and db_proj:
-                db_obj.project.disconnect(db_proj)
-                edit = True
-            elif not db_proj or (db_proj and obj_in.project != db_proj.uuid):
-                db_item = db_projects.get(obj_in.project)
-                db_obj.project.replace(db_item)
-                edit = True
+        db_obj = service.networks.get_or_none(uuid=obj_in.uuid)
+        db_region = service.region.single()
+        db_provider = db_region.provider.single()
+        assert db_obj is None, (
+            f"A shared network with uuid {obj_in.uuid} belonging to provider "
+            f"{db_provider.name} already exists"
+        )
+        db_obj = super().create(obj_in=obj_in)
 
-        if isinstance(obj_in, NetworkCreateExtended):
-            obj_in = NetworkUpdate.parse_obj(obj_in)
+        db_obj.service.connect(service)
 
-        updated_data = super().update(db_obj=db_obj, obj_in=obj_in, force=force)
-        return db_obj if edit else updated_data
+        return db_obj
 
 
-network_mng = CRUDNetwork(
-    model=Network,
-    create_schema=NetworkCreate,
-    read_schema=NetworkRead,
-    read_public_schema=NetworkReadPublic,
-    read_extended_schema=NetworkReadExtended,
-    read_extended_public_schema=NetworkReadExtendedPublic,
+class CRUDNetwork(
+    CRUDPrivateSharedDispatcher[
+        PrivateNetwork,
+        SharedNetwork,
+        CRUDPrivateNetwork,
+        CRUDSharedNetwork,
+        PrivateNetworkCreateExtended,
+        SharedNetworkCreate,
+        NetworkUpdate,
+    ]
+):
+    """Private and Shared Network Create, Read, Update and Delete operations."""
+
+    @property
+    def model(self) -> type[Network]:
+        return Network
+
+
+private_network_mng = CRUDPrivateNetwork(
+    model=PrivateNetwork,
+    create_schema=PrivateNetworkCreate,
+    update_schema=NetworkUpdate,
+)
+
+shared_network_mng = CRUDSharedNetwork(
+    model=SharedNetwork, create_schema=SharedNetworkCreate, update_schema=NetworkUpdate
+)
+network_mgr = CRUDNetwork(
+    private_mgr=private_network_mng,
+    shared_mgr=shared_network_mng,
+    shared_model=SharedNetwork,
+    shared_create_schema=SharedNetworkCreate,
 )
