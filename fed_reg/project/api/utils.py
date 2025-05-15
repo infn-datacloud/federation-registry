@@ -75,7 +75,7 @@ def filter_on_region_attr(  # noqa: C901
                 item.quotas = item.quotas.exclude(uid=quota.uid)
         if len(item.quotas) > 0:
             for flavor in item.private_flavors:
-                service = flavor.services.single()
+                service = flavor.service.single()
                 if not service.region.get_or_none(**attrs):
                     item.private_flavors = item.private_flavors.exclude(uid=flavor.uid)
             for image in item.private_images:
