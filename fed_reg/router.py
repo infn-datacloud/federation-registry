@@ -52,3 +52,6 @@ router_v1.include_router(network_service_router_v1)
 router_v1.include_router(object_storage_service_router_v1)
 router_v1.include_router(sla_router_v1)
 router_v1.include_router(user_group_router_v1)
+
+
+router_v2 = APIRouter()

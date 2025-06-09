@@ -4,8 +4,8 @@ import uvicorn
 from fastapi import FastAPI
 
 # from fastapi.middleware.cors import CORSMiddleware
-from fed_reg.config import get_settings
-from fed_reg.router import router_v1
+from fed_reg.config import API_V1_STR, API_V2_STR, get_settings
+from fed_reg.router import router_v1, router_v2
 
 summary = "Federation-Registry (ex CMDB) of the DataCloud project"
 description = """
@@ -28,11 +28,19 @@ contact = {
 }
 tags_metadata = [
     {
-        "name": settings.API_V1_STR,
+        "name": API_V1_STR,
         "description": "API version 1, see link on the right",
         "externalDocs": {
             "description": "API version 1 documentation",
             "url": f"{settings.DOC_V1_URL}",
+        },
+    },
+    {
+        "name": API_V2_STR,
+        "description": "API version 2, see link on the right",
+        "externalDocs": {
+            "description": "API version 2 documentation",
+            "url": f"{settings.DOC_V2_URL}",
         },
     },
 ]
@@ -63,8 +71,17 @@ sub_app_v1 = FastAPI(
     version=version,
 )
 sub_app_v1.include_router(router_v1)
-app.mount(settings.API_V1_STR, sub_app_v1)
+app.mount(API_V1_STR, sub_app_v1)
 
+sub_app_v2 = FastAPI(
+    contact=contact,
+    description=description,
+    summary=summary,
+    title=settings.PROJECT_NAME,
+    version=version,
+)
+sub_app_v2.include_router(router_v2)
+app.mount(API_V2_STR, sub_app_v2)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0")

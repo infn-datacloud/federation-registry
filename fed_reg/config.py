@@ -8,6 +8,9 @@ from typing import Any, Optional
 from neomodel import config
 from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, Field, validator
 
+API_V1_STR: str = "/api/v1"
+API_V2_STR: str = "/api/v2"
+
 
 class Neo4jUriScheme(str, Enum):
     """Enumeration with the accepted neo4j schemas."""
@@ -23,18 +26,7 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "Federation-Registry"
     DOMAIN: str = "localhost:8000"
-    API_V1_STR: str = "/api/v1"
     ROOT_PATH: str | None = None
-
-    @validator("API_V1_STR")
-    @classmethod
-    def start_with_single_slash(cls, v: str) -> str:
-        """String must start with a single slash."""
-        assert v.startswith("/"), ValueError("API V1 string must start with '/'")
-        assert len(v) > 1, ValueError(
-            "API V1 string can't have an empty string after the '/'"
-        )
-        return v
 
     NEO4J_SERVER: str = "localhost:7687"
     NEO4J_USER: str = "neo4j"
@@ -75,19 +67,30 @@ class Settings(BaseSettings):
     TRUSTED_IDP_LIST: list[AnyHttpUrl] = []
 
     DOC_V1_URL: Optional[AnyHttpUrl] = None
+    DOC_V2_URL: Optional[AnyHttpUrl] = None
 
     @validator("DOC_V1_URL", pre=True)
     @classmethod
-    def create_doc_url(cls, v: Optional[str], values: dict[str, Any]) -> str:
+    def create_doc_v1_url(cls, v: Optional[str], values: dict[str, Any]) -> str:
         """Build URL for internal documentation."""
         if v:
             return v
         protocol = "http"
         root_path = values.get("ROOT_PATH", "/")
         root_path = root_path[1:] if root_path is not None else ""
-        link = os.path.join(
-            values.get("DOMAIN"), root_path, values.get("API_V1_STR")[1:], "docs"
-        )
+        link = os.path.join(values.get("DOMAIN"), root_path, API_V1_STR, "docs")
+        return f"{protocol}://{link}"
+
+    @validator("DOC_V1_URL", pre=True)
+    @classmethod
+    def create_doc_v2_url(cls, v: Optional[str], values: dict[str, Any]) -> str:
+        """Build URL for internal documentation."""
+        if v:
+            return v
+        protocol = "http"
+        root_path = values.get("ROOT_PATH", "/")
+        root_path = root_path[1:] if root_path is not None else ""
+        link = os.path.join(values.get("DOMAIN"), root_path, API_V2_STR, "docs")
         return f"{protocol}://{link}"
 
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
