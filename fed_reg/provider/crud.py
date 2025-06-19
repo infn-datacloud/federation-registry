@@ -5,8 +5,9 @@ from fedreg.identity_provider.models import IdentityProvider
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas import ProviderCreate, ProviderUpdate
 from fedreg.provider.schemas_extended import (
-    AuthMethodCreate,
     IdentityProviderCreateExtended,
+    K8sAuthMethodCreate,
+    OsAuthMethodCreate,
     ProjectCreate,
     ProviderCreateExtended,
     RegionCreateExtended,
@@ -74,7 +75,11 @@ class CRUDProvider(CRUDBase[Provider, ProviderCreate, ProviderUpdate]):
         return db_obj.save() if edit1 or edit2 or edit3 or edit_content else None
 
     def update_idp_relationship(
-        self, *, db_obj: IdentityProvider, obj_in: AuthMethodCreate, provider: Provider
+        self,
+        *,
+        db_obj: IdentityProvider,
+        obj_in: OsAuthMethodCreate | K8sAuthMethodCreate,
+        provider: Provider,
     ) -> AuthMethod | None:
         """Update identity provider and resource provider connection attributes."""
         if db_obj.providers.is_connected(provider):
