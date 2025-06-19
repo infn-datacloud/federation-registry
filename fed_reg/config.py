@@ -1,109 +1,114 @@
 """Module with the configuration parameters."""
 
 import os
-from enum import Enum
 from functools import lru_cache
-from typing import Any, Optional
+from logging import Logger
+from typing import Literal
+from urllib.parse import urljoin
 
 from neomodel import config
-from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, Field, validator
+from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, Field
 
 API_V1_STR: str = "/api/v1"
 API_V2_STR: str = "/api/v2"
 
 
-class Neo4jUriScheme(str, Enum):
-    """Enumeration with the accepted neo4j schemas."""
+def set_neo4j_db_url(neo4j_db_url: str, logger: Logger) -> AnyUrl:
+    """
+    Sets the Neo4j database URL in the configuration.
 
-    NEO4J: str = "neo4j"
-    NEO4JS: str = "neo4j+s"
-    BOLT: str = "bolt"
-    BOLTS: str = "bolt+s"
+    Args:
+        v (AnyUrl): The new database URL to set.
+
+    Returns:
+        AnyUrl: The same URL that was provided as input.
+    """
+    logger.info("Neo4j database URL: %s", neo4j_db_url)
+    config.DATABASE_URL = neo4j_db_url
+
+
+def build_doc_url(domain: AnyHttpUrl, root_path: str, api_version: str) -> str:
+    """
+    Builds a documentation URL based on the provided domain, root path, and API version.
+
+    Args:
+        domain (AnyHttpUrl): The domain to use in the URL.
+        root_path (str): The root path to append to the domain. If not provided,
+            defaults to an empty string.
+        api_version (str): The API version to include in the URL path.
+
+    Returns:
+        str: The complete documentation URL as a string.
+    """
+    protocol = "http"
+    root_path = root_path[1:] if root_path is not None else ""
+    base_url = f"{protocol}://{domain!s}"
+    path = os.path.join(root_path, api_version, "docs")
+    return urljoin(base_url, path)
 
 
 class Settings(BaseSettings):
     """Model with the app settings."""
 
-    PROJECT_NAME: str = "Federation-Registry"
-    DOMAIN: str = "localhost:8000"
-    ROOT_PATH: str | None = None
+    NEO4J_DB_URL: AnyUrl = Field(
+        default="bolt://neo4j:password@localhost:7687",
+        description="Neo4j complete connection URL. It contains the connection "
+        "scheme, the user, the password, the server hostname and port.",
+    )
 
-    NEO4J_SERVER: str = "localhost:7687"
-    NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "password"
-    NEO4J_URI_SCHEME: Neo4jUriScheme = Field(default=Neo4jUriScheme.BOLT)
-    NEO4J_DB_URL: Optional[AnyUrl] = None
+    PROJECT_NAME: str = Field(
+        default="Federation-Registry",
+        description="Project name to display in the swagger documentation",
+    )
+    MAINTAINER_NAME: str | None = Field(
+        default=None,
+        description="Maintainer name to show in the swagger documentation",
+    )
+    MAINTAINER_URL: AnyHttpUrl | None = Field(
+        default=None,
+        description="Maintainer reference URL to show in the swagger documentation",
+    )
+    MAINTAINER_EMAIL: EmailStr = Field(
+        default=None,
+        description="Maintainer contact email to show in the swagger documentation",
+    )
+    DOMAIN: str = Field(
+        default="localhost:8000",
+        description="Base path to build the swagger documentation URL",
+    )
+    ROOT_PATH: str | None = Field(
+        default=None, description="Root path to build the swagger documentation URL"
+    )
+    DOC_V1_URL: AnyHttpUrl | None = Field(
+        default=None, description="URL to the V1 Documentation"
+    )
 
-    @validator("NEO4J_URI_SCHEME")
-    @classmethod
-    def get_enum_val(cls, v: Neo4jUriScheme) -> str:
-        """Retrive the string from the enum value."""
-        return v.value
+    DOC_V2_URL: AnyHttpUrl | None = Field(
+        default=None, description="URL to the V2 Documentation"
+    )
 
-    @validator("NEO4J_DB_URL", pre=True)
-    @classmethod
-    def assemble_db_connection(cls, v: Optional[str], values: dict[str, Any]) -> str:
-        """Before checking the DB URL, assemble the target DB uri from single parts."""
-        if v:
-            return v
-        s = f"{values.get('NEO4J_URI_SCHEME')}://"
-        s += f"{values.get('NEO4J_USER')}:"
-        s += f"{values.get('NEO4J_PASSWORD')}@"
-        s += f"{values.get('NEO4J_SERVER')}"
-        return s
-
-    @validator("NEO4J_DB_URL")
-    @classmethod
-    def set_neo4j_db_url(cls, v: AnyUrl) -> AnyUrl:
-        """Set the DATABASE_URL."""
-        config.DATABASE_URL = str(v)
-        return v
-
-    MAINTAINER_NAME: Optional[str] = None
-    MAINTAINER_URL: Optional[AnyHttpUrl] = None
-    MAINTAINER_EMAIL: Optional[EmailStr] = None
-
-    ADMIN_EMAIL_LIST: list[EmailStr] = []
-    TRUSTED_IDP_LIST: list[AnyHttpUrl] = []
-
-    DOC_V1_URL: Optional[AnyHttpUrl] = None
-    DOC_V2_URL: Optional[AnyHttpUrl] = None
-
-    @validator("DOC_V1_URL", pre=True)
-    @classmethod
-    def create_doc_v1_url(cls, v: Optional[str], values: dict[str, Any]) -> str:
-        """Build URL for internal documentation."""
-        if v:
-            return v
-        protocol = "http"
-        root_path = values.get("ROOT_PATH", "/")
-        root_path = root_path[1:] if root_path is not None else ""
-        link = os.path.join(values.get("DOMAIN"), root_path, API_V1_STR, "docs")
-        return f"{protocol}://{link}"
-
-    @validator("DOC_V1_URL", pre=True)
-    @classmethod
-    def create_doc_v2_url(cls, v: Optional[str], values: dict[str, Any]) -> str:
-        """Build URL for internal documentation."""
-        if v:
-            return v
-        protocol = "http"
-        root_path = values.get("ROOT_PATH", "/")
-        root_path = root_path[1:] if root_path is not None else ""
-        link = os.path.join(values.get("DOMAIN"), root_path, API_V2_STR, "docs")
-        return f"{protocol}://{link}"
+    ADMIN_EMAIL_LIST: list[EmailStr] = Field(
+        default_factory=list,
+        description="List of the administrator's email. Used to authorize users. "
+        "To be replaced by OPA",
+    )
+    TRUSTED_IDP_LIST: list[AnyHttpUrl] = Field(
+        default_factory=list, description="List of trusted identity providers"
+    )
 
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200",
     # "http://localhost:3000", "http://localhost:8080",
     # "http://local.dockertoolbox.tiangolo.com"]'
     # BACKEND_CORS_ORIGINS: list[AnyHttpUrl] = ["http://localhost:3000"]
+    BACKEND_CORS_ORIGINS: list[AnyHttpUrl | Literal["*"]] = Field(
+        default=["http://localhost:3000/"],
+        description="JSON-formatted list of allowed origins",
+    )
 
     class Config:
-        """Sub class to set attribute as case sensitive."""
-
+        env_file = ".env"
         case_sensitive = True
-        validate_assignment = True
 
 
 @lru_cache

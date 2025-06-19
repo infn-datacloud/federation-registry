@@ -1,5 +1,6 @@
 """Authentication and authorization rules."""
 
+from logging import Logger
 from typing import Annotated
 
 from fastapi import HTTPException, Request, Security, status
@@ -15,10 +16,11 @@ from flaat.fastapi import Flaat
 from flaat.requirements import AllOf, HasSubIss, IsTrue
 from flaat.user_infos import UserInfos
 
-from fed_reg.config import get_settings
+from fed_reg.config import Settings, get_settings
 
-security = HTTPBearer()
-lazy_security = HTTPBearer(auto_error=False)
+IDP_TIMEOUT = 5
+
+flaat = Flaat()
 
 
 def has_write_access(user_infos: UserInfos) -> bool:
@@ -30,15 +32,22 @@ def has_write_access(user_infos: UserInfos) -> bool:
     return False
 
 
-flaat = Flaat()
-flaat.set_access_levels(
-    [AccessLevel("write", AllOf(HasSubIss(), IsTrue(has_write_access)))]
-)
-flaat.set_trusted_OP_list(get_settings().TRUSTED_IDP_LIST)
-flaat.set_request_timeout(30)
+def configure_flaat(settings: Settings, logger: Logger) -> None:
+    logger.info(
+        "Trusted IDPs have been configured. Total count: %d",
+        len(settings.TRUSTED_IDP_LIST),
+    )
+    flaat.set_access_levels(
+        [AccessLevel("write", AllOf(HasSubIss(), IsTrue(has_write_access)))]
+    )
+    flaat.set_request_timeout(IDP_TIMEOUT)
+    flaat.set_trusted_OP_list([str(i) for i in settings.TRUSTED_IDP_LIST])
 
 
 custom = AuthWorkflow(flaat=flaat, ignore_no_authn=True)
+
+security = HTTPBearer()
+lazy_security = HTTPBearer(auto_error=False)
 
 
 def get_user_infos(
