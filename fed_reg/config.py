@@ -1,112 +1,161 @@
 """Module with the configuration parameters."""
 
-import os
+import logging
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Annotated, Literal
 
-from neomodel import config
-from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, Field, validator
+from fastapi import Depends
+from pydantic import AnyHttpUrl, BeforeValidator, EmailStr, Field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import Self
 
-API_V1_STR: str = "/api/v1"
-API_V2_STR: str = "/api/v2"
+API_V1_STR = "/api/v1/"
+API_V2_STR = "/api/v2/"
 
 
-class Neo4jUriScheme(str, Enum):
-    """Enumeration with the accepted neo4j schemas."""
+class AuthenticationMethodsEnum(str, Enum):
+    """Enumeration of supported authentication methods."""
 
-    NEO4J: str = "neo4j"
-    NEO4JS: str = "neo4j+s"
-    BOLT: str = "bolt"
-    BOLTS: str = "bolt+s"
+    local = "local"
+
+
+class AuthorizationMethodsEnum(str, Enum):
+    """Enumeration of supported authorization methods."""
+
+    local = "local"
+    opa = "opa"
+
+
+class LogLevelEnum(int, Enum):
+    """Enumeration of supported logging levels."""
+
+    DEBUG = logging.DEBUG
+    INFO = logging.INFO
+    WARNING = logging.WARNING
+    ERROR = logging.ERROR
+    CRITICAL = logging.CRITICAL
+
+
+def get_level(value: int | str | LogLevelEnum) -> int:
+    """Convert a string, integer, or LogLevelEnum value to a logging level integer.
+
+    Args:
+        value: The log level as a string (case-insensitive), integer, or LogLevelEnum.
+
+    Returns:
+        int: The corresponding logging level integer.
+
+    """
+    if isinstance(value, str):
+        return LogLevelEnum.__getitem__(value.upper())
+    return value
 
 
 class Settings(BaseSettings):
     """Model with the app settings."""
 
-    PROJECT_NAME: str = "Federation-Registry"
-    DOMAIN: str = "localhost:8000"
-    ROOT_PATH: str | None = None
+    PROJECT_NAME: Annotated[
+        str,
+        Field(
+            default="Federation-Registry",
+            description="Project name to show in the Swagger documentation",
+        ),
+    ]
+    MAINTAINER_NAME: Annotated[
+        str | None, Field(default=None, description="Maintainer name")
+    ]
+    MAINTAINER_URL: Annotated[
+        AnyHttpUrl | None, Field(default=None, description="Maintainer's profile URL")
+    ]
+    MAINTAINER_EMAIL: Annotated[
+        EmailStr | None, Field(default=None, description="Maintainer's email address")
+    ]
+    BASE_URL: Annotated[
+        AnyHttpUrl,
+        Field(
+            default="http://localhost:8000",
+            description="Application base URL. "
+            "Used to build documentation redirect links.",
+        ),
+    ]
+    DB_URL: Annotated[
+        str,
+        Field(
+            default="sqlite+pysqlite:///:memory:",
+            description="DB URL. By default it use an in memory SQLite DB.",
+        ),
+    ]
+    OPA_AUTHZ_URL: Annotated[
+        AnyHttpUrl,
+        Field(
+            default="http://localhost:8181/v1/data/fed-mgr",
+            description="Open Policy Agent service roles authorization URL",
+        ),
+    ]
+    DB_ECO: Annotated[
+        bool, Field(default=False, description="Eco messages exchanged with the DB")
+    ]
+    LOG_LEVEL: Annotated[
+        LogLevelEnum,
+        Field(default=LogLevelEnum.INFO, description="Logs level"),
+        BeforeValidator(get_level),
+    ]
+    TRUSTED_IDP_LIST: Annotated[
+        list[AnyHttpUrl],
+        Field(
+            default_factory=list,
+            description="List of the application trusted identity providers",
+        ),
+    ]
+    AUTHN_MODE: Annotated[
+        AuthenticationMethodsEnum | None,
+        Field(
+            default=None,
+            description="Authorization method to use. Allowed values: local",
+        ),
+    ]
+    AUTHZ_MODE: Annotated[
+        AuthorizationMethodsEnum | None,
+        Field(
+            default=None,
+            description="Authorization method to use. Allowed values: opa",
+        ),
+    ]
+    BACKEND_CORS_ORIGINS: Annotated[
+        list[AnyHttpUrl | Literal["*"]],
+        Field(
+            default=["http://localhost:3000/"],
+            description="JSON-formatted list of allowed origins",
+        ),
+    ]
 
-    NEO4J_SERVER: str = "localhost:7687"
-    NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "password"
-    NEO4J_URI_SCHEME: Neo4jUriScheme = Field(default=Neo4jUriScheme.BOLT)
-    NEO4J_DB_URL: Optional[AnyUrl] = None
+    model_config = SettingsConfigDict(env_file=".env")
 
-    @validator("NEO4J_URI_SCHEME")
-    @classmethod
-    def get_enum_val(cls, v: Neo4jUriScheme) -> str:
-        """Retrive the string from the enum value."""
-        return v.value
+    @model_validator(mode="after")
+    def verify_authn_authz_mode(self) -> Self:
+        """Validate the configuration of authentication and authorization modes.
 
-    @validator("NEO4J_DB_URL", pre=True)
-    @classmethod
-    def assemble_db_connection(cls, v: Optional[str], values: dict[str, Any]) -> str:
-        """Before checking the DB URL, assemble the target DB uri from single parts."""
-        if v:
-            return v
-        s = f"{values.get('NEO4J_URI_SCHEME')}://"
-        s += f"{values.get('NEO4J_USER')}:"
-        s += f"{values.get('NEO4J_PASSWORD')}@"
-        s += f"{values.get('NEO4J_SERVER')}"
-        return s
+        Raises:
+            ValueError: If the authorization mode is defined but the authentication mode
+            is undefined.
 
-    @validator("NEO4J_DB_URL")
-    @classmethod
-    def set_neo4j_db_url(cls, v: AnyUrl) -> AnyUrl:
-        """Set the DATABASE_URL."""
-        config.DATABASE_URL = str(v)
-        return v
+        Returns:
+            Self: Returns the current instance for method chaining.
 
-    MAINTAINER_NAME: Optional[str] = None
-    MAINTAINER_URL: Optional[AnyHttpUrl] = None
-    MAINTAINER_EMAIL: Optional[EmailStr] = None
-
-    ADMIN_EMAIL_LIST: list[EmailStr] = []
-    TRUSTED_IDP_LIST: list[AnyHttpUrl] = []
-
-    DOC_V1_URL: Optional[AnyHttpUrl] = None
-    DOC_V2_URL: Optional[AnyHttpUrl] = None
-
-    @validator("DOC_V1_URL", pre=True)
-    @classmethod
-    def create_doc_v1_url(cls, v: Optional[str], values: dict[str, Any]) -> str:
-        """Build URL for internal documentation."""
-        if v:
-            return v
-        protocol = "http"
-        root_path = values.get("ROOT_PATH", "/")
-        root_path = root_path[1:] if root_path is not None else ""
-        link = os.path.join(values.get("DOMAIN"), root_path, API_V1_STR, "docs")
-        return f"{protocol}://{link}"
-
-    @validator("DOC_V1_URL", pre=True)
-    @classmethod
-    def create_doc_v2_url(cls, v: Optional[str], values: dict[str, Any]) -> str:
-        """Build URL for internal documentation."""
-        if v:
-            return v
-        protocol = "http"
-        root_path = values.get("ROOT_PATH", "/")
-        root_path = root_path[1:] if root_path is not None else ""
-        link = os.path.join(values.get("DOMAIN"), root_path, API_V2_STR, "docs")
-        return f"{protocol}://{link}"
-
-    # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
-    # e.g: '["http://localhost", "http://localhost:4200",
-    # "http://localhost:3000", "http://localhost:8080",
-    # "http://local.dockertoolbox.tiangolo.com"]'
-    # BACKEND_CORS_ORIGINS: list[AnyHttpUrl] = ["http://localhost:3000"]
-
-    class Config:
-        """Sub class to set attribute as case sensitive."""
-
-        case_sensitive = True
-        validate_assignment = True
+        """
+        if self.AUTHN_MODE is None and self.AUTHZ_MODE is not None:
+            raise ValueError(
+                "If authorization mode is defined, authentication mode can't be "
+                "undefined."
+            )
+        return self
 
 
 @lru_cache
 def get_settings() -> Settings:
     """Retrieve cached settings."""
     return Settings()
+
+
+SettingsDep = Annotated[Settings, Depends(get_settings)]
