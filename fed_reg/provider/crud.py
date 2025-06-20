@@ -228,11 +228,26 @@ class CRUDProvider(CRUDBase[Provider, ProviderCreate, ProviderUpdate]):
             else:
                 # Update relationship data if needed
                 rel = db_item.providers.relationship(db_obj)
-                if rel.protocol != item.relationship.protocol:
+
+                if (
+                    isinstance(item.relationship.protocol, OsAuthMethodCreate)
+                    and rel.protocol != item.relationship.protocol
+                ):
                     rel.protocol = item.relationship.protocol
                     edit = True
-                if rel.idp_name != item.relationship.idp_name:
+                if (
+                    isinstance(item.relationship.protocol, OsAuthMethodCreate)
+                    and rel.idp_name is not None
+                    and rel.idp_name != item.relationship.idp_name
+                ):
                     rel.idp_name = item.relationship.idp_name
+                    edit = True
+                if (
+                    isinstance(item.relationship.protocol, K8sAuthMethodCreate)
+                    and rel.audience is not None
+                    and rel.audience != item.relationship.audience
+                ):
+                    rel.audience = item.relationship.audience
                     edit = True
                 updated_data = identity_provider_mgr.patch(db_obj=db_item, obj_in=item)
                 edit = edit or updated_data is not None
