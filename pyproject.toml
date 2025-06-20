@@ -8,10 +8,11 @@ packages = [{ include = "fed_reg"}]
 [tool.poetry.dependencies]
 python = ">=3.9.2,<4.0.0"
 flaat = "^1.1.15"
-fastapi = {extras = ["standard"], version = "^0.115.12"}
+fastapi = "^0.108"
 fedreg = {git = "https://github.com/infn-datacloud/federation-registry-lib.git", branch = "k8s"}
 
 [tool.poetry.group.dev.dependencies]
+uvicorn = "^0.22.0"
 httpx = "^0.24.1"
 pytest = "^7.4.4"
 pytest-cases = "^3.8.1"
