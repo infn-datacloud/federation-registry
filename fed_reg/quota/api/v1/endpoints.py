@@ -8,6 +8,7 @@ from fedreg.quota.models import (
     ComputeQuota,
     NetworkQuota,
     ObjectStoreQuota,
+    StorageClassQuota,
 )
 from fedreg.quota.schemas import (
     BlockStorageQuotaQuery,
@@ -22,6 +23,9 @@ from fedreg.quota.schemas import (
     ObjectStoreQuotaQuery,
     ObjectStoreQuotaRead,
     ObjectStoreQuotaUpdate,
+    StorageClassQuotaQuery,
+    StorageClassQuotaRead,
+    StorageClassQuotaUpdate,
 )
 from flaat.user_infos import UserInfos
 from neomodel import db
@@ -35,12 +39,15 @@ from fed_reg.quota.api.dependencies import (
     get_compute_quota_item,
     get_network_quota_item,
     get_object_store_quota_item,
+    get_storage_class_quota_item,
     network_quota_must_exist,
     object_store_quota_must_exist,
+    storage_class_quota_must_exist,
     validate_new_block_storage_quota_values,
     validate_new_compute_quota_values,
     validate_new_network_quota_values,
     validate_new_object_store_quota_values,
+    validate_new_storage_class_quota_values,
 )
 from fed_reg.quota.api.utils import (
     BlockStorageQuotaReadMulti,
@@ -51,16 +58,20 @@ from fed_reg.quota.api.utils import (
     NetworkQuotaReadSingle,
     ObjectStoreQuotaReadMulti,
     ObjectStoreQuotaReadSingle,
+    StorageClassQuotaReadMulti,
+    StorageClassQuotaReadSingle,
     choose_block_storage_schema,
     choose_compute_schema,
     choose_network_schema,
     choose_object_store_schema,
+    choose_storage_class_schema,
 )
 from fed_reg.quota.crud import (
     block_storage_quota_mng,
     compute_quota_mng,
     network_quota_mng,
     object_store_quota_mng,
+    storage_class_quota_mng,
 )
 
 bs_router = APIRouter(prefix="/block_storage_quotas", tags=["block_storage_quotas"])
@@ -650,3 +661,141 @@ def delete_object_store_quotas(
     """
     if item is not None:
         object_store_quota_mng.remove(db_obj=item)
+
+
+sc_router = APIRouter(prefix="/storage_class_quotas", tags=["storage_class_quotas"])
+
+
+@sc_router.get(
+    "/",
+    response_model=StorageClassQuotaReadMulti,
+    summary="Read all storage_class_quotas",
+    description="Retrieve all storage_class_quotas stored in the database. \
+        It is possible to filter on storage_class_quotas attributes and other \
+        common query parameters.",
+)
+@custom.decorate_view_func
+@db.read_transaction
+def get_storage_class_quotas(
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    comm: Annotated[DbQueryCommonParams, Depends()],
+    page: Annotated[Pagination, Depends()],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[StorageClassQuotaQuery, Depends()],
+):
+    """GET operation to retrieve all storage_class_quotas.
+
+    It can receive the following group op parameters:
+    - comm: parameters common to all DB queries to limit, skip or sort results.
+    - page: parameters to limit and select the number of results to return to the user.
+    - shape: parameters to define the number of information contained in each result.
+    - item: parameters specific for this item typology. Used to apply filters.
+
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
+    """
+    items = storage_class_quota_mng.get_multi(
+        **comm.dict(exclude_none=True), **item.dict(exclude_none=True)
+    )
+    items = paginate(items=items, page=page.page, size=page.size)
+    return choose_storage_class_schema(
+        items,
+        auth=user_infos is not None,
+        short=shape.short,
+        with_conn=shape.with_conn,
+    )
+
+
+@sc_router.get(
+    "/{quota_uid}",
+    response_model=StorageClassQuotaReadSingle,
+    summary="Read a specific storage_class_quota",
+    description="Retrieve a specific storage_class_quota using its *uid*. If no entity \
+        matches the given *uid*, the endpoint raises a `not found` error.",
+)
+@custom.decorate_view_func
+@db.read_transaction
+def get_storage_class_quota(
+    user_infos: Annotated[UserInfos | None, Security(get_user_infos)],
+    shape: Annotated[SchemaShape, Depends()],
+    item: Annotated[StorageClassQuota, Depends(storage_class_quota_must_exist)],
+):
+    """GET operation to retrieve the storage_class_quota matching a specific uid.
+
+    The endpoint expects a uid and uses a dependency to check its existence.
+
+    It can receive the following group op parameters:
+    - shape: parameters to define the number of information contained in each result.
+
+    If the user is authenticated the user_infos object is not None and it is used to
+    determine the data to return to the user.
+    Non-authenticated users can view this function.
+    """
+    return choose_storage_class_schema(
+        item, auth=user_infos is not None, short=shape.short, with_conn=shape.with_conn
+    )
+
+
+@sc_router.patch(
+    "/{quota_uid}",
+    status_code=status.HTTP_200_OK,
+    response_model=StorageClassQuotaRead | None,
+    summary="Patch only specific attribute of the target storage_class_quota",
+    description="Update only the received attribute values of a specific block storage \
+        quota. The target storage_class_quota is identified using its *uid*. If no \
+        entity matches the given *uid*, the endpoint raises a `not found` error. At \
+        first, the endpoint validates the new storage_class_quota values checking \
+        there are no other items with the given *uuid* and *name*. In that case, the \
+        endpoint raises the `conflict` error. If there are no differences between new \
+        values and current ones, the database entity is left unchanged and the \
+        endpoint returns the `not modified` message.",
+    dependencies=[Security(strict_security)],
+)
+@db.write_transaction
+def put_storage_class_quota(
+    response: Response,
+    validated_data: Annotated[
+        tuple[StorageClassQuota, StorageClassQuotaUpdate],
+        Depends(validate_new_storage_class_quota_values),
+    ],
+):
+    """PATCH operation to update the storage_class_quota matching a specific uid.
+
+    The endpoint expects the item's uid and uses a dependency to check its existence.
+    It expects the new data to write in the database.
+    It updates only the received attributes. It leaves unchanged the other item's
+    attributes and its relationships.
+
+    If new data equals current data, no update is performed and the endpoint returns a
+    response with an empty body and the 304 status code.
+
+    Only authenticated users can view this function.
+    """
+    item, update_data = validated_data
+    db_item = storage_class_quota_mng.patch(db_obj=item, obj_in=update_data)
+    if not db_item:
+        response.status_code = status.HTTP_304_NOT_MODIFIED
+    return db_item
+
+
+@sc_router.delete(
+    "/{quota_uid}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a specific storage_class_quota",
+    description="Delete a specific storage_class_quota using its *uid*. Returns \
+        `no content`.",
+    dependencies=[Security(strict_security)],
+)
+@db.write_transaction
+def delete_storage_class_quotas(
+    item: Annotated[StorageClassQuota, Depends(get_storage_class_quota_item)],
+):
+    """DELETE operation to remove the storage_class_quota matching a specific uid.
+
+    The endpoint expects the item's uid.
+
+    Only authenticated users can view this endpoint.
+    """
+    if item is not None:
+        storage_class_quota_mng.remove(db_obj=item)
