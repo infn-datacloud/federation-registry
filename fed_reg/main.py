@@ -88,6 +88,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=version,
     root_path=settings.ROOT_PATH,
+    lifespan=lifespan,
 )
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(

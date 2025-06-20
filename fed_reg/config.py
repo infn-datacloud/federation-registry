@@ -1,16 +1,43 @@
 """Module with the configuration parameters."""
 
+import logging
 import os
+from enum import Enum
 from functools import lru_cache
 from logging import Logger
 from typing import Literal
 from urllib.parse import urljoin
 
 from neomodel import config
-from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, Field
+from pydantic import AnyHttpUrl, AnyUrl, BaseSettings, EmailStr, Field, validator
 
 API_V1_STR: str = "/api/v1"
 API_V2_STR: str = "/api/v2"
+
+
+class LogLevelEnum(int, Enum):
+    """Enumeration of supported logging levels."""
+
+    DEBUG = logging.DEBUG
+    INFO = logging.INFO
+    WARNING = logging.WARNING
+    ERROR = logging.ERROR
+    CRITICAL = logging.CRITICAL
+
+
+def get_level(value: int | str | LogLevelEnum) -> int:
+    """Convert a string, integer, or LogLevelEnum value to a logging level integer.
+
+    Args:
+        value: The log level as a string (case-insensitive), integer, or LogLevelEnum.
+
+    Returns:
+        int: The corresponding logging level integer.
+
+    """
+    if isinstance(value, str):
+        return LogLevelEnum.__getitem__(value.upper())
+    return value
 
 
 def set_neo4j_db_url(neo4j_db_url: str, logger: Logger) -> AnyUrl:
@@ -87,6 +114,7 @@ class Settings(BaseSettings):
         default=None, description="URL to the V2 Documentation"
     )
 
+    LOG_LEVEL: LogLevelEnum = Field(default=LogLevelEnum.INFO, description="Logs level")
     ADMIN_EMAIL_LIST: list[EmailStr] = Field(
         default_factory=list,
         description="List of the administrator's email. Used to authorize users. "
@@ -105,6 +133,11 @@ class Settings(BaseSettings):
         default=["http://localhost:3000/"],
         description="JSON-formatted list of allowed origins",
     )
+
+    @validator("LOG_LEVEL", pre=True)
+    @classmethod
+    def get_level(cls, value: int | str | LogLevelEnum) -> int:
+        return get_level(value)
 
     class Config:
         env_file = ".env"
