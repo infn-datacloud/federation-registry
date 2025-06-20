@@ -1,9 +1,0 @@
-services:
-  backend:
-    image: indigopaas/federation-registry:v1.0.0-alpha.2
-    restart: unless-stopped
-    ports:
-      - "8000:80"
-    environment:
-      - ADMIN_EMAIL_LIST=${ADMIN_EMAIL_LIST}
-      - TRUSTED_IDP_LIST=${TRUSTED_IDP_LIST}

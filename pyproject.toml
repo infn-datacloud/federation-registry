@@ -1,26 +1,30 @@
 [tool.poetry]
-name = "federation-registry"
-version = "0.1.0"
-description = "Python web application providing public REST API to inspect the configurations of the providers registered into the DataCloud project"
+name = "fed-reg"
+version = "2.0.0"
+description = "INFN-DataCloud federation-registry python library and backend REST API"
 authors = ["Giovanni Savarese <giovanni.savarese@ba.infn.it>", "Marica Antonacci <marica.antonacci@ba.infn.it>"]
-packages = [{ include = "fed_reg"}]
+license = "Apache License 2.0"
+readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.9.2,<4.0.0"
-flaat = "^1.1.15"
-fastapi = "^0.108"
+python = ">=3.12,<4.0.0"
+pydantic-settings = "^2.9.1"
+pydantic = {extras = ["email"], version = "^2.11.4"}
 neomodel = "^5.3.0"
-pydantic = {extras = ["email"], version = ">=1.10.9,<2.0.0"}
-fedreg = {git = "https://github.com/infn-datacloud/federation-registry-lib.git", tag = "v1.2.0"}
 
 [tool.poetry.group.dev.dependencies]
-uvicorn = "^0.22.0"
-httpx = "^0.24.1"
-pytest = "^7.4.4"
-pytest-cases = "^3.8.1"
-pytest-cov = "^4.1.0"
-pre-commit = "^3.3.3"
-ruff = "^0.9.6"
+pre-commit = "^3.5.0"
+pytest = "^8.3.5"
+pytest-cases = "^3.8.6"
+pytest-mock = "^3.14.0"
+pytest-cov = "^6.1.1"
+ruff = "^0.11.10"
+fastapi-cli = "^0.0.7"
+
+[tool.poetry.group.rest-api.dependencies]
+fastapi = {extras = ["standard"], version = "^0.115.13"}
+flaat = "^1.2.0"
+opentelemetry-distro = "^0.55b1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -31,27 +35,13 @@ build-backend = "poetry.core.masonry.api"
 # mccabe (C90) pep8-naming (N), pydocstyle (D), pyupgrade (UP), 
 # ruff specific rules (RUF),
 # flake8-bugbear (B), flake8-logging-format (G), flake8-quotes (Q)
-extend-select = ["B", "C90", "E", "F", "G", "I", "N", "Q", "RUF", "UP", "W"]
-
-[tool.ruff.lint.flake8-bugbear]
-# Ignore flake8-bugbear errors raised by Depends, Query and Security
-extend-immutable-calls = [
-    "fastapi.Depends", 
-    "fastapi.params.Depends", 
-    "fastapi.Query", 
-    "fastapi.params.Query", 
-    "fastapi.Security", 
-    "fastapi.params.Security",
-]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
+extend-select = ["B", "C90", "E", "D", "F", "G", "I", "N", "Q", "RUF", "UP", "W"]
 
 [tool.pytest.ini_options]
 addopts = "--resetdb"
 
 [tool.coverage.run]
 relative_files = true
-source = ["fed_reg"]
+source = ["fed_reg/"]
 branch = true
 omit = ["tests/**"]

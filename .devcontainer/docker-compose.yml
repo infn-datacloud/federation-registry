@@ -15,7 +15,7 @@ services:
   base:
     build:
       context: ./..
-      dockerfile: ./dockerfiles/Dockerfile.devc
+      dockerfile: ./.devcontainer/Dockerfile
     container_name: fed-reg-devc-base
     volumes:
       - ..:/workspace:cached

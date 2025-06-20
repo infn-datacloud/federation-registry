@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.10
+ARG PYTHON_VERSION=3.12
 ARG POETRY_VERSION=1.8.3
 
 # Create requirements.txt from poetry dependencies
@@ -16,22 +16,20 @@ RUN poetry export \
 
 
 # Stage used in production with no kubernetes
-FROM tiangolo/uvicorn-gunicorn-fastapi:python${PYTHON_VERSION}-slim AS production
+FROM python:${PYTHON_VERSION}-slim AS production
 
-# Updating packages and installing git
+# Updating packages and installing libraries
 RUN apt-get update \
-    && apt-get install -y git \
     && apt-get clean
 
 WORKDIR /app/
 
-COPY --from=requirements /tmp/requirements.txt /app/requirements.txt
-
 # Upgrade pip and install requirements
-RUN pip install --user --upgrade pip \
-    && pip install --user --no-cache-dir --upgrade -r /app/requirements.txt
+COPY --from=requirements /tmp/requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
-ENV PYTHONPATH="${PYTHONPATH}:/app"
-ENV APP_MODULE=fed_reg.main:app
-
+# Copy the application code
 COPY ./fed_reg /app/fed_reg
+
+CMD ["fastapi", "run", "/app/fed_reg/main.py", "--port", "80"]

@@ -40,14 +40,9 @@ pipeline {
     stages {
         stage('Run tests on multiple python versions') {
             parallel {
-                stage('Run tests on python3.10') {
+                stage('Run tests on python3.12') {
                     steps {
-                        runTests('3.10')
-                    }
-                }
-                stage('Run tests on python3.11') {
-                    steps {
-                        runTests('3.11')
+                        runTests('3.12')
                     }
                 }
             }
@@ -64,7 +59,7 @@ pipeline {
                     coverageDir: "${COVERAGE_DIR}",
                     srcDir: 'fed_reg',
                     testsDir: 'tests',
-                    pythonVersions: '3.10, 3.11'
+                    pythonVersions: '3.12'
                 )
             }
         }
