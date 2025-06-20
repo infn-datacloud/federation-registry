@@ -18,6 +18,7 @@ from fedreg.provider.schemas_extended import (
     PrivateFlavorCreateExtended,
     PrivateImageCreateExtended,
     PrivateNetworkCreateExtended,
+    StorageClassCreateExtended,
 )
 from fedreg.region.models import Region
 from fedreg.service.models import (
@@ -67,6 +68,7 @@ from fed_reg.quota.crud import (
     network_quota_mng,
     object_store_quota_mng,
 )
+from fed_reg.storageclass.crud import storageclass_mgr
 
 ModelType = TypeVar(
     "ModelType",
@@ -208,6 +210,8 @@ class CRUDBlockStorageService(
             self.quota_mgr.create(
                 obj_in=quota, service=db_obj, provider_projects=provider_projects
             )
+        for storage_class in obj_in.storage_classes:
+            storageclass_mgr.create(obj_in=storage_class, service=db_obj)
         return db_obj
 
     def update(
@@ -220,13 +224,46 @@ class CRUDBlockStorageService(
         """Update Block Storage Service attributes. Update linked quotas."""
         if provider_projects is None:
             provider_projects = []
-        edit = self._update_quotas(
+        edit1 = self._update_quotas(
             db_obj=db_obj,
             input_quotas=obj_in.quotas,
             provider_projects=provider_projects,
         )
+        edit2 = self.__update_strorage_classes(
+            db_obj=db_obj, input_storage_classes=obj_in.storage_classes
+        )
         edit_content = self._update(db_obj=db_obj, obj_in=obj_in, force=True)
-        return db_obj.save() if edit or edit_content else None
+        return db_obj.save() if edit1 or edit2 or edit_content else None
+
+    def __update_strorage_classes(
+        self,
+        *,
+        db_obj: BlockStorageService,
+        input_strorage_classes: list[StorageClassCreateExtended],
+    ) -> bool:
+        """Update service linked flavors.
+
+        Connect new flavors not already connect, leave untouched already linked ones and
+        delete old ones no more connected to the service.
+        """
+        edit = False
+        db_items = {db_item.name: db_item for db_item in db_obj.storage_classes}
+        for item in input_strorage_classes:
+            db_item = db_items.pop(item.name, None)
+
+            if not db_item:
+                storageclass_mgr.create(obj_in=item, service=db_obj)
+                edit = True
+            else:
+                updated_db_item = storageclass_mgr.update(db_obj=db_item, obj_in=item)
+                if updated_db_item:
+                    edit = True
+
+        for db_item in db_items.values():
+            storageclass_mgr.remove(db_obj=db_item)
+            edit = True
+
+        return edit
 
 
 class CRUDComputeService(
