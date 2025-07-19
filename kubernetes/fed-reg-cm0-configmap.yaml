@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    io.kompose.service: fed-reg
+  name: fed-reg-cm0
+data:
+  authn_mode: local
+  authz_mode: opa
+  db_url: bolt://neo4j:changeit@db:7687
+  opa_authz_url: http://opa:8181/v1/data/fed_reg
