@@ -230,20 +230,20 @@ class CRUDProvider(CRUDBase[Provider, ProviderCreate, ProviderUpdate]):
                 rel = db_item.providers.relationship(db_obj)
 
                 if (
-                    isinstance(item.relationship.protocol, OsAuthMethodCreate)
+                    isinstance(item.relationship, OsAuthMethodCreate)
                     and rel.protocol != item.relationship.protocol
                 ):
                     rel.protocol = item.relationship.protocol
                     edit = True
                 if (
-                    isinstance(item.relationship.protocol, OsAuthMethodCreate)
+                    isinstance(item.relationship, OsAuthMethodCreate)
                     and rel.idp_name is not None
                     and rel.idp_name != item.relationship.idp_name
                 ):
                     rel.idp_name = item.relationship.idp_name
                     edit = True
                 if (
-                    isinstance(item.relationship.protocol, K8sAuthMethodCreate)
+                    isinstance(item.relationship, K8sAuthMethodCreate)
                     and rel.audience is not None
                     and rel.audience != item.relationship.audience
                 ):

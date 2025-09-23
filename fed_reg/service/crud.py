@@ -239,7 +239,7 @@ class CRUDBlockStorageService(
         self,
         *,
         db_obj: BlockStorageService,
-        input_strorage_classes: list[StorageClassCreateExtended],
+        input_storage_classes: list[StorageClassCreateExtended],
     ) -> bool:
         """Update service linked flavors.
 
@@ -248,7 +248,7 @@ class CRUDBlockStorageService(
         """
         edit = False
         db_items = {db_item.name: db_item for db_item in db_obj.storage_classes}
-        for item in input_strorage_classes:
+        for item in input_storage_classes:
             db_item = db_items.pop(item.name, None)
 
             if not db_item:
