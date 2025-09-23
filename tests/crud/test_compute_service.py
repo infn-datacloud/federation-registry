@@ -63,7 +63,6 @@ def service_model(region_model: Region) -> ComputeService:
     shared_image = SharedImage(name=random_lower_string(), uuid=str(uuid4())).save()
     private_image = PrivateImage(name=random_lower_string(), uuid=str(uuid4())).save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.regions.connect(region_model)
     provider.projects.connect(project)
     region_model.services.connect(service)
     service.quotas.connect(quota)

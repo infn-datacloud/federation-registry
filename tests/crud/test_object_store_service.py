@@ -56,7 +56,6 @@ def service_model(region_model: Region) -> ObjectStoreService:
     ).save()
     quota = ObjectStoreQuota().save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.regions.connect(region_model)
     provider.projects.connect(project)
     region_model.services.connect(service)
     service.quotas.connect(quota)

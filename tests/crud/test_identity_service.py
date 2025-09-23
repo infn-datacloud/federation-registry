@@ -47,7 +47,6 @@ def service_model(region_model: Region) -> IdentityService:
         endpoint=str(random_url()), name=random_service_name(ServiceType.IDENTITY)
     ).save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.regions.connect(region_model)
     provider.projects.connect(project)
     region_model.services.connect(service)
     return service
