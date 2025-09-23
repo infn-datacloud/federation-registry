@@ -1,10 +1,13 @@
 """Quota REST API utils."""
 
+from typing import Annotated
+
 from fedreg.quota.models import (
     BlockStorageQuota,
     ComputeQuota,
     NetworkQuota,
     ObjectStoreQuota,
+    StorageClassQuota,
 )
 from fedreg.quota.schemas import (
     BlockStorageQuotaRead,
@@ -15,6 +18,8 @@ from fedreg.quota.schemas import (
     NetworkQuotaReadPublic,
     ObjectStoreQuotaRead,
     ObjectStoreQuotaReadPublic,
+    StorageClassQuotaRead,
+    StorageClassQuotaReadPublic,
 )
 from fedreg.quota.schemas_extended import (
     BlockStorageQuotaReadExtended,
@@ -25,6 +30,8 @@ from fedreg.quota.schemas_extended import (
     NetworkQuotaReadExtendedPublic,
     ObjectStoreQuotaReadExtended,
     ObjectStoreQuotaReadExtendedPublic,
+    StorageClassQuotaReadExtended,
+    StorageClassQuotaReadExtendedPublic,
 )
 from pydantic import BaseModel, Field
 
@@ -101,6 +108,24 @@ class ObjectStoreQuotaReadMulti(BaseModel):
         | list[ObjectStoreQuotaReadExtendedPublic]
         | list[ObjectStoreQuotaReadPublic]
     ) = Field(..., discriminator="schema_type")
+
+
+StorageClassQuotaReadSingle = Annotated[
+    ObjectStoreQuotaReadExtended
+    | ObjectStoreQuotaRead
+    | ObjectStoreQuotaReadExtendedPublic
+    | ObjectStoreQuotaReadPublic,
+    Field(discriminator="schema_type"),
+]
+
+
+StorageClassQuotaReadMulti = Annotated[
+    list[ObjectStoreQuotaReadExtended]
+    | list[ObjectStoreQuotaRead]
+    | list[ObjectStoreQuotaReadExtendedPublic]
+    | list[ObjectStoreQuotaReadPublic],
+    Field(discriminator="schema_type"),
+]
 
 
 def choose_block_storage_schema(
@@ -196,4 +221,28 @@ def choose_object_store_schema(
         read_public_schema=ObjectStoreQuotaReadPublic,
         read_private_extended_schema=ObjectStoreQuotaReadExtended,
         read_public_extended_schema=ObjectStoreQuotaReadExtendedPublic,
+    )
+
+
+def choose_storage_class_schema(
+    items: list[StorageClassQuota], *, auth: bool, with_conn: bool, short: bool
+) -> (
+    list[StorageClassQuotaRead]
+    | list[StorageClassQuotaReadPublic]
+    | list[StorageClassQuotaReadExtended]
+    | list[StorageClassQuotaReadExtendedPublic]
+    | StorageClassQuotaRead
+    | StorageClassQuotaReadPublic
+    | StorageClassQuotaReadExtended
+    | StorageClassQuotaReadExtendedPublic
+):
+    return choose_out_schema(
+        items=items,
+        auth=auth,
+        short=short,
+        with_conn=with_conn,
+        read_private_schema=StorageClassQuotaRead,
+        read_public_schema=StorageClassQuotaReadPublic,
+        read_private_extended_schema=StorageClassQuotaReadExtended,
+        read_public_extended_schema=StorageClassQuotaReadExtendedPublic,
     )

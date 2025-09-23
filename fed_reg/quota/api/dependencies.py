@@ -8,12 +8,14 @@ from fedreg.quota.models import (
     ComputeQuota,
     NetworkQuota,
     ObjectStoreQuota,
+    StorageClassQuota,
 )
 from fedreg.quota.schemas import (
     BlockStorageQuotaUpdate,
     ComputeQuotaUpdate,
     NetworkQuotaUpdate,
     ObjectStoreQuotaUpdate,
+    StorageClassQuotaUpdate,
 )
 
 from fed_reg.dependencies import valid_id
@@ -22,6 +24,7 @@ from fed_reg.quota.crud import (
     compute_quota_mng,
     network_quota_mng,
     object_store_quota_mng,
+    storage_class_quota_mng,
 )
 
 
@@ -95,6 +98,39 @@ def validate_new_object_store_quota_values(
 ) -> tuple[ObjectStoreQuota, ObjectStoreQuotaUpdate]:
     """Check given data are valid ones."""
     return validate_new_quota_values(item=item, new_data=new_data)
+
+
+def storage_class_quota_must_exist(quota_uid: str) -> StorageClassQuota:
+    """The target quota must exists otherwise raises `not found` error."""
+    return valid_id(mgr=storage_class_quota_mng, item_id=quota_uid)
+
+
+def get_storage_class_quota_item(quota_uid: str) -> StorageClassQuota:
+    """Retrieve the target quota. If not found, return None."""
+    return valid_id(mgr=storage_class_quota_mng, item_id=quota_uid, error=False)
+
+
+def validate_new_storage_class_quota_values(
+    item: Annotated[StorageClassQuota, Depends(storage_class_quota_must_exist)],
+    new_data: StorageClassQuotaUpdate,
+) -> tuple[StorageClassQuota, StorageClassQuotaUpdate]:
+    """Check given data are valid ones."""
+    if new_data.per_user != item.per_user or new_data.usage != item.usage:
+        db_project = item.project.single()
+        db_storage_class = item.storage_class.single()
+        proj_quotas = db_project.quotas.filter(
+            type=new_data.type, per_user=new_data.per_user
+        )
+        serv_quotas = db_storage_class.quotas.filter(per_user=new_data.per_user)
+        serv_quotas_matching_proj = set([i.uid for i in proj_quotas]).intersection(
+            set([i.uid for i in serv_quotas])
+        )
+        if len(serv_quotas_matching_proj) > 0:
+            s = "" if new_data.per_user else "not"
+            msg = f"Duplicated {type(item)}, to {s} apply to each user, on "
+            msg += f"Project '{db_project.uid}' and StorageClass {db_storage_class.uid}"
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
+    return item, new_data
 
 
 def validate_new_quota_values(

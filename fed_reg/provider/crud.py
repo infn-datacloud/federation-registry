@@ -5,8 +5,9 @@ from fedreg.identity_provider.models import IdentityProvider
 from fedreg.provider.models import Provider
 from fedreg.provider.schemas import ProviderCreate, ProviderUpdate
 from fedreg.provider.schemas_extended import (
-    AuthMethodCreate,
     IdentityProviderCreateExtended,
+    K8sAuthMethodCreate,
+    OsAuthMethodCreate,
     ProjectCreate,
     ProviderCreateExtended,
     RegionCreateExtended,
@@ -74,7 +75,11 @@ class CRUDProvider(CRUDBase[Provider, ProviderCreate, ProviderUpdate]):
         return db_obj.save() if edit1 or edit2 or edit3 or edit_content else None
 
     def update_idp_relationship(
-        self, *, db_obj: IdentityProvider, obj_in: AuthMethodCreate, provider: Provider
+        self,
+        *,
+        db_obj: IdentityProvider,
+        obj_in: OsAuthMethodCreate | K8sAuthMethodCreate,
+        provider: Provider,
     ) -> AuthMethod | None:
         """Update identity provider and resource provider connection attributes."""
         if db_obj.providers.is_connected(provider):
@@ -223,11 +228,26 @@ class CRUDProvider(CRUDBase[Provider, ProviderCreate, ProviderUpdate]):
             else:
                 # Update relationship data if needed
                 rel = db_item.providers.relationship(db_obj)
-                if rel.protocol != item.relationship.protocol:
+
+                if (
+                    isinstance(item.relationship, OsAuthMethodCreate)
+                    and rel.protocol != item.relationship.protocol
+                ):
                     rel.protocol = item.relationship.protocol
                     edit = True
-                if rel.idp_name != item.relationship.idp_name:
+                if (
+                    isinstance(item.relationship, OsAuthMethodCreate)
+                    and rel.idp_name is not None
+                    and rel.idp_name != item.relationship.idp_name
+                ):
                     rel.idp_name = item.relationship.idp_name
+                    edit = True
+                if (
+                    isinstance(item.relationship, K8sAuthMethodCreate)
+                    and rel.audience is not None
+                    and rel.audience != item.relationship.audience
+                ):
+                    rel.audience = item.relationship.audience
                     edit = True
                 updated_data = identity_provider_mgr.patch(db_obj=db_item, obj_in=item)
                 edit = edit or updated_data is not None

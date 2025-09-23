@@ -62,7 +62,6 @@ def service_model(region_model: Region) -> NetworkService:
         name=random_lower_string(), uuid=str(uuid4())
     ).save()
     project = Project(name=random_lower_string(), uuid=str(uuid4())).save()
-    provider.regions.connect(region_model)
     provider.projects.connect(project)
     region_model.services.connect(service)
     service.quotas.connect(quota)
