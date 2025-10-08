@@ -9,7 +9,7 @@ packages = [{ include = "fed_reg"}]
 python = ">=3.9.2,<4.0.0"
 flaat = "^1.1"
 fastapi = "^0.108"
-fedreg = {git = "https://github.com/infn-datacloud/federation-registry-lib.git", tag = "v1.3.0"}
+fedreg = {git = "https://github.com/infn-datacloud/federation-registry-lib.git", tag = "v1.3.1"}
 
 [tool.poetry.group.dev.dependencies]
 uvicorn = "^0.36"
